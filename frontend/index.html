@@ -57,8 +57,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .hdr-sub{display:flex;flex-direction:column;gap:1px;}
 .hdr-sub .s1{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px;}
 .hdr-sub .s2{font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;color:var(--muted);letter-spacing:.5px;}
-.hdr-logo-wrap{background:#fff;border-radius:6px;padding:4px 12px;transition:background .2s,padding .2s,border-radius .2s;}
-:root.light .hdr-logo-wrap{background:transparent;padding:4px 0;border-radius:0;}
+.hdr-logo-wrap{display:flex;align-items:center;}
+.hdr-logo-wrap img{transition:filter .2s;}
+:root:not(.light) .hdr-logo-wrap img{filter:brightness(0) invert(1);}
 
 /* ── TWO-TIER NAVIGATION ──────────────────────────────────────────────────── */
 
