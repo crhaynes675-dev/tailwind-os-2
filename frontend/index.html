@@ -57,6 +57,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .hdr-sub{display:flex;flex-direction:column;gap:1px;}
 .hdr-sub .s1{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px;}
 .hdr-sub .s2{font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;color:var(--muted);letter-spacing:.5px;}
+.hdr-logo-wrap{background:#fff;border-radius:6px;padding:4px 12px;transition:background .2s,padding .2s,border-radius .2s;}
+:root.light .hdr-logo-wrap{background:transparent;padding:4px 0;border-radius:0;}
 
 /* ── TWO-TIER NAVIGATION ──────────────────────────────────────────────────── */
 
@@ -943,7 +945,9 @@ input,select,textarea,button { touch-action:manipulation; }
 </div>
 
 <div class="hdr">
-  <img src="logo.png" alt="Tailwind OS" style="height:40px;width:auto;display:block;"/>
+  <div class="hdr-logo-wrap">
+    <img src="logo.png" alt="Tailwind OS" style="height:36px;width:auto;display:block;"/>
+  </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px;position:relative;">
     <button class="btn bo" onclick="clearSavedState()" style="font-size:.6rem;padding:5px 12px;opacity:.6" title="Reset all saved settings to defaults">↺ Reset Saved Data</button>
 
