@@ -837,6 +837,34 @@ input,select,textarea,button { touch-action:manipulation; }
       <p style="text-align:center;margin-top:14px;">
         <button class="auth-back-link" onclick="authShowForgot()">Forgot password?</button>
       </p>
+      <p style="text-align:center;margin-top:8px;">
+        <button class="auth-back-link" onclick="authShowSignup()">Don't have an account? Request access</button>
+      </p>
+    </div>
+
+    <div id="auth-signup-panel" style="display:none;">
+      <p class="auth-reset-desc">Fill out the form below and an administrator will create your account.</p>
+      <div class="auth-field">
+        <label class="auth-label" for="su-name">Full Name</label>
+        <input class="auth-input" id="su-name" type="text" placeholder="Your full name"
+               autocomplete="name" oninput="authClearSignupMsg()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="su-email">Email</label>
+        <input class="auth-input" id="su-email" type="email" placeholder="your@email.com"
+               autocomplete="email" oninput="authClearSignupMsg()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="su-note">Note <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input class="auth-input" id="su-note" type="text" placeholder="Role, crew, or anything helpful"
+               oninput="authClearSignupMsg()" onkeydown="if(event.key==='Enter')authSignupSubmit()">
+      </div>
+      <div class="auth-error" id="su-err"></div>
+      <div id="su-ok" style="display:none;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--green);padding:8px 10px;background:rgba(76,175,121,.08);border:1px solid rgba(76,175,121,.25);border-radius:4px;margin-bottom:12px;"></div>
+      <button class="auth-submit" id="su-btn" onclick="authSignupSubmit()">Send Request</button>
+      <p style="text-align:center;margin-top:16px;">
+        <button class="auth-back-link" onclick="authBackToLogin()">← Back to sign in</button>
+      </p>
     </div>
 
     <div id="auth-reset-panel" style="display:none;">
@@ -5827,6 +5855,76 @@ function authSubmit() {
   });
 }
 
+// ── Sign-up / access request ──────────────────────────────────────────────────
+function authShowSignup() {
+  document.getElementById('auth-login-panel').style.display = 'none';
+  document.getElementById('auth-signup-panel').style.display = 'block';
+  authClearSignupMsg();
+  setTimeout(function() { document.getElementById('su-name').focus(); }, 80);
+}
+
+function authClearSignupMsg() {
+  var err = document.getElementById('su-err');
+  var ok  = document.getElementById('su-ok');
+  if (err) { err.style.display = 'none'; err.textContent = ''; err.classList.remove('show'); }
+  if (ok)  { ok.style.display  = 'none'; ok.textContent  = ''; }
+}
+
+function authSignupSubmit() {
+  var name  = (document.getElementById('su-name').value  || '').trim();
+  var email = (document.getElementById('su-email').value || '').trim();
+  var note  = (document.getElementById('su-note').value  || '').trim();
+  var err   = document.getElementById('su-err');
+
+  if (!name || !email) {
+    err.textContent = 'Please enter your name and email.';
+    err.style.display = 'block'; err.classList.add('show');
+    return;
+  }
+
+  var btn = document.getElementById('su-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  authClearSignupMsg();
+
+  fetch(MM_API_BASE + '/sms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type:    'access_request',
+      name:    name,
+      email:   email,
+      note:    note || '',
+      status:  'pending',
+      subject: 'Access Request — ' + name,
+      body:    name + ' (' + email + ') has requested access.' + (note ? ' Note: ' + note : '')
+    })
+  })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+  .then(function(res) {
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+    if (!res.ok) {
+      err.textContent = 'Failed to send request. Please try again.';
+      err.style.display = 'block'; err.classList.add('show');
+      return;
+    }
+    var ok = document.getElementById('su-ok');
+    ok.textContent = 'Request sent! An administrator will reach out to ' + email + ' to set up your account.';
+    ok.style.display = 'block';
+    btn.style.display = 'none';
+    document.getElementById('su-name').value  = '';
+    document.getElementById('su-email').value = '';
+    document.getElementById('su-note').value  = '';
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+    err.textContent = 'Failed to send request. Check your connection.';
+    err.style.display = 'block'; err.classList.add('show');
+  });
+}
+
 // ── Password reset (Cognito ForgotPassword flow) ──────────────────────────────
 var _authResetUsername = '';
 
@@ -5843,8 +5941,9 @@ function authShowForgot() {
 }
 
 function authBackToLogin() {
-  document.getElementById('auth-reset-panel').style.display = 'none';
-  document.getElementById('auth-login-panel').style.display = 'block';
+  document.getElementById('auth-reset-panel').style.display  = 'none';
+  document.getElementById('auth-signup-panel').style.display = 'none';
+  document.getElementById('auth-login-panel').style.display  = 'block';
   authClearResetMsg();
   var confirmBtn = document.getElementById('auth-confirm-btn');
   if (confirmBtn) confirmBtn.style.display = '';
