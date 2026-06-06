@@ -838,30 +838,40 @@ input,select,textarea,button { touch-action:manipulation; }
         <button class="auth-back-link" onclick="authShowForgot()">Forgot password?</button>
       </p>
       <p style="text-align:center;margin-top:8px;">
-        <button class="auth-back-link" onclick="authShowSignup()">Don't have an account? Request access</button>
+        <button class="auth-back-link" onclick="authShowCompanySignup()">New company? Get started</button>
       </p>
     </div>
 
     <div id="auth-signup-panel" style="display:none;">
-      <p class="auth-reset-desc">Fill out the form below and an administrator will create your account.</p>
+      <p class="auth-reset-desc">Register your company and we'll get your team set up on Install Pro.</p>
       <div class="auth-field">
-        <label class="auth-label" for="su-name">Full Name</label>
-        <input class="auth-input" id="su-name" type="text" placeholder="Your full name"
+        <label class="auth-label" for="su-company">Company Name</label>
+        <input class="auth-input" id="su-company" type="text" placeholder="e.g. Apex Window &amp; Door"
+               autocomplete="organization" oninput="authClearSignupMsg()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="su-name">Your Name</label>
+        <input class="auth-input" id="su-name" type="text" placeholder="First and last name"
                autocomplete="name" oninput="authClearSignupMsg()">
       </div>
       <div class="auth-field">
-        <label class="auth-label" for="su-email">Email</label>
-        <input class="auth-input" id="su-email" type="email" placeholder="your@email.com"
+        <label class="auth-label" for="su-email">Work Email</label>
+        <input class="auth-input" id="su-email" type="email" placeholder="you@yourcompany.com"
                autocomplete="email" oninput="authClearSignupMsg()">
       </div>
       <div class="auth-field">
-        <label class="auth-label" for="su-note">Note <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
-        <input class="auth-input" id="su-note" type="text" placeholder="Role, crew, or anything helpful"
-               oninput="authClearSignupMsg()" onkeydown="if(event.key==='Enter')authSignupSubmit()">
+        <label class="auth-label" for="su-phone">Phone <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input class="auth-input" id="su-phone" type="tel" placeholder="(555) 000-0000"
+               autocomplete="tel" oninput="authClearSignupMsg()">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="su-crew">Team Size <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input class="auth-input" id="su-crew" type="number" placeholder="Number of installers"
+               min="1" oninput="authClearSignupMsg()" onkeydown="if(event.key==='Enter')authSignupSubmit()">
       </div>
       <div class="auth-error" id="su-err"></div>
       <div id="su-ok" style="display:none;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--green);padding:8px 10px;background:rgba(76,175,121,.08);border:1px solid rgba(76,175,121,.25);border-radius:4px;margin-bottom:12px;"></div>
-      <button class="auth-submit" id="su-btn" onclick="authSignupSubmit()">Send Request</button>
+      <button class="auth-submit" id="su-btn" onclick="authSignupSubmit()">Submit</button>
       <p style="text-align:center;margin-top:16px;">
         <button class="auth-back-link" onclick="authBackToLogin()">← Back to sign in</button>
       </p>
@@ -5855,12 +5865,14 @@ function authSubmit() {
   });
 }
 
-// ── Sign-up / access request ──────────────────────────────────────────────────
-function authShowSignup() {
+// ── Company sign-up ───────────────────────────────────────────────────────────
+function authShowCompanySignup() {
   document.getElementById('auth-login-panel').style.display = 'none';
   document.getElementById('auth-signup-panel').style.display = 'block';
   authClearSignupMsg();
-  setTimeout(function() { document.getElementById('su-name').focus(); }, 80);
+  var suBtn = document.getElementById('su-btn');
+  if (suBtn) suBtn.style.display = '';
+  setTimeout(function() { document.getElementById('su-company').focus(); }, 80);
 }
 
 function authClearSignupMsg() {
@@ -5871,56 +5883,64 @@ function authClearSignupMsg() {
 }
 
 function authSignupSubmit() {
-  var name  = (document.getElementById('su-name').value  || '').trim();
-  var email = (document.getElementById('su-email').value || '').trim();
-  var note  = (document.getElementById('su-note').value  || '').trim();
-  var err   = document.getElementById('su-err');
+  var company = (document.getElementById('su-company').value || '').trim();
+  var name    = (document.getElementById('su-name').value   || '').trim();
+  var email   = (document.getElementById('su-email').value  || '').trim();
+  var phone   = (document.getElementById('su-phone').value  || '').trim();
+  var crew    = (document.getElementById('su-crew').value   || '').trim();
+  var err     = document.getElementById('su-err');
 
-  if (!name || !email) {
-    err.textContent = 'Please enter your name and email.';
+  if (!company || !name || !email) {
+    err.textContent = 'Company name, your name, and email are required.';
     err.style.display = 'block'; err.classList.add('show');
     return;
   }
 
   var btn = document.getElementById('su-btn');
   btn.disabled = true;
-  btn.textContent = 'Sending…';
+  btn.textContent = 'Submitting…';
   authClearSignupMsg();
+
+  var details = company + ' — ' + name + ' (' + email + ')' +
+    (phone ? ', ' + phone : '') +
+    (crew  ? ', team size: ' + crew : '');
 
   fetch(MM_API_BASE + '/sms', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type:    'access_request',
-      name:    name,
-      email:   email,
-      note:    note || '',
-      status:  'pending',
-      subject: 'Access Request — ' + name,
-      body:    name + ' (' + email + ') has requested access.' + (note ? ' Note: ' + note : '')
+      type:        'company_signup',
+      company:     company,
+      contactName: name,
+      email:       email,
+      phone:       phone,
+      crewSize:    crew,
+      status:      'pending',
+      subject:     'New Company Sign-Up — ' + company,
+      body:        details
     })
   })
   .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
   .then(function(res) {
     btn.disabled = false;
-    btn.textContent = 'Send Request';
+    btn.textContent = 'Submit';
     if (!res.ok) {
-      err.textContent = 'Failed to send request. Please try again.';
+      err.textContent = 'Submission failed. Please try again.';
       err.style.display = 'block'; err.classList.add('show');
       return;
     }
     var ok = document.getElementById('su-ok');
-    ok.textContent = 'Request sent! An administrator will reach out to ' + email + ' to set up your account.';
+    ok.textContent = 'Thanks, ' + name + '! We received your request for ' + company + ' and will be in touch at ' + email + ' shortly.';
     ok.style.display = 'block';
     btn.style.display = 'none';
-    document.getElementById('su-name').value  = '';
-    document.getElementById('su-email').value = '';
-    document.getElementById('su-note').value  = '';
+    ['su-company','su-name','su-email','su-phone','su-crew'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
   })
   .catch(function() {
     btn.disabled = false;
-    btn.textContent = 'Send Request';
-    err.textContent = 'Failed to send request. Check your connection.';
+    btn.textContent = 'Submit';
+    err.textContent = 'Submission failed. Check your connection and try again.';
     err.style.display = 'block'; err.classList.add('show');
   });
 }
