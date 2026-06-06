@@ -57,9 +57,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .hdr-sub{display:flex;flex-direction:column;gap:1px;}
 .hdr-sub .s1{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px;}
 .hdr-sub .s2{font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;color:var(--muted);letter-spacing:.5px;}
-.hdr-logo-wrap{display:flex;align-items:center;}
-.hdr-logo-wrap img{transition:filter .2s;}
-:root:not(.light) .hdr-logo-wrap img{filter:brightness(0) invert(1);}
+.hdr-logo-wrap{display:flex;align-items:center;background:#fff;padding:5px 12px;border-radius:6px;transition:background .2s,box-shadow .2s;}
+:root.light .hdr-logo-wrap{background:transparent;box-shadow:none;padding:5px 0;}
 
 /* ── TWO-TIER NAVIGATION ──────────────────────────────────────────────────── */
 
@@ -947,7 +946,7 @@ input,select,textarea,button { touch-action:manipulation; }
 
 <div class="hdr">
   <div class="hdr-logo-wrap">
-    <img src="logo.png" alt="Tailwind OS" style="height:36px;width:auto;display:block;"/>
+    <img src="logo.jpeg" alt="Tailwind OS" style="height:36px;width:auto;display:block;"/>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px;position:relative;">
     <button class="btn bo" onclick="clearSavedState()" style="font-size:.6rem;padding:5px 12px;opacity:.6" title="Reset all saved settings to defaults">↺ Reset Saved Data</button>
