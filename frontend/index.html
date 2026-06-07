@@ -8301,7 +8301,21 @@ function syncFlush() {
 
   // Process one at a time for reliability
   var entry = SYNC_QUEUE[0];
-  syncSendOne(entry).then(function() {
+  syncSendOne(entry).then(function(res) {
+    // When a new calendar job is created, write the server-assigned ids back
+    if (entry.op === 'JOB_CREATE' && res && res.jobId) {
+      var appt = (CAL_APPTS || []).find(function(a){ return a._id === entry.jobId; });
+      if (appt) {
+        appt._apiId         = res.jobId;
+        appt.workOrderNumber= res.workOrderNumber || '';
+      }
+      var dj = (typeof DASH_JOBS !== 'undefined' ? DASH_JOBS : []).find(function(j){ return j.calApptId === entry.jobId; });
+      if (dj) {
+        dj._apiId         = res.jobId;
+        dj.workOrderNumber= res.workOrderNumber || '';
+        if (typeof dashRender === 'function') dashRender();
+      }
+    }
     SYNC_QUEUE.shift();
     syncPersistQueue();
     syncUpdateBadge();
@@ -8329,7 +8343,17 @@ function syncSendOne(entry) {
   if (!mmGetToken()) return Promise.reject(new Error('not authenticated'));
   switch (entry.op) {
     case 'JOB_CREATE':
-      return mmApi('POST', '/jobs', entry.payload);
+      // Normalise calendar field names to API field names
+      var cp = entry.payload;
+      return mmApi('POST', '/jobs', {
+        jobName:      cp.jobName      || cp.job  || 'Untitled',
+        address:      cp.address      || cp.addr || '',
+        scheduledDate:cp.scheduledDate|| cp.date || '',
+        assignedTo:   cp.assignedTo   || cp.crew || '',
+        status:       cp.status       || 'Scheduled',
+        notes:        cp.notes        || cp.internalNotes || '',
+        quoteNum:     cp.quoteNum     || cp.quoteRef || ''
+      });
     case 'JOB_UPDATE':
     case 'STATUS_CHANGE':
     case 'NOTE_ADD':
@@ -11859,8 +11883,17 @@ function dashSaveModal() {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
     } else {
       mmApi('POST', '/jobs', payload).then(function(res) {
-        if (res && res.jobId) { job._apiId = res.jobId; job.workOrderNumber = res.workOrderNumber || ''; }
+        if (res && res.jobId) {
+          job._apiId = res.jobId;
+          job.workOrderNumber = res.workOrderNumber || '';
+          // Propagate to linked calendar appointment if one exists
+          if (job.calApptId) {
+            var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId; });
+            if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
+          }
+        }
         dashPersistState();
+        dashRender();
       }).catch(function(){});
     }
     dashPersistState();
@@ -11880,8 +11913,16 @@ function dashSaveModalAndSchedule() {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
     } else {
       mmApi('POST', '/jobs', payload).then(function(res) {
-        if (res && res.jobId) { job._apiId = res.jobId; job.workOrderNumber = res.workOrderNumber || ''; }
+        if (res && res.jobId) {
+          job._apiId = res.jobId;
+          job.workOrderNumber = res.workOrderNumber || '';
+          if (job.calApptId) {
+            var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId; });
+            if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
+          }
+        }
         dashPersistState();
+        dashRender();
       }).catch(function(){});
     }
   }
