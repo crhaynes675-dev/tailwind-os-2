@@ -1086,7 +1086,7 @@ input,select,textarea,button { touch-action:manipulation; }
                    oninput="authClearSignupMsg()">
           </div>
           <div class="auth-field">
-            <label class="auth-label" for="su-email">Email</label>
+            <label class="auth-label" for="su-email">Email *</label>
             <input class="auth-input" id="su-email" type="email"
                    placeholder="you@company.com" autocomplete="email"
                    oninput="authClearSignupMsg()">
@@ -6357,6 +6357,10 @@ function obWizHide() {
 }
 
 function obWizComplete() {
+  var companyName = (document.getElementById('ob-company-name') || {}).value || _obWiz.companyName || '';
+  if (companyName && mmGetToken()) {
+    mmApi('PUT', '/tenants/me', { companyName: companyName }).catch(function() {});
+  }
   obWizHide();
   _isNewSignup = false;
 }
@@ -6627,8 +6631,8 @@ function authSignupSubmit() {
     err.style.display = 'block'; err.classList.add('show');
   }
 
-  if (!fullname || !username || !password) {
-    showErr('Full name, username, and password are required.');
+  if (!fullname || !username || !email || !password) {
+    showErr('Full name, username, email, and password are required.');
     return;
   }
   if (password !== confirm) {
