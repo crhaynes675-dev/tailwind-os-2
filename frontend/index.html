@@ -10666,6 +10666,7 @@ function dashSyncFromSources() {
       importedDate: new Date().toISOString().slice(0,10)
     });
     DASH_JOBS.push(job);
+    dashAssignWorkOrderNumber(job);
     added++;
   });
 
@@ -10685,14 +10686,22 @@ function dashSyncFromSources() {
       importedDate:  rec.date || new Date().toISOString().slice(0,10)
     });
     DASH_JOBS.push(job);
+    dashAssignWorkOrderNumber(job);
     added++;
   });
 
   // 3. From CAL_APPTS — scheduled jobs not yet in dashboard
   (CAL_APPTS || []).forEach(function(appt) {
     if (!appt || appt._unscheduled) return;
-    var exists = DASH_JOBS.find(function(j){ return j.calApptId === appt._id; });
-    if (exists) return;
+    var exists = DASH_JOBS.find(function(j){
+      return j.calApptId === appt._id || (appt._apiId && j._apiId === appt._apiId);
+    });
+    if (exists) {
+      // Entry exists but may have a stale calApptId — heal it and copy workOrderNumber
+      if (exists.calApptId !== appt._id) exists.calApptId = appt._id;
+      if (appt.workOrderNumber && !exists.workOrderNumber) exists.workOrderNumber = appt.workOrderNumber;
+      return;
+    }
     var job = dashMakeJob({
       jobName:      appt.job   || 'Calendar Job',
       jobAddress:   appt.addr  || '',
@@ -10707,6 +10716,7 @@ function dashSyncFromSources() {
       workOrderNumber: appt.workOrderNumber || ''
     });
     DASH_JOBS.push(job);
+    dashAssignWorkOrderNumber(job); // no-op if _apiId already set
     added++;
   });
 
@@ -11317,8 +11327,14 @@ function dashNotifyCalendarChange(calApptId) {
 // Sweeps all DASH_JOBS with calApptId links and pulls latest cal data.
 function dashSyncCalendarUpdates() {
   DASH_JOBS.forEach(function(j) {
-    if (!j.calApptId) return;
+    if (!j.calApptId && !j._apiId) return;
+    // Try exact calApptId match first; fall back to _apiId match (handles stale local IDs
+    // after CAL_APPTS is replaced by the API response which uses 'api_GUID' ids)
     var appt = (CAL_APPTS || []).find(function(a){ return a._id === j.calApptId; });
+    if (!appt && j._apiId) {
+      appt = (CAL_APPTS || []).find(function(a){ return a._apiId === j._apiId; });
+      if (appt) j.calApptId = appt._id; // heal the stale local ID
+    }
     if (!appt) return;
 
     // Sync fields
@@ -11331,6 +11347,7 @@ function dashSyncCalendarUpdates() {
     if (appt.customerName)  j.customerName  = appt.customerName;
     if (appt.holdReason !== undefined) j.holdReason = appt.holdReason;
     if (appt.piwrComplete)  j.piwrComplete  = appt.piwrComplete;
+    if (appt.workOrderNumber) j.workOrderNumber = appt.workOrderNumber;
 
     // Auto-advance status after sync (e.g. job gets address/crew from calendar)
     jobAutoAdvanceStatus(j);
@@ -11352,7 +11369,9 @@ function dashSyncCalendarUpdates() {
   // Also pick up any CAL_APPTS not yet in DASH_JOBS
   (CAL_APPTS || []).forEach(function(appt) {
     if (appt._unscheduled || !appt._id) return;
-    var exists = DASH_JOBS.find(function(j){ return j.calApptId === appt._id; });
+    var exists = DASH_JOBS.find(function(j){
+      return j.calApptId === appt._id || (appt._apiId && j._apiId === appt._apiId);
+    });
     if (!exists) {
       var job = dashMakeJob({
         jobName:      appt.job   || 'Calendar Job',
@@ -11362,12 +11381,21 @@ function dashSyncCalendarUpdates() {
         timeWindow:   appt.time  || '',
         source:       'Calendar',
         status:       'Scheduled',
-        calApptId:    appt._id,
-        priority:     appt.priority || 'Normal'
+        calApptId:       appt._id,
+        priority:        appt.priority || 'Normal',
+        workOrderNumber: appt.workOrderNumber || ''
       });
       DASH_JOBS.push(job);
     }
   });
+
+  // Backfill: assign WO# to any existing DASH_JOB that doesn't have one yet.
+  // This catches jobs that were in localStorage before the WO# feature, or were added
+  // from PDF/NCI import before this session's dashSyncFromSources ran.
+  // _woAssignAttempted (session Set) prevents hammering the API on every render.
+  if (typeof dashAssignWorkOrderNumber === 'function') {
+    DASH_JOBS.forEach(function(j) { dashAssignWorkOrderNumber(j); });
+  }
 }
 
 // ── Calendar preview render ───────────────────────────────────────────────────
@@ -11885,12 +11913,14 @@ function dashSaveModal() {
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
+    } else if (job._woPending) {
+      // dashAssignWorkOrderNumber POST is in flight — mark dirty so its callback sends a PUT
+      job._pendingSave = true;
     } else {
       mmApi('POST', '/jobs', payload).then(function(res) {
         if (res && res.jobId) {
           job._apiId = res.jobId;
           job.workOrderNumber = res.workOrderNumber || '';
-          // Propagate to linked calendar appointment if one exists
           if (job.calApptId) {
             var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId; });
             if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
@@ -11937,11 +11967,51 @@ function dashSaveModalAndSchedule() {
 
 function dashCloseModal() { G('dash-job-modal').style.display='none'; }
 
+// Session-only Set so we don't re-POST jobs that already got a WO# attempt this session
+// (not serialized to localStorage, so a page refresh resets it cleanly)
+var _woAssignAttempted = new Set();
+
+// ── Assign WO# immediately after a DASH_JOB is created (before the user saves) ─
+function dashAssignWorkOrderNumber(job) {
+  if (!mmGetToken()) return;
+  if (job._apiId || job.workOrderNumber || job._woPending) return;
+  if (_woAssignAttempted.has(job.dashId)) return;
+  _woAssignAttempted.add(job.dashId);
+  job._woPending = true;
+  mmApi('POST', '/jobs', {
+    jobName:       job.jobName       || 'Untitled',
+    address:       job.jobAddress    || '',
+    scheduledDate: job.scheduledDate || new Date().toISOString().slice(0,10),
+    assignedTo:    job.crew          || '',
+    status:        job.status        || 'Unscheduled',
+    notes:         job.notes         || '',
+    quoteNum:      job.quoteNum      || ''
+  }).then(function(res) {
+    delete job._woPending;
+    if (res && res.jobId) {
+      job._apiId          = res.jobId;
+      job.workOrderNumber = res.workOrderNumber || '';
+      if (job.calApptId) {
+        var appt = (CAL_APPTS||[]).find(function(a){ return a._id === job.calApptId; });
+        if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
+      }
+      // If user saved the modal while the POST was in flight, send their edits now
+      if (job._pendingSave) {
+        delete job._pendingSave;
+        syncEnqueue('JOB_UPDATE', job._apiId, _dashJobApiPayload(job));
+      }
+      dashPersistState();
+      dashRender();
+    }
+  }).catch(function() { delete job._woPending; });
+}
+
 // ── New manual job ────────────────────────────────────────────────────────────
 function dashOpenNewJob() {
   var job = dashMakeJob({ status:'Unscheduled', source:'Manual', priority:'Normal' });
   DASH_JOBS.push(job);
   DASH_SELECTED_ID = job.dashId;
+  dashAssignWorkOrderNumber(job);
   dashOpenJobModal(job.dashId);
 }
 
