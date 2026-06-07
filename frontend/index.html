@@ -56,7 +56,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .hdr-sub{display:flex;flex-direction:column;gap:1px;}
 .hdr-sub .s1{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:.5px;}
 .hdr-sub .s2{font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;color:var(--muted);letter-spacing:.5px;}
-.hdr-logo-wrap{display:flex;align-items:center;padding:4px 0;}
+.hdr-logo-wrap{display:flex;align-items:center;padding:2px 0;}
+.hdr-logo-wrap img{height:72px;width:auto;display:block;}
 
 /* ── TWO-TIER NAVIGATION ──────────────────────────────────────────────────── */
 
@@ -421,6 +422,10 @@ input,select,textarea,button { touch-action:manipulation; }
               display:flex; flex-direction:column; justify-content:center; }
   #auth-overlay{ padding:0; }
 }
+
+/* ── Header logo — scale down on mobile ──────────────────────────────────── */
+@media(max-width:860px){.hdr-logo-wrap img{height:56px;}}
+@media(max-width:480px){.hdr-logo-wrap img{height:44px;}}
 
 /* ── User bar — compact on mobile ────────────────────────────────────────── */
 @media(max-width:600px){
@@ -862,8 +867,8 @@ input,select,textarea,button { touch-action:manipulation; }
      ══════════════════════════════════════════════ -->
 <div id="auth-overlay">
   <div class="auth-card">
-    <div class="auth-brand" style="margin-bottom:8px;padding:8px 0 4px;">
-      <img src="logo.png" alt="Tailwind OS" style="width:200px;height:auto;display:block;margin:0 auto;"/>
+    <div class="auth-brand" style="margin-bottom:16px;padding:20px 0 8px;">
+      <img src="logo.png" alt="Tailwind OS" style="width:280px;max-width:85%;height:auto;display:block;margin:0 auto;"/>
     </div>
 
     <div id="auth-login-panel">
@@ -1181,7 +1186,7 @@ input,select,textarea,button { touch-action:manipulation; }
 
 <div class="hdr">
   <div class="hdr-logo-wrap">
-    <img src="logo.png" alt="Tailwind OS" style="height:48px;width:auto;display:block;"/>
+    <img src="logo.png" alt="Tailwind OS"/>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px;position:relative;">
     <button class="btn bo" onclick="clearSavedState()" style="font-size:.6rem;padding:5px 12px;opacity:.6" title="Reset all saved settings to defaults">↺ Reset Saved Data</button>
