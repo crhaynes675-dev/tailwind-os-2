@@ -81,7 +81,10 @@ export class ApiStack extends cdk.Stack {
         throttlingBurstLimit: 200,
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: ['https://app.morrisonmillwork.com'],
+        allowOrigins: [
+          'https://app.morrisonmillwork.com',
+          'https://d8im2hbxazf8r.cloudfront.net',
+        ],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization'],
         maxAge: cdk.Duration.hours(1),
