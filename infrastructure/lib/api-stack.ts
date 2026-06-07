@@ -36,7 +36,21 @@ export class ApiStack extends cdk.Stack {
       TABLE_NAME: table.tableName,
       ATTACHMENTS_BUCKET: attachmentsBucket.bucketName,
       REGION: this.region,
+      USER_POOL_ID: userPool.userPoolId,
     };
+
+    // Grant Lambda role permission to manage Cognito users
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'cognito-idp:ListUsers',
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminDeleteUser',
+        'cognito-idp:AdminUpdateUserAttributes',
+        'cognito-idp:AdminGetUser',
+      ],
+      resources: [userPool.userPoolArn],
+    }));
 
     const backendAsset = lambda.Code.fromAsset(
       path.join(__dirname, '../../backend/dist')
@@ -59,6 +73,7 @@ export class ApiStack extends cdk.Stack {
       });
     };
 
+    const usersFn       = makeFn('UsersFn',       'handlers/users.handler');
     const jobsFn        = makeFn('JobsFn',        'handlers/jobs.handler');
     const piwrFn        = makeFn('PiwrFn',        'handlers/piwr.handler');
     const auditFn       = makeFn('AuditFn',       'handlers/audit.handler');
@@ -100,6 +115,15 @@ export class ApiStack extends cdk.Stack {
       authorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     };
+
+    // User management (Cognito admin operations)
+    const users         = this.api.root.addResource('users');
+    users.addMethod('GET',  new apigateway.LambdaIntegration(usersFn), auth);
+    users.addMethod('POST', new apigateway.LambdaIntegration(usersFn), auth);
+    const userByName    = users.addResource('{username}');
+    userByName.addMethod('DELETE', new apigateway.LambdaIntegration(usersFn), auth);
+    const userPassword  = userByName.addResource('password');
+    userPassword.addMethod('PUT', new apigateway.LambdaIntegration(usersFn), auth);
 
     const jobs = this.api.root.addResource('jobs');
     jobs.addMethod('GET',  new apigateway.LambdaIntegration(jobsFn), auth);

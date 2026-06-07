@@ -1564,10 +1564,10 @@ input,select,textarea,button { touch-action:manipulation; }
       <div style="overflow-x:auto">
         <table class="um-table">
           <thead>
-            <tr><th>#</th><th>Username</th><th>Role</th></tr>
+            <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th></th></tr>
           </thead>
           <tbody id="um-user-list">
-            <tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
+            <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -1576,14 +1576,26 @@ input,select,textarea,button { touch-action:manipulation; }
     <!-- Create user -->
     <div class="um-section">
       <div class="um-section-title">Create New User</div>
-      <div class="um-form-row">
+      <div class="um-form-row" style="flex-wrap:wrap">
         <div class="um-form-field">
           <label class="um-form-label" for="um-new-username">Username</label>
           <input class="um-form-input" id="um-new-username" type="text" placeholder="e.g. jsmith" autocomplete="off">
         </div>
         <div class="um-form-field">
+          <label class="um-form-label" for="um-new-email">Email</label>
+          <input class="um-form-input" id="um-new-email" type="email" placeholder="user@company.com" autocomplete="off">
+        </div>
+        <div class="um-form-field">
+          <label class="um-form-label" for="um-new-given">First Name</label>
+          <input class="um-form-input" id="um-new-given" type="text" placeholder="First name" autocomplete="off">
+        </div>
+        <div class="um-form-field">
+          <label class="um-form-label" for="um-new-family">Last Name</label>
+          <input class="um-form-input" id="um-new-family" type="text" placeholder="Last name" autocomplete="off">
+        </div>
+        <div class="um-form-field">
           <label class="um-form-label" for="um-new-password">Password</label>
-          <input class="um-form-input" id="um-new-password" type="text" placeholder="Temporary password" autocomplete="off">
+          <input class="um-form-input" id="um-new-password" type="text" placeholder="Min 12 chars, A-z 0-9 symbol" autocomplete="off">
         </div>
         <div class="um-form-field" style="max-width:140px">
           <label class="um-form-label" for="um-new-role">Role</label>
@@ -1594,7 +1606,7 @@ input,select,textarea,button { touch-action:manipulation; }
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
           <label class="um-form-label">&nbsp;</label>
-          <button class="um-create-btn" onclick="umCreateUser()">+ Create User</button>
+          <button class="um-create-btn" id="um-create-btn" onclick="umCreateUser()">+ Create User</button>
         </div>
       </div>
       <div class="um-msg" id="um-msg"></div>
@@ -6185,70 +6197,102 @@ function umRenderPage() {
 
 function umRenderList() {
   var tbody = document.getElementById('um-user-list');
-  if (!AUTH_USERS.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:14px">No users found.</td></tr>';
-  } else {
-    tbody.innerHTML = AUTH_USERS.map(function(u) {
-      var isSelf = AUTH_CURRENT_USER && u.username === AUTH_CURRENT_USER.username;
-      return '<tr' + (isSelf ? ' class="um-self"' : '') + '>' +
-        '<td style="color:var(--muted);font-size:.7rem">' + u.id + '</td>' +
-        '<td>' + u.username + (isSelf ? '<span class="um-you">you</span>' : '') + '</td>' +
-        '<td><span class="um-role-badge ' + u.role + '">' + u.role + '</span></td>' +
-      '</tr>';
-    }).join('');
-  }
-  // Keep pw-select-user dropdown in sync with the current user list
-  var sel = document.getElementById('pw-select-user');
-  if (sel) {
-    sel.innerHTML = AUTH_USERS.map(function(u) {
-      return '<option value="' + u.id + '">' + u.username + ' (' + u.role + ')</option>';
-    }).join('');
-  }
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Loading…</td></tr>';
+  mmApi('GET', '/users').then(function(users) {
+    if (!users || !users.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">No users found.</td></tr>';
+    } else {
+      tbody.innerHTML = users.map(function(u) {
+        var isSelf = AUTH_CURRENT_USER && u.username === AUTH_CURRENT_USER.username;
+        var name = ((u.givenName || '') + ' ' + (u.familyName || '')).trim();
+        return '<tr' + (isSelf ? ' class="um-self"' : '') + '>' +
+          '<td>' + u.username + (isSelf ? '<span class="um-you">you</span>' : '') + '</td>' +
+          '<td>' + (name || '—') + '</td>' +
+          '<td style="color:var(--muted);font-size:.8rem">' + (u.email || '—') + '</td>' +
+          '<td><span class="um-role-badge ' + u.role + '">' + u.role + '</span></td>' +
+          '<td>' + (isSelf ? '' : '<button onclick="umDeleteUser(\'' + u.username.replace(/'/g,'\\\'') + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.75rem;padding:2px 6px">Delete</button>') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+    var sel = document.getElementById('pw-select-user');
+    if (sel && users) {
+      sel.innerHTML = users.map(function(u) {
+        return '<option value="' + u.username + '">' + u.username + ' (' + u.role + ')</option>';
+      }).join('');
+    }
+  }).catch(function(err) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:14px">Failed to load users: ' + (err.message || err) + '</td></tr>';
+  });
 }
 
 function umCreateUser() {
-  var username = (document.getElementById('um-new-username').value || '').trim();
-  var password = (document.getElementById('um-new-password').value || '').trim();
-  var role     = document.getElementById('um-new-role').value;
+  var username   = (document.getElementById('um-new-username').value || '').trim();
+  var email      = (document.getElementById('um-new-email').value    || '').trim();
+  var givenName  = (document.getElementById('um-new-given').value    || '').trim();
+  var familyName = (document.getElementById('um-new-family').value   || '').trim();
+  var password   = (document.getElementById('um-new-password').value || '').trim();
+  var role       = document.getElementById('um-new-role').value;
 
-  if (!username || !password) {
-    umShowMsg('Username and password are required.', 'error'); return;
+  if (!username || !email || !givenName || !familyName || !password) {
+    umShowMsg('All fields are required.', 'error'); return;
   }
-  if (AUTH_USERS.find(function(u) { return u.username === username; })) {
-    umShowMsg('Username "' + username + '" is already taken.', 'error'); return;
-  }
 
-  AUTH_USERS.push({ id: AUTH_NEXT_ID++, username: username, password: password, role: role });
+  var btn = document.getElementById('um-create-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
 
-  document.getElementById('um-new-username').value = '';
-  document.getElementById('um-new-password').value = '';
-  document.getElementById('um-new-role').value = 'user';
-  umRenderList();
-  umShowMsg('User "' + username + '" created successfully.', 'success');
+  mmApi('POST', '/users', { username: username, email: email, givenName: givenName, familyName: familyName, password: password, role: role })
+    .then(function() {
+      document.getElementById('um-new-username').value = '';
+      document.getElementById('um-new-email').value    = '';
+      document.getElementById('um-new-given').value    = '';
+      document.getElementById('um-new-family').value   = '';
+      document.getElementById('um-new-password').value = '';
+      document.getElementById('um-new-role').value     = 'user';
+      umShowMsg('User "' + username + '" created in Cognito.', 'success');
+      umRenderList();
+    })
+    .catch(function(err) {
+      umShowMsg(err.message || 'Failed to create user.', 'error');
+    })
+    .then(function() {
+      if (btn) { btn.disabled = false; btn.textContent = '+ Create User'; }
+    });
 }
 
 function umChangePassword() {
-  var sel      = document.getElementById('pw-select-user');
-  var newPw    = (document.getElementById('pw-new').value || '').trim();
-  var msgEl    = document.getElementById('pw-msg');
-
-  msgEl.className = 'um-msg'; msgEl.style.display = 'none';
+  var sel   = document.getElementById('pw-select-user');
+  var newPw = (document.getElementById('pw-new').value || '').trim();
 
   if (!sel || !sel.value) { umShowPwMsg('Please select a user.', 'error'); return; }
   if (!newPw)             { umShowPwMsg('Please enter a new password.', 'error'); return; }
-  if (newPw.length < 4)   { umShowPwMsg('Password must be at least 4 characters.', 'error'); return; }
 
-  var targetId = parseInt(sel.value, 10);
-  var target   = AUTH_USERS.find(function(u) { return u.id === targetId; });
-  if (!target) { umShowPwMsg('User not found.', 'error'); return; }
+  var targetUsername = sel.value;
+  var btn = document.querySelector('[onclick="umChangePassword()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
 
-  // Apply the change directly to in-memory store
-  target.password = newPw;
+  mmApi('PUT', '/users/' + encodeURIComponent(targetUsername) + '/password', { password: newPw })
+    .then(function() {
+      document.getElementById('pw-new').value = '';
+      umShowPwMsg('Password for "' + targetUsername + '" updated in Cognito.', 'success');
+    })
+    .catch(function(err) {
+      umShowPwMsg(err.message || 'Failed to update password.', 'error');
+    })
+    .then(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Update Password'; }
+    });
+}
 
-  // Clear the field
-  document.getElementById('pw-new').value = '';
-
-  umShowPwMsg('Password for "' + target.username + '" updated successfully.', 'success');
+function umDeleteUser(username) {
+  if (!confirm('Delete user "' + username + '" from Cognito? This cannot be undone.')) return;
+  mmApi('DELETE', '/users/' + encodeURIComponent(username))
+    .then(function() {
+      umShowMsg('User "' + username + '" deleted.', 'success');
+      umRenderList();
+    })
+    .catch(function(err) {
+      umShowMsg(err.message || 'Failed to delete user.', 'error');
+    });
 }
 
 function umShowPwMsg(text, type) {

@@ -1,0 +1,120 @@
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import {
+  CognitoIdentityProviderClient,
+  ListUsersCommand,
+  AdminCreateUserCommand,
+  AdminSetUserPasswordCommand,
+  AdminDeleteUserCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
+import { ok, created, noContent, badRequest, notFound, serverError, forbidden } from '../lib/response';
+
+const cognito = new CognitoIdentityProviderClient({ region: process.env.REGION ?? 'us-east-1' });
+const USER_POOL_ID = process.env.USER_POOL_ID!;
+
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    const claims = (event.requestContext?.authorizer as any)?.claims ?? {};
+    if (claims['custom:role'] !== 'admin') {
+      return forbidden('Admin access required', event);
+    }
+
+    const { httpMethod } = event;
+    const username = event.pathParameters?.username;
+    const isPasswordPath = event.path?.endsWith('/password') ?? false;
+
+    // GET /users — list all Cognito users
+    if (httpMethod === 'GET') {
+      const result = await cognito.send(new ListUsersCommand({
+        UserPoolId: USER_POOL_ID,
+        Limit: 60,
+      }));
+      const users = (result.Users ?? []).map(u => {
+        const attrs: Record<string, string> = {};
+        (u.Attributes ?? []).forEach(a => { if (a.Name && a.Value) attrs[a.Name] = a.Value; });
+        return {
+          username: u.Username ?? '',
+          email: attrs['email'] ?? '',
+          givenName: attrs['given_name'] ?? '',
+          familyName: attrs['family_name'] ?? '',
+          role: attrs['custom:role'] ?? 'user',
+          status: u.UserStatus ?? '',
+          enabled: u.Enabled ?? true,
+        };
+      });
+      return ok(users, event);
+    }
+
+    // POST /users — create a new user in Cognito
+    if (httpMethod === 'POST' && !username) {
+      const body = JSON.parse(event.body ?? '{}');
+      const { username: newUsername, email, givenName, familyName, password, role } = body;
+
+      if (!newUsername || !email || !givenName || !familyName || !password) {
+        return badRequest('username, email, givenName, familyName, and password are all required', event);
+      }
+
+      await cognito.send(new AdminCreateUserCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: newUsername,
+        MessageAction: 'SUPPRESS',
+        TemporaryPassword: password,
+        UserAttributes: [
+          { Name: 'email',          Value: email },
+          { Name: 'email_verified', Value: 'true' },
+          { Name: 'given_name',     Value: givenName },
+          { Name: 'family_name',    Value: familyName },
+          { Name: 'custom:role',    Value: role ?? 'user' },
+        ],
+      }));
+
+      // Make the password permanent so the user doesn't have to reset on first login
+      await cognito.send(new AdminSetUserPasswordCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: newUsername,
+        Password: password,
+        Permanent: true,
+      }));
+
+      return created({ username: newUsername, created: true }, event);
+    }
+
+    if (!username) return badRequest('username is required', event);
+
+    // PUT /users/{username}/password — set a new permanent password
+    if (httpMethod === 'PUT' && isPasswordPath) {
+      const body = JSON.parse(event.body ?? '{}');
+      const { password } = body;
+      if (!password) return badRequest('password is required', event);
+
+      await cognito.send(new AdminSetUserPasswordCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: username,
+        Password: password,
+        Permanent: true,
+      }));
+      return ok({ updated: true }, event);
+    }
+
+    // DELETE /users/{username} — remove user from Cognito
+    if (httpMethod === 'DELETE') {
+      await cognito.send(new AdminDeleteUserCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: username,
+      }));
+      return noContent(event);
+    }
+
+    return badRequest('Method not supported', event);
+  } catch (err: any) {
+    if (err.name === 'UsernameExistsException') {
+      return badRequest('Username already exists', event);
+    }
+    if (err.name === 'InvalidPasswordException') {
+      return badRequest('Password does not meet requirements: ' + err.message, event);
+    }
+    if (err.name === 'UserNotFoundException') {
+      return notFound('User not found', event);
+    }
+    return serverError(err, event);
+  }
+};

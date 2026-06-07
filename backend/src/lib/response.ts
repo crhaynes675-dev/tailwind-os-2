@@ -43,6 +43,12 @@ export const badRequest = (msg: string, event?: Partial<APIGatewayProxyEvent>): 
   body: JSON.stringify({ error: msg }),
 });
 
+export const forbidden = (msg = 'Forbidden', event?: Partial<APIGatewayProxyEvent>): APIGatewayProxyResult => ({
+  statusCode: 403,
+  headers: corsHeaders(event),
+  body: JSON.stringify({ error: msg }),
+});
+
 export const serverError = (err: unknown, event?: Partial<APIGatewayProxyEvent>): APIGatewayProxyResult => {
   console.error(err);
   return {
