@@ -10937,8 +10937,12 @@ function dashRestoreState() {
     var token = sessionStorage.getItem('mm_id_token');
     if (saved && token) {
       var user = JSON.parse(saved);
+      // Always re-derive role from the live JWT so stale sessions get the right permissions
+      var claims = mmParseJwt(token) || {};
+      if (claims['custom:role']) user.role = claims['custom:role'];
       if (user && user.username && user.role) {
         AUTH_CURRENT_USER = user;
+        sessionStorage.setItem('mm_auth_user', JSON.stringify(user));
         authShowApp(user);
         return;
       }
