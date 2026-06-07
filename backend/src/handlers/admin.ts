@@ -40,7 +40,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         try {
           const users = await cognito.send(new ListUsersCommand({
             UserPoolId: USER_POOL_ID,
-            Filter: `"custom:tenantId" = "${tenant.tenantId}"`,
+            Filter: `custom:tenantId = "${tenant.tenantId}"`,
             Limit: 60,
           }));
           return { ...tenant, userCount: users.Users?.length ?? 0 };
