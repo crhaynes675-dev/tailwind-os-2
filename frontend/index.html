@@ -8255,9 +8255,10 @@ function syncLoadFromStorage() {
             crew:     j.assignedTo   || '',
             quoteRef: j.quoteNum     || ''
           }), {
-            _id:     'api_' + j.jobId,
-            _apiId:  j.jobId,
-            status:  j.status || 'Scheduled',
+            _id:        'api_' + j.jobId,
+            _apiId:     j.jobId,
+            parentJobId:j.parentJobId || '',
+            status:     j.status || 'Scheduled',
             internalNotes: j.notes || ''
           });
         });
@@ -10598,6 +10599,8 @@ function dashMakeJob(opts) {
     manager:         opts.manager         || '',
     notes:           opts.notes           || '',
     calApptId:       opts.calApptId       || null,
+    _apiId:          opts._apiId          || '',
+    parentJobId:     opts.parentJobId     || '',
     quoteNum:        opts.quoteNum        || '',
     lastUpdated:     new Date().toISOString(),
     notifications:   [],
@@ -10665,7 +10668,9 @@ function dashSyncFromSources() {
       timeWindow:   appt.time  || '',
       source:       'Calendar',
       status:       appt.status === 'Completed' ? 'Completed' : appt.status === 'Canceled' ? 'Issue / Hold' : 'Scheduled',
-      calApptId:    appt._id
+      calApptId:    appt._id,
+      _apiId:       appt._apiId     || '',
+      parentJobId:  appt.parentJobId|| ''
     });
     DASH_JOBS.push(job);
     added++;
@@ -11143,11 +11148,13 @@ function dashRender() {
     var sc = DASH_STATUSES[j.status] || 'var(--muted)';
     var pc = j.priority === 'High' ? 'var(--red)' : j.priority === 'Low' ? 'var(--muted)' : 'var(--text)';
     var locked = (j.status === 'Completed' || j.status === 'Canceled');
+    var openSubCount = j._apiId ? DASH_JOBS.filter(function(s){ return s.parentJobId === j._apiId && s.status !== 'Completed' && s.status !== 'Canceled'; }).length : 0;
+    var subBadge = openSubCount ? '<span title="' + openSubCount + ' open sub work order(s)" style="font-size:.5rem;margin-left:5px;background:#e05252;color:#fff;padding:1px 5px;border-radius:3px;">⚠️ ' + openSubCount + ' issue' + (openSubCount>1?'s':'') + '</span>' : '';
     return '<tr style="cursor:pointer;transition:background .1s;'+(locked?'opacity:.8;':'')+'"' +
       ' onclick="dashSelectJob(\'' + j.dashId + '\')"' +
       ' onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'"' +
       ' onmouseleave="this.style.background=\'\'">' +
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + '</td>' +
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + subBadge + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerName||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobAddress||'—') + '</td>' +
       '<td style="padding:9px 12px;"><span style="font-family:\'Outfit\',sans-serif;font-size:.58rem;padding:2px 8px;border-radius:3px;background:' + sc + '22;color:' + sc + ';border:1px solid ' + sc + '44;white-space:nowrap;">' + j.status + '</span></td>' +
@@ -11221,7 +11228,9 @@ function dashNotifyCalendarChange(calApptId) {
       source:       'Calendar',
       status:       'Scheduled',
       calApptId:    appt._id,
-      priority:     appt.priority || 'Normal'
+      priority:     appt.priority  || 'Normal',
+      _apiId:       appt._apiId    || '',
+      parentJobId:  appt.parentJobId || ''
     });
     DASH_JOBS.push(job);
   }
@@ -11529,6 +11538,17 @@ function dashProgressStatus(dashId, newStatus) {
   if ((job.status === 'Completed' || job.status === 'Canceled') && !isAdmin) {
     alert(job.status + ' jobs can only be modified by an admin.');
     return;
+  }
+
+  // Block Completed if open sub work orders exist
+  if (newStatus === 'Completed' && job._apiId) {
+    var openSubs = DASH_JOBS.filter(function(j) {
+      return j.parentJobId === job._apiId && j.status !== 'Completed' && j.status !== 'Canceled';
+    });
+    if (openSubs.length) {
+      alert('Cannot mark Completed: ' + openSubs.length + ' open sub work order(s) must be resolved first.\n\nOpen issues:\n' + openSubs.map(function(s){ return '• ' + s.jobName; }).join('\n'));
+      return;
+    }
   }
 
   // Require date before marking In Progress

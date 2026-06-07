@@ -15,10 +15,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const { httpMethod, pathParameters, queryStringParameters } = event;
     const jobId = pathParameters?.jobId;
 
-    // GET /jobs — list all jobs, optional ?from=YYYY-MM-DD&to=YYYY-MM-DD
+    // GET /jobs — list all jobs, optional ?from=YYYY-MM-DD&to=YYYY-MM-DD&parentJobId=UUID
     if (httpMethod === 'GET' && !jobId) {
-      const from = queryStringParameters?.from ?? '0000-00-00';
-      const to   = queryStringParameters?.to   ?? '9999-99-99';
+      const from        = queryStringParameters?.from        ?? '0000-00-00';
+      const to          = queryStringParameters?.to          ?? '9999-99-99';
+      const parentJobId = queryStringParameters?.parentJobId ?? null;
 
       const result = await ddb.send(new QueryCommand({
         TableName: TABLE,
@@ -30,7 +31,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           ':to':   `DATE#${to}#~`,
         },
       }));
-      return ok(result.Items ?? []);
+
+      let items = result.Items ?? [];
+      if (parentJobId) {
+        items = items.filter(i => i.parentJobId === parentJobId);
+      }
+      return ok(items);
     }
 
     // GET /jobs/:jobId — full job detail (metadata + all sub-items)
@@ -56,7 +62,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const now = new Date().toISOString();
       const date = (body.scheduledDate ?? now.slice(0, 10));
 
-      const item = {
+      const item: Record<string, any> = {
         PK: tpk(t, 'JOB', id),
         SK: 'METADATA',
         GSI1PK: tgsi(t, 'JOBS'),
@@ -76,6 +82,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         createdAt: now,
         updatedAt: now,
       };
+
+      // Preserve parent link for sub work orders created by the mobile app
+      if (body.parentJobId) item.parentJobId = body.parentJobId;
 
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
 
@@ -98,7 +107,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const body = JSON.parse(event.body ?? '{}');
       const now  = new Date().toISOString();
 
-      const allowed = ['jobName', 'address', 'scheduledDate', 'assignedTo', 'status', 'notes', 'quoteNum'];
+      const allowed = ['jobName', 'address', 'scheduledDate', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No valid fields to update');
 
