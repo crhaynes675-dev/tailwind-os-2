@@ -5604,10 +5604,10 @@ function calDrawerDetailsHTML() {
             col('Priority',            sel('cd-priority',['Low','Normal','High','Urgent'], j.priority||'Normal')),
             col('Quote / Order Ref',   inp('cd-quoteref', j.quoteRef, 'e.g. 225910'))
           )+
-          (j.workOrderNumber ? row2(
-            col('Work Order #', '<div style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--accent);font-family:\'Outfit\',sans-serif;font-size:.82rem;font-weight:700;padding:8px 10px;letter-spacing:.5px;">' + j.workOrderNumber + '</div>'),
+          row2(
+            col('Work Order #', '<div style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:'+(j.workOrderNumber?'var(--accent)':'var(--muted)')+';font-family:\'Outfit\',sans-serif;font-size:.82rem;font-weight:700;padding:8px 10px;letter-spacing:.5px;">' + (j.workOrderNumber || '—') + '</div>'),
             col('', '')
-          ) : '')+
+          )+
           (j.status === 'Issue / Hold' ?
             fi('Hold Reason', inp('cd-hold-reason', j.holdReason||'', 'Hold reason…')) : '')+
           fi('Tags',                   inp('cd-tags',    j.tags,         'e.g. Loewen, Warranty'))+
@@ -11816,7 +11816,7 @@ function dashOpenJobModal(dashId) {
 
   G('dash-modal-title').textContent = job.jobName;
   G('dash-modal-body').innerHTML =
-    (job.workOrderNumber ? '<div style="font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--accent);font-weight:700;margin-bottom:12px;letter-spacing:.5px;">Work Order: ' + esc(job.workOrderNumber) + '</div>' : '') +
+    '<div style="font-family:\'Outfit\',sans-serif;font-size:.62rem;color:'+(job.workOrderNumber?'var(--accent)':'var(--muted)')+';font-weight:700;margin-bottom:12px;letter-spacing:.5px;">Work Order: ' + esc(job.workOrderNumber || '—') + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
     fi2('Job Name',     '<input id="dm-jobname"  value="'+esc(job.jobName)+'"      oninput="dashModalChange(\'jobName\',this.value)">') +
     fi2('Customer',     '<input id="dm-custname" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)">') +
