@@ -5604,6 +5604,10 @@ function calDrawerDetailsHTML() {
             col('Priority',            sel('cd-priority',['Low','Normal','High','Urgent'], j.priority||'Normal')),
             col('Quote / Order Ref',   inp('cd-quoteref', j.quoteRef, 'e.g. 225910'))
           )+
+          (j.workOrderNumber ? row2(
+            col('Work Order #', '<div style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--accent);font-family:\'Outfit\',sans-serif;font-size:.82rem;font-weight:700;padding:8px 10px;letter-spacing:.5px;">' + j.workOrderNumber + '</div>'),
+            col('', '')
+          ) : '')+
           (j.status === 'Issue / Hold' ?
             fi('Hold Reason', inp('cd-hold-reason', j.holdReason||'', 'Hold reason…')) : '')+
           fi('Tags',                   inp('cd-tags',    j.tags,         'e.g. Loewen, Warranty'))+
@@ -8255,10 +8259,11 @@ function syncLoadFromStorage() {
             crew:     j.assignedTo   || '',
             quoteRef: j.quoteNum     || ''
           }), {
-            _id:        'api_' + j.jobId,
-            _apiId:     j.jobId,
-            parentJobId:j.parentJobId || '',
-            status:     j.status || 'Scheduled',
+            _id:             'api_' + j.jobId,
+            _apiId:          j.jobId,
+            parentJobId:     j.parentJobId     || '',
+            workOrderNumber: j.workOrderNumber || '',
+            status:          j.status || 'Scheduled',
             internalNotes: j.notes || ''
           });
         });
@@ -10601,6 +10606,7 @@ function dashMakeJob(opts) {
     calApptId:       opts.calApptId       || null,
     _apiId:          opts._apiId          || '',
     parentJobId:     opts.parentJobId     || '',
+    workOrderNumber: opts.workOrderNumber || '',
     quoteNum:        opts.quoteNum        || '',
     lastUpdated:     new Date().toISOString(),
     notifications:   [],
@@ -10668,9 +10674,10 @@ function dashSyncFromSources() {
       timeWindow:   appt.time  || '',
       source:       'Calendar',
       status:       appt.status === 'Completed' ? 'Completed' : appt.status === 'Canceled' ? 'Issue / Hold' : 'Scheduled',
-      calApptId:    appt._id,
-      _apiId:       appt._apiId     || '',
-      parentJobId:  appt.parentJobId|| ''
+      calApptId:       appt._id,
+      _apiId:          appt._apiId          || '',
+      parentJobId:     appt.parentJobId     || '',
+      workOrderNumber: appt.workOrderNumber || ''
     });
     DASH_JOBS.push(job);
     added++;
@@ -11139,7 +11146,7 @@ function dashRender() {
 
   var activeCount = DASH_JOBS.filter(function(j){return j.status!=='Unscheduled';}).length;
   if (!jobs.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">' +
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">' +
       (activeCount ? 'No active jobs match filters.' : 'No active jobs — schedule a job from the Unscheduled queue above.') + '</td></tr>';
     return;
   }
@@ -11154,6 +11161,7 @@ function dashRender() {
       ' onclick="dashSelectJob(\'' + j.dashId + '\')"' +
       ' onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'"' +
       ' onmouseleave="this.style.background=\'\'">' +
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + subBadge + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerName||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobAddress||'—') + '</td>' +
@@ -11228,9 +11236,10 @@ function dashNotifyCalendarChange(calApptId) {
       source:       'Calendar',
       status:       'Scheduled',
       calApptId:    appt._id,
-      priority:     appt.priority  || 'Normal',
-      _apiId:       appt._apiId    || '',
-      parentJobId:  appt.parentJobId || ''
+      priority:        appt.priority        || 'Normal',
+      _apiId:          appt._apiId          || '',
+      parentJobId:     appt.parentJobId     || '',
+      workOrderNumber: appt.workOrderNumber || ''
     });
     DASH_JOBS.push(job);
   }
@@ -11245,6 +11254,7 @@ function dashNotifyCalendarChange(calApptId) {
   if (appt.customerName)  job.customerName  = appt.customerName;
   if (appt.holdReason !== undefined) job.holdReason = appt.holdReason;
   if (appt.piwrComplete)  job.piwrComplete  = appt.piwrComplete;
+  if (appt.workOrderNumber && !job.workOrderNumber) job.workOrderNumber = appt.workOrderNumber;
   job.lastUpdated = new Date().toISOString();
 
   // ── Status sync with no-regress guard ────────────────────────────────────
@@ -11782,6 +11792,7 @@ function dashOpenJobModal(dashId) {
 
   G('dash-modal-title').textContent = job.jobName;
   G('dash-modal-body').innerHTML =
+    (job.workOrderNumber ? '<div style="font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--accent);font-weight:700;margin-bottom:12px;letter-spacing:.5px;">Work Order: ' + esc(job.workOrderNumber) + '</div>' : '') +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
     fi2('Job Name',     '<input id="dm-jobname"  value="'+esc(job.jobName)+'"      oninput="dashModalChange(\'jobName\',this.value)">') +
     fi2('Customer',     '<input id="dm-custname" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)">') +
@@ -11848,7 +11859,7 @@ function dashSaveModal() {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
     } else {
       mmApi('POST', '/jobs', payload).then(function(res) {
-        if (res && res.jobId) { job._apiId = res.jobId; }
+        if (res && res.jobId) { job._apiId = res.jobId; job.workOrderNumber = res.workOrderNumber || ''; }
         dashPersistState();
       }).catch(function(){});
     }
@@ -11869,7 +11880,7 @@ function dashSaveModalAndSchedule() {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
     } else {
       mmApi('POST', '/jobs', payload).then(function(res) {
-        if (res && res.jobId) { job._apiId = res.jobId; }
+        if (res && res.jobId) { job._apiId = res.jobId; job.workOrderNumber = res.workOrderNumber || ''; }
         dashPersistState();
       }).catch(function(){});
     }
@@ -12912,6 +12923,7 @@ if ('serviceWorker' in navigator) {
         <div style="overflow-x:auto;">
           <table class="ut" style="width:100%;min-width:900px;">
             <thead><tr id="dash-thead">
+              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">WO #</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Job</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Customer</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Address</th>
@@ -12923,7 +12935,7 @@ if ('serviceWorker' in navigator) {
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
             <tbody id="dash-tbody">
-              <tr><td colspan="9" style="text-align:center;padding:32px;font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);">
+              <tr><td colspan="10" style="text-align:center;padding:32px;font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);">
                 No jobs yet — click ↻ Sync Jobs to import from PDF / Intake / Calendar, or + Add Job to create manually.
               </td></tr>
             </tbody>

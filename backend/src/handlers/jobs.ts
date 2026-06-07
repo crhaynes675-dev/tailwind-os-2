@@ -62,6 +62,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const now = new Date().toISOString();
       const date = (body.scheduledDate ?? now.slice(0, 10));
 
+      // Atomically increment per-tenant WO counter to get a sequential number
+      const counterResult = await ddb.send(new UpdateCommand({
+        TableName: TABLE,
+        Key: { PK: `TENANT#${t}#COUNTER`, SK: 'WO_COUNTER' },
+        UpdateExpression: 'ADD #cnt :one',
+        ExpressionAttributeNames: { '#cnt': 'count' },
+        ExpressionAttributeValues: { ':one': 1 },
+        ReturnValues: 'UPDATED_NEW',
+      }));
+      const woSeq = counterResult.Attributes?.count ?? 1;
+      const workOrderNumber = `WO-${new Date().getFullYear()}-${String(woSeq).padStart(4, '0')}`;
+
       const item: Record<string, any> = {
         PK: tpk(t, 'JOB', id),
         SK: 'METADATA',
@@ -71,6 +83,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         GSI2SK: body.assignedTo ? `DATE#${date}#${id}` : undefined,
         tenantId: t,
         jobId: id,
+        workOrderNumber,
         jobName: body.jobName,
         address: body.address ?? '',
         scheduledDate: date,
