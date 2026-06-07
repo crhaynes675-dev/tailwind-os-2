@@ -894,6 +894,7 @@ input,select,textarea,button { touch-action:manipulation; }
 .um-role-badge.foreman{color:#7c9ebb;border-color:rgba(124,158,187,.35);background:rgba(124,158,187,.08);}
 .um-role-badge.lead_installer{color:#6dbf8a;border-color:rgba(109,191,138,.35);background:rgba(109,191,138,.08);}
 .um-role-badge.installer,.um-role-badge.user{color:var(--muted);border-color:var(--border);background:transparent;}
+.um-role-badge.apprentice{color:#94a3b8;border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08);}
 .um-form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
 .um-form-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px;}
 .um-form-label{font-family:'Outfit',sans-serif;font-size:.6rem;letter-spacing:1px;text-transform:uppercase;color:var(--label);}
@@ -1461,6 +1462,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <div class="tb-sep tb-admin" id="admin-sep"></div>
   <button class="tb tb-admin" data-idx="7"  onclick="ST(7)"  title="Users" id="tab-users">👥 Users</button>
   <button class="tb tb-admin" data-idx="12" onclick="ST(12)" title="Automations" id="tab-auto">⚡ Automations</button>
+  <button class="tb tb-admin" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew Roster" id="tab-crew">👷 Crew</button>
 </div>
 
 <!-- SUB-TABS: REPORTS -->
@@ -2048,6 +2050,66 @@ input,select,textarea,button { touch-action:manipulation; }
 
 </div>
 
+<!-- ═══════════ PAGE 20 · CREW MANAGEMENT (admin only) ═══════════ -->
+<div class="pg" id="p20">
+
+  <div class="um-header">
+    <h2 class="um-title">Crew Roster</h2>
+    <span class="um-badge">Admin Only</span>
+  </div>
+  <p class="um-sub">Manage your field crew. These members appear in the Tailwind mobile app roster.</p>
+
+  <!-- Current crew list -->
+  <div class="um-section">
+    <div class="um-section-title">Current Crew</div>
+    <div style="overflow-x:auto">
+      <table class="um-table">
+        <thead>
+          <tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th><th style="width:120px"></th></tr>
+        </thead>
+        <tbody id="crew-mgmt-list">
+          <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add crew member -->
+  <div class="um-section">
+    <div class="um-section-title">Add Crew Member</div>
+    <div class="um-form-row" style="flex-wrap:wrap">
+      <div class="um-form-field">
+        <label class="um-form-label" for="cm-new-name">Name *</label>
+        <input class="um-form-input" id="cm-new-name" type="text" placeholder="e.g. Marcus Rivera" autocomplete="off"
+               onkeydown="if(event.key==='Enter')crewMgmtCreate()">
+      </div>
+      <div class="um-form-field" style="max-width:160px">
+        <label class="um-form-label" for="cm-new-role">Role</label>
+        <select class="um-form-select" id="cm-new-role">
+          <option value="installer">Installer</option>
+          <option value="lead_installer">Lead Installer</option>
+          <option value="foreman">Foreman</option>
+          <option value="apprentice">Apprentice</option>
+        </select>
+      </div>
+      <div class="um-form-field">
+        <label class="um-form-label" for="cm-new-phone">Phone</label>
+        <input class="um-form-input" id="cm-new-phone" type="tel" placeholder="555-000-0000" autocomplete="off">
+      </div>
+      <div class="um-form-field">
+        <label class="um-form-label" for="cm-new-email">Email</label>
+        <input class="um-form-input" id="cm-new-email" type="email" placeholder="crew@company.com" autocomplete="off">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <label class="um-form-label">&nbsp;</label>
+        <button class="um-create-btn" id="cm-create-btn" onclick="crewMgmtCreate()">+ Add Member</button>
+      </div>
+    </div>
+    <div class="um-msg" id="cm-msg"></div>
+  </div>
+
+</div>
+
 <!-- ═══════════ PAGE 8 · POST INSTALLATION INSPECTION ═══════════ -->
 <div class="pg" id="p8">
   <div class="card">
@@ -2227,7 +2289,7 @@ function mmApi(method, path, body) {
 var NAV_GROUPS = {
   sales:    [0, 4, 5, 10],
   install:  [1, 8, 9, 13, 14, 16],
-  customer: [7, 11, 12, 17],
+  customer: [7, 11, 12, 17, 20],
   reports:  [15],
   billing:  [18],
   sa:       [19]
@@ -2253,7 +2315,7 @@ function setGroup(g) {
 }
 
 function ST(idx) {
-  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19'];
+  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19','p20'];
   pages.forEach(function(id, i) {
     var el = document.getElementById(id);
     if (el) el.classList.toggle('on', i === idx);
@@ -6874,6 +6936,8 @@ function authShowApp(user) {
   if (autoBtn)  autoBtn.style.display  = isAdmin ? '' : 'none';
 
   document.getElementById('tab-users').style.display = 'none'; // not a visible sub-tab
+  var crewTab = document.getElementById('tab-crew');
+  if (crewTab) crewTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
 
   // Now it's safe to initialise the calculator tab
   ST(0);
@@ -7230,6 +7294,127 @@ function umShowMsg(text, type) {
   if (type === 'success') {
     setTimeout(function() { el.className = 'um-msg'; el.style.display = 'none'; }, 4000);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CREW MANAGEMENT PAGE (p20)
+// ══════════════════════════════════════════════════════════════════════════════
+
+var _CREW_ROLE_LABELS = { installer:'Installer', lead_installer:'Lead Installer', foreman:'Foreman', apprentice:'Apprentice' };
+
+function crewMgmtLoad() {
+  var tbody = document.getElementById('crew-mgmt-list');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Loading…</td></tr>';
+  mmApi('GET', '/crew').then(function(members) {
+    if (!members || !members.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">No crew members yet. Add one below.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = members.map(function(m) {
+      var rl = _CREW_ROLE_LABELS[m.role] || m.role || '—';
+      var rc = m.role || 'installer';
+      var sid = m.id.replace(/'/g,"\\'");
+      var sname = (m.name || 'this member').replace(/'/g,"\\'");
+      return '<tr>' +
+        '<td style="font-weight:600;color:var(--text)">' + (m.name || '—') + '</td>' +
+        '<td><span class="um-role-badge ' + rc + '">' + rl + '</span></td>' +
+        '<td style="color:var(--muted);font-size:.8rem">' + (m.phone || '—') + '</td>' +
+        '<td style="color:var(--muted);font-size:.8rem">' + (m.email || '—') + '</td>' +
+        '<td style="display:flex;gap:6px;align-items:center;">' +
+          '<button onclick="crewMgmtEdit(\'' + sid + '\')" ' +
+            'style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.72rem;padding:3px 8px;border-radius:3px;font-family:\'Outfit\',sans-serif;white-space:nowrap;"' +
+          '>Edit</button>' +
+          '<button onclick="crewMgmtDelete(\'' + sid + '\',\'' + sname + '\')" ' +
+            'style="background:none;border:none;color:var(--danger,#e05c5c);cursor:pointer;font-size:.75rem;padding:2px 6px;"' +
+          '>Delete</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }).catch(function(err) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger,#e05c5c);text-align:center;padding:14px">Failed to load crew: ' + (err.message || err) + '</td></tr>';
+  });
+}
+
+function crewMgmtCreate() {
+  var name  = (document.getElementById('cm-new-name').value  || '').trim();
+  var role  = document.getElementById('cm-new-role').value;
+  var phone = (document.getElementById('cm-new-phone').value || '').trim();
+  var email = (document.getElementById('cm-new-email').value || '').trim();
+  if (!name) { crewMgmtMsg('Name is required.', 'error'); return; }
+  var btn = document.getElementById('cm-create-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  mmApi('POST', '/crew', { name: name, role: role, phone: phone, email: email })
+    .then(function() {
+      document.getElementById('cm-new-name').value  = '';
+      document.getElementById('cm-new-phone').value = '';
+      document.getElementById('cm-new-email').value = '';
+      document.getElementById('cm-new-role').value  = 'installer';
+      crewMgmtMsg('"' + name + '" added to crew.', 'success');
+      crewMgmtLoad();
+      crewRefreshRoster();
+    })
+    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to add member.', 'error'); })
+    .then(function() { if (btn) { btn.disabled = false; btn.textContent = '+ Add Member'; } });
+}
+
+function crewMgmtDelete(id, name) {
+  if (!confirm('Remove "' + name + '" from the crew roster? This cannot be undone.')) return;
+  mmApi('DELETE', '/crew/' + encodeURIComponent(id))
+    .then(function() {
+      crewMgmtMsg('"' + name + '" removed.', 'success');
+      crewMgmtLoad();
+      crewRefreshRoster();
+    })
+    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to delete.', 'error'); });
+}
+
+function crewMgmtEdit(id) {
+  mmApi('GET', '/crew').then(function(members) {
+    var m = (members || []).find(function(x) { return x.id === id; });
+    if (!m) return;
+    var idx = members.indexOf(m);
+    var tbody = document.getElementById('crew-mgmt-list');
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr');
+    if (!rows[idx]) return;
+    var roleOpts = ['installer','lead_installer','foreman','apprentice'].map(function(r) {
+      return '<option value="'+r+'"'+(m.role===r?' selected':'')+'>'+(_CREW_ROLE_LABELS[r])+'</option>';
+    }).join('');
+    rows[idx].innerHTML =
+      '<td><input class="um-form-input" id="cm-edit-name" value="' + (m.name||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
+      '<td><select class="um-form-select" id="cm-edit-role" style="padding:5px 8px;font-size:.78rem">' + roleOpts + '</select></td>' +
+      '<td><input class="um-form-input" id="cm-edit-phone" value="' + (m.phone||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
+      '<td><input class="um-form-input" id="cm-edit-email" value="' + (m.email||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
+      '<td style="display:flex;gap:6px;align-items:center;">' +
+        '<button onclick="crewMgmtSave(\'' + id.replace(/'/g,"\\'") + '\')" class="um-create-btn" style="font-size:.72rem;padding:5px 10px;">Save</button>' +
+        '<button onclick="crewMgmtLoad()" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.72rem;padding:3px 8px;border-radius:3px;font-family:\'Outfit\',sans-serif">Cancel</button>' +
+      '</td>';
+  }).catch(function(){});
+}
+
+function crewMgmtSave(id) {
+  var name  = (document.getElementById('cm-edit-name').value  || '').trim();
+  var role  = document.getElementById('cm-edit-role').value;
+  var phone = (document.getElementById('cm-edit-phone').value || '').trim();
+  var email = (document.getElementById('cm-edit-email').value || '').trim();
+  if (!name) { crewMgmtMsg('Name is required.', 'error'); return; }
+  mmApi('PUT', '/crew/' + encodeURIComponent(id), { name: name, role: role, phone: phone, email: email })
+    .then(function() {
+      crewMgmtMsg('Crew member updated.', 'success');
+      crewMgmtLoad();
+      crewRefreshRoster();
+    })
+    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to save.', 'error'); });
+}
+
+function crewMgmtMsg(text, type) {
+  var el = document.getElementById('cm-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'um-msg show ' + type;
+  el.style.display = 'block';
+  if (type === 'success') setTimeout(function() { el.className = 'um-msg'; el.style.display = 'none'; }, 3500);
 }
 
 // ══════════════════════════════════════════════
