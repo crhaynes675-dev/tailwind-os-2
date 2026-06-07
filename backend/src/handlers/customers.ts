@@ -2,13 +2,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, badRequest, serverError } from '../lib/response';
-
-// Customer database (CDB) records
-// PK: CDB#<id>  SK: RECORD
-// GSI1PK: CDB_RECORDS  GSI1SK: ADDED#<date>#<id>
+import { getTenantId, tpk, tgsi } from '../lib/tenant';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const t = getTenantId(event);
     const { httpMethod, pathParameters } = event;
     const customerId = pathParameters?.customerId;
 
@@ -17,7 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         TableName: TABLE,
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk',
-        ExpressionAttributeValues: { ':pk': 'CDB_RECORDS' },
+        ExpressionAttributeValues: { ':pk': tgsi(t, 'CDB_RECORDS') },
         ScanIndexForward: false,
         Limit: 2000,
       }));
@@ -29,12 +27,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const id   = body.id || ('cdb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
       const date = body.added || new Date().toISOString().slice(0, 10);
       const item = {
-        PK: `CDB#${id}`, SK: 'RECORD',
-        GSI1PK: 'CDB_RECORDS',
+        PK: tpk(t, 'CDB', id), SK: 'RECORD',
+        GSI1PK: tgsi(t, 'CDB_RECORDS'),
         GSI1SK: `ADDED#${date}#${id}`,
-        ...body,
-        id,
-        added: date,
+        ...body, id, added: date,
         createdAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
@@ -47,11 +43,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const body = JSON.parse(event.body ?? '{}');
       const date = body.added || new Date().toISOString().slice(0, 10);
       const item = {
-        PK: `CDB#${customerId}`, SK: 'RECORD',
-        GSI1PK: 'CDB_RECORDS',
+        PK: tpk(t, 'CDB', customerId), SK: 'RECORD',
+        GSI1PK: tgsi(t, 'CDB_RECORDS'),
         GSI1SK: `ADDED#${date}#${customerId}`,
-        ...body,
-        id: customerId,
+        ...body, id: customerId,
         updatedAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
@@ -61,7 +56,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (httpMethod === 'DELETE') {
       await ddb.send(new DeleteCommand({
         TableName: TABLE,
-        Key: { PK: `CDB#${customerId}`, SK: 'RECORD' },
+        Key: { PK: tpk(t, 'CDB', customerId), SK: 'RECORD' },
       }));
       return ok({ deleted: true });
     }

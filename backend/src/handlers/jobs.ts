@@ -2,11 +2,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, created, noContent, notFound, badRequest, serverError } from '../lib/response';
+import { getTenantId, tpk, tgsi } from '../lib/tenant';
 import { randomUUID } from 'crypto';
-
-function jobKey(jobId: string) {
-  return { PK: `JOB#${jobId}`, SK: 'METADATA' };
-}
 
 function callerUsername(event: APIGatewayProxyEvent): string {
   return (event.requestContext.authorizer?.claims?.['cognito:username'] as string) ?? 'unknown';
@@ -14,6 +11,7 @@ function callerUsername(event: APIGatewayProxyEvent): string {
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const t = getTenantId(event);
     const { httpMethod, pathParameters, queryStringParameters } = event;
     const jobId = pathParameters?.jobId;
 
@@ -27,7 +25,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk AND GSI1SK BETWEEN :from AND :to',
         ExpressionAttributeValues: {
-          ':pk':   'JOBS',
+          ':pk':   tgsi(t, 'JOBS'),
           ':from': `DATE#${from}`,
           ':to':   `DATE#${to}#~`,
         },
@@ -40,7 +38,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const result = await ddb.send(new QueryCommand({
         TableName: TABLE,
         KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: { ':pk': `JOB#${jobId}` },
+        ExpressionAttributeValues: { ':pk': tpk(t, 'JOB', jobId) },
       }));
       if (!result.Items?.length) return notFound();
 
@@ -59,12 +57,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const date = (body.scheduledDate ?? now.slice(0, 10));
 
       const item = {
-        PK: `JOB#${id}`,
+        PK: tpk(t, 'JOB', id),
         SK: 'METADATA',
-        GSI1PK: 'JOBS',
+        GSI1PK: tgsi(t, 'JOBS'),
         GSI1SK: `DATE#${date}#${id}`,
-        GSI2PK: body.assignedTo ? `USER#${body.assignedTo}` : undefined,
+        GSI2PK: body.assignedTo ? tgsi(t, `USER#${body.assignedTo}`) : undefined,
         GSI2SK: body.assignedTo ? `DATE#${date}#${id}` : undefined,
+        tenantId: t,
         jobId: id,
         jobName: body.jobName,
         address: body.address ?? '',
@@ -80,11 +79,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
 
-      // Write initial audit entry
       await ddb.send(new PutCommand({
         TableName: TABLE,
         Item: {
-          PK: `JOB#${id}`,
+          PK: tpk(t, 'JOB', id),
           SK: `AUDIT#${now}#${randomUUID()}`,
           action: 'created',
           user: callerUsername(event),
@@ -112,7 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
       await ddb.send(new UpdateCommand({
         TableName: TABLE,
-        Key: jobKey(jobId),
+        Key: { PK: tpk(t, 'JOB', jobId), SK: 'METADATA' },
         UpdateExpression: `SET ${expr}, #ua = :now`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
@@ -122,7 +120,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       await ddb.send(new PutCommand({
         TableName: TABLE,
         Item: {
-          PK: `JOB#${jobId}`,
+          PK: tpk(t, 'JOB', jobId),
           SK: `AUDIT#${now}#${randomUUID()}`,
           action: 'updated',
           user: callerUsername(event),
@@ -139,14 +137,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const existing = await ddb.send(new QueryCommand({
         TableName: TABLE,
         KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: { ':pk': `JOB#${jobId}` },
+        ExpressionAttributeValues: { ':pk': tpk(t, 'JOB', jobId) },
         ProjectionExpression: 'PK, SK',
       }));
 
       const items = existing.Items ?? [];
       if (!items.length) return notFound();
 
-      // DynamoDB batch delete in chunks of 25
       for (let i = 0; i < items.length; i += 25) {
         await ddb.send(new BatchWriteCommand({
           RequestItems: {

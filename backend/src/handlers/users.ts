@@ -7,6 +7,7 @@ import {
   AdminDeleteUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ok, created, noContent, badRequest, notFound, serverError, forbidden } from '../lib/response';
+import { getTenantId } from '../lib/tenant';
 
 const cognito = new CognitoIdentityProviderClient({ region: process.env.REGION ?? 'us-east-1' });
 const USER_POOL_ID = process.env.USER_POOL_ID!;
@@ -14,18 +15,18 @@ const USER_POOL_ID = process.env.USER_POOL_ID!;
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const claims = (event.requestContext?.authorizer as any)?.claims ?? {};
-    if (claims['custom:role'] !== 'admin') {
-      return forbidden('Admin access required', event);
-    }
+    const isAdmin = claims['custom:role'] === 'admin';
 
     const { httpMethod } = event;
     const username = event.pathParameters?.username;
     const isPasswordPath = event.path?.endsWith('/password') ?? false;
 
-    // GET /users — list all Cognito users
+    // GET /users — list Cognito users scoped to this tenant
     if (httpMethod === 'GET') {
+      const tenantId = getTenantId(event);
       const result = await cognito.send(new ListUsersCommand({
         UserPoolId: USER_POOL_ID,
+        Filter: `"custom:tenantId" = "${tenantId}"`,
         Limit: 60,
       }));
       const users = (result.Users ?? []).map(u => {
@@ -44,8 +45,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return ok(users, event);
     }
 
-    // POST /users — create a new user in Cognito
+    // POST /users — create a new user in Cognito (admin only)
     if (httpMethod === 'POST' && !username) {
+      if (!isAdmin) return forbidden('Admin access required', event);
+      const tenantId = getTenantId(event);
       const body = JSON.parse(event.body ?? '{}');
       const { username: newUsername, email, givenName, familyName, password, role } = body;
 
@@ -59,11 +62,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         MessageAction: 'SUPPRESS',
         TemporaryPassword: password,
         UserAttributes: [
-          { Name: 'email',          Value: email },
-          { Name: 'email_verified', Value: 'true' },
-          { Name: 'given_name',     Value: givenName },
-          { Name: 'family_name',    Value: familyName },
-          { Name: 'custom:role',    Value: role ?? 'user' },
+          { Name: 'email',              Value: email },
+          { Name: 'email_verified',     Value: 'true' },
+          { Name: 'given_name',         Value: givenName },
+          { Name: 'family_name',        Value: familyName },
+          { Name: 'custom:role',        Value: role ?? 'installer' },
+          { Name: 'custom:tenantId',    Value: tenantId },
         ],
       }));
 
@@ -80,8 +84,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     if (!username) return badRequest('username is required', event);
 
-    // PUT /users/{username}/password — set a new permanent password
+    // PUT /users/{username}/password — set a new permanent password (admin only)
     if (httpMethod === 'PUT' && isPasswordPath) {
+      if (!isAdmin) return forbidden('Admin access required', event);
       const body = JSON.parse(event.body ?? '{}');
       const { password } = body;
       if (!password) return badRequest('password is required', event);
@@ -95,8 +100,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return ok({ updated: true }, event);
     }
 
-    // DELETE /users/{username} — remove user from Cognito
+    // DELETE /users/{username} — remove user from Cognito (admin only)
     if (httpMethod === 'DELETE') {
+      if (!isAdmin) return forbidden('Admin access required', event);
       await cognito.send(new AdminDeleteUserCommand({
         UserPoolId: USER_POOL_ID,
         Username: username,

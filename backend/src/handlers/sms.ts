@@ -2,13 +2,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, badRequest, serverError } from '../lib/response';
-
-// SMS queue / notification log
-// PK: SMS#<id>  SK: MESSAGE
-// GSI1PK: SMS_QUEUE  GSI1SK: CREATED#<ts>#<id>
+import { getTenantId, tpk, tgsi } from '../lib/tenant';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const t = getTenantId(event);
     const { httpMethod, pathParameters } = event;
     const messageId = pathParameters?.messageId;
 
@@ -17,7 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         TableName: TABLE,
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk',
-        ExpressionAttributeValues: { ':pk': 'SMS_QUEUE' },
+        ExpressionAttributeValues: { ':pk': tgsi(t, 'SMS_QUEUE') },
         ScanIndexForward: false,
         Limit: 200,
       }));
@@ -29,12 +27,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const id   = body.id || ('sms_' + Date.now());
       const ts   = body.created || new Date().toISOString();
       const item = {
-        PK: `SMS#${id}`, SK: 'MESSAGE',
-        GSI1PK: 'SMS_QUEUE',
+        PK: tpk(t, 'SMS', id), SK: 'MESSAGE',
+        GSI1PK: tgsi(t, 'SMS_QUEUE'),
         GSI1SK: `CREATED#${ts}#${id}`,
-        ...body,
-        id,
-        created: ts,
+        ...body, id, created: ts,
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
       return ok({ id });
@@ -46,11 +42,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const body = JSON.parse(event.body ?? '{}');
       const ts   = body.created || new Date().toISOString();
       const item = {
-        PK: `SMS#${messageId}`, SK: 'MESSAGE',
-        GSI1PK: 'SMS_QUEUE',
+        PK: tpk(t, 'SMS', messageId), SK: 'MESSAGE',
+        GSI1PK: tgsi(t, 'SMS_QUEUE'),
         GSI1SK: `CREATED#${ts}#${messageId}`,
-        ...body,
-        id: messageId,
+        ...body, id: messageId,
         updatedAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));

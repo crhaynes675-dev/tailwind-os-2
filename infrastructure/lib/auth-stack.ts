@@ -29,7 +29,8 @@ export class AuthStack extends cdk.Stack {
         familyName: { required: true, mutable: true },
       },
       customAttributes: {
-        role: new cognito.StringAttribute({ mutable: true }),
+        role:     new cognito.StringAttribute({ mutable: true }),
+        tenantId: new cognito.StringAttribute({ mutable: true }),
       },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });

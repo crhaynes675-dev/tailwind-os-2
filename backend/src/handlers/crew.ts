@@ -2,13 +2,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, badRequest, serverError } from '../lib/response';
-
-// Crew roster members
-// PK: CREW#<id>  SK: MEMBER
-// GSI1PK: CREW_ROSTER  GSI1SK: NAME#<name>#<id>
+import { getTenantId, tpk, tgsi } from '../lib/tenant';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const t = getTenantId(event);
     const { httpMethod, pathParameters } = event;
     const crewId = pathParameters?.crewId;
 
@@ -17,22 +15,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         TableName: TABLE,
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk',
-        ExpressionAttributeValues: { ':pk': 'CREW_ROSTER' },
+        ExpressionAttributeValues: { ':pk': tgsi(t, 'CREW_ROSTER') },
         Limit: 500,
       }));
       return ok(result.Items ?? []);
     }
 
     if (httpMethod === 'POST') {
-      const body  = JSON.parse(event.body ?? '{}');
-      const id    = body.id || ('cr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
-      const name  = body.name || 'Unknown';
-      const item  = {
-        PK: `CREW#${id}`, SK: 'MEMBER',
-        GSI1PK: 'CREW_ROSTER',
+      const body = JSON.parse(event.body ?? '{}');
+      const id   = body.id || ('cr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
+      const name = body.name || 'Unknown';
+      const item = {
+        PK: tpk(t, 'CREW', id), SK: 'MEMBER',
+        GSI1PK: tgsi(t, 'CREW_ROSTER'),
         GSI1SK: `NAME#${name}#${id}`,
-        ...body,
-        id,
+        ...body, id,
         createdAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
@@ -45,11 +42,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const body = JSON.parse(event.body ?? '{}');
       const name = body.name || 'Unknown';
       const item = {
-        PK: `CREW#${crewId}`, SK: 'MEMBER',
-        GSI1PK: 'CREW_ROSTER',
+        PK: tpk(t, 'CREW', crewId), SK: 'MEMBER',
+        GSI1PK: tgsi(t, 'CREW_ROSTER'),
         GSI1SK: `NAME#${name}#${crewId}`,
-        ...body,
-        id: crewId,
+        ...body, id: crewId,
         updatedAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
@@ -59,7 +55,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (httpMethod === 'DELETE') {
       await ddb.send(new DeleteCommand({
         TableName: TABLE,
-        Key: { PK: `CREW#${crewId}`, SK: 'MEMBER' },
+        Key: { PK: tpk(t, 'CREW', crewId), SK: 'MEMBER' },
       }));
       return ok({ deleted: true });
     }

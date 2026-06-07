@@ -84,10 +84,13 @@ export class ApiStack extends cdk.Stack {
     const crewFn        = makeFn('CrewFn',        'handlers/crew.handler');
     const smsFn         = makeFn('SmsFn',         'handlers/sms.handler');
     const automationsFn = makeFn('AutomationsFn', 'handlers/automations.handler');
+    const tenantsFn     = makeFn('TenantsFn',     'handlers/tenants.handler');
+    const billingFn     = makeFn('BillingFn',     'handlers/billing.handler');
+    const adminFn       = makeFn('AdminFn',        'handlers/admin.handler');
 
     this.api = new apigateway.RestApi(this, 'Api', {
       restApiName: 'mm-install-pro-api',
-      description: 'Morrison Millwork Install Pro API',
+      description: 'Tailwind OS API',
       deployOptions: {
         stageName: 'prod',
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
@@ -191,6 +194,30 @@ export class ApiStack extends cdk.Stack {
     const ruleId      = automations.addResource('{ruleId}');
     ruleId.addMethod('PUT',    new apigateway.LambdaIntegration(automationsFn), auth);
     ruleId.addMethod('DELETE', new apigateway.LambdaIntegration(automationsFn), auth);
+
+    // Tenants — POST is public (no auth), GET /me and PUT /me require auth
+    const tenants    = this.api.root.addResource('tenants');
+    tenants.addMethod('POST', new apigateway.LambdaIntegration(tenantsFn));   // public signup
+    const tenantsMe  = tenants.addResource('me');
+    tenantsMe.addMethod('GET', new apigateway.LambdaIntegration(tenantsFn), auth);
+    tenantsMe.addMethod('PUT', new apigateway.LambdaIntegration(tenantsFn), auth);
+
+    // Billing — webhook is public, session/checkout require auth
+    const billing         = this.api.root.addResource('billing');
+    const billingSession  = billing.addResource('session');
+    billingSession.addMethod('GET',  new apigateway.LambdaIntegration(billingFn), auth);
+    const billingCheckout = billing.addResource('checkout');
+    billingCheckout.addMethod('POST', new apigateway.LambdaIntegration(billingFn), auth);
+    const billingWebhook  = billing.addResource('webhook');
+    billingWebhook.addMethod('POST', new apigateway.LambdaIntegration(billingFn));  // public
+
+    // Admin — super_admin only (enforced in Lambda)
+    const admin          = this.api.root.addResource('admin');
+    const adminTenants   = admin.addResource('tenants');
+    adminTenants.addMethod('GET', new apigateway.LambdaIntegration(adminFn), auth);
+    const adminTenantId  = adminTenants.addResource('{tenantId}');
+    adminTenantId.addMethod('PUT',    new apigateway.LambdaIntegration(adminFn), auth);
+    adminTenantId.addMethod('DELETE', new apigateway.LambdaIntegration(adminFn), auth);
 
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: this.api.url,

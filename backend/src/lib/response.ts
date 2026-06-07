@@ -7,9 +7,12 @@ const ALLOWED_ORIGINS = new Set([
 
 const corsHeaders = (event?: Partial<APIGatewayProxyEvent>) => {
   const origin = event?.headers?.origin || event?.headers?.Origin || '';
+  // Allow known web origins explicitly; allow everything else (mobile apps, Expo Go, etc.)
+  const allowOrigin = ALLOWED_ORIGINS.has(origin) ? origin : '*';
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://d8im2hbxazf8r.cloudfront.net',
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
   };
 };
 

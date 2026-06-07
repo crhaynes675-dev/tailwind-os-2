@@ -15,8 +15,8 @@
 <meta name="description" content="Tailwind OS — Move Forward Faster"/>
 
 <!-- Inline SVG app icon (no external file needed) -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231a1916'/><text x='50' y='56' font-family='Georgia,serif' font-size='42' font-weight='700' fill='%23e8a427' text-anchor='middle' dominant-baseline='middle'>MM</text></svg>"/>
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231a1916'/><text x='90' y='100' font-family='Georgia,serif' font-size='72' font-weight='700' fill='%23e8a427' text-anchor='middle' dominant-baseline='middle'>MM</text></svg>"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231a1916'/><text x='50' y='56' font-family='Georgia,serif' font-size='42' font-weight='700' fill='%23e8a427' text-anchor='middle' dominant-baseline='middle'>TO</text></svg>"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231a1916'/><text x='90' y='100' font-family='Georgia,serif' font-size='72' font-weight='700' fill='%23e8a427' text-anchor='middle' dominant-baseline='middle'>TO</text></svg>"/>
 
 <!-- iPad Pro splash screens (11-inch and 12.9-inch) -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -697,7 +697,9 @@ input,select,textarea,button { touch-action:manipulation; }
 .um-you{font-size:.53rem;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:2px;padding:1px 5px;margin-left:7px;}
 .um-role-badge{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid;}
 .um-role-badge.admin{color:var(--accent);border-color:rgba(232,164,39,.35);background:rgba(232,164,39,.08);}
-.um-role-badge.user{color:var(--muted);border-color:var(--border);background:transparent;}
+.um-role-badge.foreman{color:#7c9ebb;border-color:rgba(124,158,187,.35);background:rgba(124,158,187,.08);}
+.um-role-badge.lead_installer{color:#6dbf8a;border-color:rgba(109,191,138,.35);background:rgba(109,191,138,.08);}
+.um-role-badge.installer,.um-role-badge.user{color:var(--muted);border-color:var(--border);background:transparent;}
 .um-form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
 .um-form-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px;}
 .um-form-label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:1px;text-transform:uppercase;color:var(--label);}
@@ -844,16 +846,54 @@ input,select,textarea,button { touch-action:manipulation; }
     </div>
 
     <div id="auth-signup-panel" style="display:none;">
-      <p class="auth-reset-desc">Register your company and we'll get your team set up on Tailwind OS.</p>
+      <p class="auth-reset-desc">Create your company account — free 30-day trial, no credit card required.</p>
       <div class="auth-field">
         <label class="auth-label" for="su-company">Company Name</label>
-        <input class="auth-input" id="su-company" type="text" placeholder="e.g. Apex Window &amp; Door"
+        <input class="auth-input" id="su-company" type="text" placeholder="e.g. Apex Installations"
                autocomplete="organization" oninput="authClearSignupMsg()">
       </div>
       <div class="auth-field">
-        <label class="auth-label" for="su-name">Your Name</label>
-        <input class="auth-input" id="su-name" type="text" placeholder="First and last name"
-               autocomplete="name" oninput="authClearSignupMsg()">
+        <label class="auth-label" for="su-industry">Industry</label>
+        <select class="auth-input" id="su-industry" onchange="authClearSignupMsg()"
+                style="cursor:pointer;">
+          <option value="">— Select your industry —</option>
+          <optgroup label="Trades">
+            <option value="hvac">HVAC</option>
+            <option value="electrical">Electrical</option>
+            <option value="plumbing">Plumbing</option>
+            <option value="roofing">Roofing</option>
+            <option value="painting">Painting &amp; Drywall</option>
+          </optgroup>
+          <optgroup label="Interior Finishing">
+            <option value="millwork">Millwork &amp; Cabinetry</option>
+            <option value="flooring">Flooring</option>
+            <option value="tile">Tile &amp; Stone</option>
+            <option value="countertops">Countertops</option>
+          </optgroup>
+          <optgroup label="Construction">
+            <option value="general_contracting">General Contracting</option>
+            <option value="framing">Framing &amp; Structural</option>
+            <option value="concrete">Concrete &amp; Masonry</option>
+            <option value="landscaping">Landscaping</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="property_management">Property Management</option>
+            <option value="inspection">Home Inspection</option>
+            <option value="other">Other</option>
+          </optgroup>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="auth-field" style="flex:1">
+          <label class="auth-label" for="su-first">First Name</label>
+          <input class="auth-input" id="su-first" type="text" placeholder="First"
+                 autocomplete="given-name" oninput="authClearSignupMsg()">
+        </div>
+        <div class="auth-field" style="flex:1">
+          <label class="auth-label" for="su-last">Last Name</label>
+          <input class="auth-input" id="su-last" type="text" placeholder="Last"
+                 autocomplete="family-name" oninput="authClearSignupMsg()">
+        </div>
       </div>
       <div class="auth-field">
         <label class="auth-label" for="su-email">Work Email</label>
@@ -861,18 +901,18 @@ input,select,textarea,button { touch-action:manipulation; }
                autocomplete="email" oninput="authClearSignupMsg()">
       </div>
       <div class="auth-field">
-        <label class="auth-label" for="su-phone">Phone <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
-        <input class="auth-input" id="su-phone" type="tel" placeholder="(555) 000-0000"
-               autocomplete="tel" oninput="authClearSignupMsg()">
+        <label class="auth-label" for="su-username">Choose a Username</label>
+        <input class="auth-input" id="su-username" type="text" placeholder="lowercase, no spaces"
+               autocomplete="username" oninput="authClearSignupMsg()">
       </div>
       <div class="auth-field">
-        <label class="auth-label" for="su-crew">Team Size <span style="font-size:.58rem;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
-        <input class="auth-input" id="su-crew" type="number" placeholder="Number of installers"
-               min="1" oninput="authClearSignupMsg()" onkeydown="if(event.key==='Enter')authSignupSubmit()">
+        <label class="auth-label" for="su-password">Password</label>
+        <input class="auth-input" id="su-password" type="password" placeholder="Min 12 chars, upper, lower, number, symbol"
+               autocomplete="new-password" oninput="authClearSignupMsg()" onkeydown="if(event.key==='Enter')authSignupSubmit()">
       </div>
       <div class="auth-error" id="su-err"></div>
       <div id="su-ok" style="display:none;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--green);padding:8px 10px;background:rgba(76,175,121,.08);border:1px solid rgba(76,175,121,.25);border-radius:4px;margin-bottom:12px;"></div>
-      <button class="auth-submit" id="su-btn" onclick="authSignupSubmit()">Submit</button>
+      <button class="auth-submit" id="su-btn" onclick="authSignupSubmit()">Create Account</button>
       <p style="text-align:center;margin-top:16px;">
         <button class="auth-back-link" onclick="authBackToLogin()">← Back to sign in</button>
       </p>
@@ -1034,6 +1074,12 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="ng"    id="ng-reports"  onclick="setGroup('reports')"  role="tab" aria-selected="false">
     <span class="ng-dot"></span>Reports
   </button>
+  <button class="ng tb-admin" id="ng-billing" onclick="setGroup('billing')" role="tab" aria-selected="false" style="display:none">
+    <span class="ng-dot"></span>Billing
+  </button>
+  <button class="ng" id="ng-sa" onclick="setGroup('sa')" role="tab" aria-selected="false" style="display:none">
+    <span class="ng-dot"></span>Tenants
+  </button>
 </div>
 
 <!-- SUB-TABS: SALES -->
@@ -1049,7 +1095,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="tb" data-idx="14" onclick="ST(14)" title="Operations Dashboard">⚡ Dashboard</button>
   <button class="tb" data-idx="1"  onclick="ST(1)"  title="Install Estimator">🔧 Estimator</button>
   <button class="tb" data-idx="9"  onclick="ST(9)"  title="Schedule">📅 Schedule</button>
-  <button class="tb" data-idx="8"  onclick="ST(8)"  title="Post Installation Inspection" id="tab-piwr">🔍 Post Installation Inspection</button>
+  <button class="tb" data-idx="8"  onclick="ST(8)"  title="Site Report" id="tab-piwr">🔍 Site Report</button>
   <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
   <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
 </div>
@@ -1066,6 +1112,16 @@ input,select,textarea,button { touch-action:manipulation; }
 <!-- SUB-TABS: REPORTS -->
 <div class="sub-tabs" id="st-reports" role="tablist">
   <button class="tb" data-idx="15" onclick="ST(15)" title="Reports">📊 Reports</button>
+</div>
+
+<!-- SUB-TABS: BILLING -->
+<div class="sub-tabs" id="st-billing" role="tablist">
+  <button class="tb" data-idx="18" id="tab-billing" onclick="ST(18);billingShow();" title="Billing">💳 Billing &amp; Plan</button>
+</div>
+
+<!-- SUB-TABS: SUPER-ADMIN -->
+<div class="sub-tabs" id="st-sa" role="tablist">
+  <button class="tb" data-idx="19" id="tab-sa-tenants" onclick="ST(19);saTenantsShow();" title="All Tenants">🏢 All Tenants</button>
 </div>
 
 <!-- ═══════════ PAGE 0 · PDF IMPORT ═══════════ -->
@@ -1508,7 +1564,7 @@ input,select,textarea,button { touch-action:manipulation; }
           style="background:rgba(76,175,121,.15);border:1px solid rgba(76,175,121,.4);color:#4caf79;font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.5px;padding:5px 14px;border-radius:3px;cursor:pointer;transition:all .15s;"
           onmouseenter="this.style.background='rgba(76,175,121,.25)'"
           onmouseleave="this.style.background='rgba(76,175,121,.15)'">
-          🔍 Publish to Post Installation Inspection
+          🔍 Publish to Site Report
         </button>
         <span id="PDE_count" style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);margin-left:5px"></span>
       </div>
@@ -1600,8 +1656,10 @@ input,select,textarea,button { touch-action:manipulation; }
         <div class="um-form-field" style="max-width:140px">
           <label class="um-form-label" for="um-new-role">Role</label>
           <select class="um-form-select" id="um-new-role">
-            <option value="user">user</option>
-            <option value="admin">admin</option>
+            <option value="installer">Installer</option>
+            <option value="lead_installer">Lead Installer</option>
+            <option value="foreman">Foreman</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
@@ -1641,7 +1699,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <div class="card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
       <div>
-        <div class="ct" style="margin-bottom:4px">🔍 Post Installation Inspection</div>
+        <div class="ct" style="margin-bottom:4px">🔍 Site Report</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--muted);line-height:1.5">
           Load a completed job from the Dashboard, or publish from PDF Data Export.
         </div>
@@ -1671,7 +1729,7 @@ input,select,textarea,button { touch-action:manipulation; }
 
     <!-- Empty state -->
     <div id="piwr-empty" style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);text-align:center;padding:36px 0;border:1px dashed var(--border);border-radius:4px">
-      No data published yet — go to <strong style="color:var(--accent)">PDF Data Export</strong> and click <strong style="color:#4caf79">Publish to Post Install Walk Report</strong>
+      No data published yet — go to <strong style="color:var(--accent)">PDF Data Export</strong> and click <strong style="color:#4caf79">Publish to Site Report</strong>
     </div>
 
     <!-- Report content -->
@@ -1816,12 +1874,14 @@ var NAV_GROUPS = {
   sales:    [0, 4, 5, 10],
   install:  [1, 8, 9, 13, 14, 16],
   customer: [7, 11, 12, 17],
-  reports:  [15]
+  reports:  [15],
+  billing:  [18],
+  sa:       [19]
 };
 
 function setGroup(g) {
   // Activate group tab
-  ['sales','install','customer','reports'].forEach(function(gid) {
+  ['sales','install','customer','reports','billing','sa'].forEach(function(gid) {
     var btn = document.getElementById('ng-' + gid);
     var sub = document.getElementById('st-' + gid);
     if (btn) { btn.classList.toggle('on', gid === g); btn.setAttribute('aria-selected', gid===g); }
@@ -1839,7 +1899,7 @@ function setGroup(g) {
 }
 
 function ST(idx) {
-  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17'];
+  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19'];
   pages.forEach(function(id, i) {
     var el = document.getElementById(id);
     if (el) el.classList.toggle('on', i === idx);
@@ -1854,7 +1914,7 @@ function ST(idx) {
     if (NAV_GROUPS[g].indexOf(idx) !== -1) groupForIdx = g;
   });
   if (groupForIdx) {
-    ['sales','install','customer','reports'].forEach(function(gid) {
+    ['sales','install','customer','reports','billing','sa'].forEach(function(gid) {
       var btn = document.getElementById('ng-' + gid);
       var sub = document.getElementById('st-' + gid);
       var match = gid === groupForIdx;
@@ -3343,7 +3403,7 @@ function buildDoc() {
   });
 
   return '<div id="PF">' +
-  (QS.header ? '<div class="pr-top"><div><div class="pr-co">Morrison Millwork</div><div class="pr-cosub">Install Pro &middot; Window &amp; Door</div></div>' +
+  (QS.header ? '<div class="pr-top"><div><div class="pr-co">Tailwind OS</div></div>' +
   '<div><div class="pr-dt">Installation Estimate</div><div class="pr-dn">Quote # '+or2+'</div></div></div>' : '') +
   (QS.jobinfo ? '<div class="pr-mg">' +
   '<div class="pr-mr"><span class="pr-ml">Project</span><span class="pr-mv">'+jn+'</span></div>' +
@@ -3406,7 +3466,7 @@ function buildDoc() {
   '</div>'
   : '')) +
   (QS.scopenotes && nt ? '<div class="pr-sec">Notes &amp; Scope of Work</div><div class="pr-nb">'+nt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>' : '') +
-  (QS.footer ? '<div class="pr-ft">Morrison Millwork &middot; Install Pro &middot; Generated '+today+' &middot; This is an estimate &mdash; final invoice may vary.</div>' : '') +
+  (QS.footer ? '<div class="pr-ft">Tailwind OS &middot; Generated '+today+' &middot; This is an estimate &mdash; final invoice may vary.</div>' : '') +
   '</div>';
 }
 function refreshExport() { var ep=G('EP'); if(ep) ep.innerHTML=buildDoc(); }
@@ -3629,7 +3689,7 @@ function downloadCSV() {
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href   = url;
-  a.download = 'MorrisonMillwork_PDFData_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = 'TailwindOS_PDFData_' + new Date().toISOString().slice(0,10) + '.csv';
   document.body.appendChild(a);
   a.click();
   setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
@@ -4080,12 +4140,12 @@ function calNewJobObject(def) {
 var CAL_HOURS_START=6, CAL_HOURS_END=20, CAL_SLOT_PX=60;
 var CAL_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var CAL_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var CAL_TYPES=['Install','Post Install Walk','Pre-Install Measure','Service Call','Delivery','Customer Meeting','Other'];
-var CAL_TYPE_COLORS={'Install':'#e8a427','Post Install Walk':'#4caf79','Pre-Install Measure':'#5b9bd5','Service Call':'#e05c5c','Delivery':'#9b7fd4','Customer Meeting':'#4cbfcf','Other':'#7a7570'};
+var CAL_TYPES=['Job','Site Review','Pre-Job Assessment','Service Call','Delivery','Customer Meeting','Other'];
+var CAL_TYPE_COLORS={'Job':'#e8a427','Site Review':'#4caf79','Pre-Job Assessment':'#5b9bd5','Service Call':'#e05c5c','Delivery':'#9b7fd4','Customer Meeting':'#4cbfcf','Other':'#7a7570'};
 var CAL_STATUS_COLORS={
   'Scheduled':                   '#5b9bd5',
   'In Progress':                 '#e8a427',
-  'Ready for Post Install Walk': '#9c6bce',
+  'Ready for Site Review': '#9c6bce',
   'Final Walkthrough Ready':     '#26c6da',
   'Completed':                   '#4caf79',
   'Canceled':                    '#e05252',
@@ -4869,7 +4929,7 @@ function calDrawerRenderStatus(){
   var FLOW = [
     { s:'Scheduled',                 label:'Scheduled' },
     { s:'In Progress',               label:'In Progress' },
-    { s:'Ready for Post Install Walk', label:'Post Install Walk' },
+    { s:'Ready for Site Review', label:'Site Review' },
     { s:'Final Walkthrough Ready',   label:'Final Walkthrough' },
     { s:'Completed',                 label:'Completed' },
     { s:'Canceled',                  label:'Canceled' }
@@ -4910,12 +4970,11 @@ function calDrawerSetStatus(s){
   if (s === 'In Progress' && !calDrawerJob._startedAt) {
     calDrawerJob._startedAt = new Date().toISOString();
   }
-  if (s === 'Ready for Post Install Walk') {
-    // Enable PIWR tab and notify
+  if (s === 'Ready for Site Review') {
     var dj = DASH_JOBS.find(function(j){ return j.calApptId === calDrawerJob._id; });
     if (dj) piwrFlagJobReady(dj);
     var ib = G('IB');
-    if (ib) { ib.style.display='block'; ib.textContent='Post Install Walk Report is now available for "'+calDrawerJob.job+'".'; }
+    if (ib) { ib.style.display='block'; ib.textContent='Site Report is now available for "'+calDrawerJob.job+'".'; }
   }
   if (s === 'Final Walkthrough Ready') {
     if (typeof autoFire==='function') autoFire('status_change', calDrawerJob);
@@ -4963,7 +5022,7 @@ function calDrawerTab(tab){
     b.style.fontWeight=t===tab?'700':'400';
   });
   var body=G('cal-drawer-body'); if(!body||!calDrawerJob)return;
-  if(tab==='details')body.innerHTML=calDrawerDetailsHTML();
+  if(tab==='details'){ body.innerHTML=calDrawerDetailsHTML(); setTimeout(function(){ crewSearch(''); },50); }
   if(tab==='notes')  body.innerHTML=calDrawerNotesHTML();
   if(tab==='files')  body.innerHTML=calDrawerFilesHTML();
 }
@@ -5345,17 +5404,6 @@ function calFormMsg(){}
 
 
 
-//  Self-contained, no backend required. All state lives in sessionStorage.
-//
-//  DEMO USERS (hard-coded — replace or extend as needed):
-//    admin → demo / demo123
-//    user  → user  / user123
-//
-//  UPGRADE PATH:
-//    • Swap AUTH_USERS array for a fetch() to your real backend
-//    • Replace sessionStorage with a proper token/session check
-//    • Add bcrypt password hashing on the server side
-// ══════════════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  POST INSTALL WALK REPORT (PIWR)
@@ -5504,7 +5552,7 @@ function piwrSetVal(rowId, key, val) {
 function piwrRefreshJobSelector() {
   var sel = G('piwr-job-sel'); if (!sel) return;
   var eligible = (typeof DASH_JOBS !== 'undefined' ? DASH_JOBS : []).filter(function(j){
-    return j.status === 'Ready for Post Install Walk' || j.status === 'Final Walkthrough Ready' || j.status === 'Completed';
+    return j.status === 'Ready for Site Review' || j.status === 'Final Walkthrough Ready' || j.status === 'Completed';
   });
   sel.innerHTML = '<option value="">— Select a completed or on-site job —</option>' +
     eligible.map(function(j){
@@ -5551,7 +5599,7 @@ function piwrLoadFromJob() {
   var ib = G('IB');
   if (ib) {
     ib.style.display = 'block';
-    ib.textContent = '✓ Post Install Walk loaded for "' + job.jobName + '". Complete the checklist below.';
+    ib.textContent = '✓ Site Report loaded for "' + job.jobName + '". Complete the checklist below.';
   }
 }
 
@@ -5562,7 +5610,7 @@ function piwrFlagJobReady(job) {
   var ib = G('IB');
   if (ib) {
     ib.style.display = 'block';
-    ib.textContent = '✓ "' + job.jobName + '" marked Completed. Open Post-Install Walk tab to complete the report.';
+    ib.textContent = '✓ "' + job.jobName + '" marked Completed. Open Site Report tab to complete the report.';
   }
 }
 
@@ -5756,7 +5804,7 @@ function piwrDeleteRow(rid) {
 // ── Clear all rows ────────────────────────────────────────────────────────────
 function piwrClear() {
   if (!PIWR_ROWS.length) return;
-  if (!confirm('Clear all Post Install Walk Report rows? This cannot be undone.')) return;
+  if (!confirm('Clear all Site Report rows? This cannot be undone.')) return;
   PIWR_ROWS = [];
   var logDiv = document.getElementById('piwr-log');
   if (logDiv) logDiv.style.display = 'none';
@@ -5786,12 +5834,6 @@ function piwrDownloadCSV() {
 
 
 
-// ── Demo user store ───────────────────────────────────────────────────────────
-var AUTH_USERS = [
-  { id: 1, username: 'Charles', password: 'demo123', role: 'admin' },
-  { id: 2, username: 'user', password: 'user123', role: 'user'  },
-];
-var AUTH_NEXT_ID = 3;
 
 // ── Current user (set after login) ───────────────────────────────────────────
 var AUTH_CURRENT_USER = null;
@@ -5861,9 +5903,10 @@ function authSubmit() {
       sessionStorage.setItem('mm_refresh_token', tokens.RefreshToken);
     } catch(e) {}
     var safeUser = {
-      username: claims['cognito:username'] || username,
-      role:     claims['custom:role']      || 'user',
-      email:    claims.email               || ''
+      username: claims['cognito:username']  || username,
+      role:     claims['custom:role']       || 'installer',
+      email:    claims.email                || '',
+      tenantId: claims['custom:tenantId']   || ''
     };
     AUTH_CURRENT_USER = safeUser;
     try { sessionStorage.setItem('mm_auth_user', JSON.stringify(safeUser)); } catch(e) {}
@@ -5893,64 +5936,70 @@ function authClearSignupMsg() {
 }
 
 function authSignupSubmit() {
-  var company = (document.getElementById('su-company').value || '').trim();
-  var name    = (document.getElementById('su-name').value   || '').trim();
-  var email   = (document.getElementById('su-email').value  || '').trim();
-  var phone   = (document.getElementById('su-phone').value  || '').trim();
-  var crew    = (document.getElementById('su-crew').value   || '').trim();
-  var err     = document.getElementById('su-err');
+  var company   = (document.getElementById('su-company').value   || '').trim();
+  var industry  = (document.getElementById('su-industry').value  || '').trim();
+  var firstName = (document.getElementById('su-first').value     || '').trim();
+  var lastName  = (document.getElementById('su-last').value      || '').trim();
+  var email     = (document.getElementById('su-email').value     || '').trim();
+  var username  = (document.getElementById('su-username').value  || '').trim().toLowerCase();
+  var password  = (document.getElementById('su-password').value  || '').trim();
+  var err       = document.getElementById('su-err');
 
-  if (!company || !name || !email) {
-    err.textContent = 'Company name, your name, and email are required.';
+  if (!company || !industry || !firstName || !lastName || !email || !username || !password) {
+    err.textContent = 'All fields are required, including industry.';
+    err.style.display = 'block'; err.classList.add('show');
+    return;
+  }
+  if (!/^[a-z0-9_-]{3,30}$/.test(username)) {
+    err.textContent = 'Username must be 3-30 characters: letters, numbers, hyphens, underscores only.';
     err.style.display = 'block'; err.classList.add('show');
     return;
   }
 
   var btn = document.getElementById('su-btn');
   btn.disabled = true;
-  btn.textContent = 'Submitting…';
+  btn.textContent = 'Creating account…';
   authClearSignupMsg();
 
-  var details = company + ' — ' + name + ' (' + email + ')' +
-    (phone ? ', ' + phone : '') +
-    (crew  ? ', team size: ' + crew : '');
-
-  fetch(MM_API_BASE + '/sms', {
+  fetch(MM_API_BASE + '/tenants', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type:        'company_signup',
-      company:     company,
-      contactName: name,
-      email:       email,
-      phone:       phone,
-      crewSize:    crew,
-      status:      'pending',
-      subject:     'New Company Sign-Up — ' + company,
-      body:        details
+      companyName:    company,
+      industry:       industry,
+      adminFirstName: firstName,
+      adminLastName:  lastName,
+      adminEmail:     email,
+      adminUsername:  username,
+      password:       password
     })
   })
-  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
   .then(function(res) {
     btn.disabled = false;
-    btn.textContent = 'Submit';
+    btn.textContent = 'Create Account';
     if (!res.ok) {
-      err.textContent = 'Submission failed. Please try again.';
+      var msg = (res.data && res.data.error) ? res.data.error : 'Account creation failed. Please try again.';
+      err.textContent = msg;
       err.style.display = 'block'; err.classList.add('show');
       return;
     }
+    // Account created — auto-login with the new credentials
     var ok = document.getElementById('su-ok');
-    ok.textContent = 'Thanks, ' + name + '! We received your request for ' + company + ' and will be in touch at ' + email + ' shortly.';
+    ok.textContent = 'Account created! Signing you in…';
     ok.style.display = 'block';
-    btn.style.display = 'none';
-    ['su-company','su-name','su-email','su-phone','su-crew'].forEach(function(id) {
-      document.getElementById(id).value = '';
-    });
+    // Pre-fill login form and trigger login
+    document.getElementById('auth-username').value = username;
+    document.getElementById('auth-password').value = password;
+    setTimeout(function() {
+      authBackToLogin();
+      authSubmit();
+    }, 800);
   })
   .catch(function() {
     btn.disabled = false;
-    btn.textContent = 'Submit';
-    err.textContent = 'Submission failed. Check your connection and try again.';
+    btn.textContent = 'Create Account';
+    err.textContent = 'Connection error. Please check your connection and try again.';
     err.style.display = 'block'; err.classList.add('show');
   });
 }
@@ -6101,19 +6150,31 @@ function authShowApp(user) {
   roleEl.className = 'auth-bar-role ' + user.role;
   document.getElementById('auth-bar').classList.add('show');
 
-  // Show Admin item in hamburger menu only for admins
-  var isAdmin = (user.role === 'admin');
+  var isAdmin      = (user.role === 'admin');
+  var isSuperAdmin = (user.role === 'super_admin');
 
   // Hamburger: show admin tools section, hide the locked placeholder
   var hbgAdminSec   = document.getElementById('hbg-admin-section');
   var hbgNonadminSec= document.getElementById('hbg-nonadmin-section');
-  if (hbgAdminSec)    hbgAdminSec.style.display    = isAdmin ? 'block' : 'none';
-  if (hbgNonadminSec) hbgNonadminSec.style.display  = isAdmin ? 'none'  : 'block';
+  if (hbgAdminSec)    hbgAdminSec.style.display    = (isAdmin || isSuperAdmin) ? 'block' : 'none';
+  if (hbgNonadminSec) hbgNonadminSec.style.display  = (isAdmin || isSuperAdmin) ? 'none'  : 'block';
 
   // Customer group: show admin sub-tabs (Users, Automations) for admins
   document.querySelectorAll('.tb-admin').forEach(function(el){
-    el.style.display = isAdmin ? '' : 'none';
+    el.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
   });
+
+  // Billing nav group + tab — visible to admins
+  var ngBilling = document.getElementById('ng-billing');
+  if (ngBilling) ngBilling.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
+  var billingTab = document.getElementById('tab-billing');
+  if (billingTab) billingTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
+
+  // Super-admin nav group + tab — only for super_admin
+  var ngSa = document.getElementById('ng-sa');
+  if (ngSa) ngSa.style.display = isSuperAdmin ? '' : 'none';
+  var saTab = document.getElementById('tab-sa-tenants');
+  if (saTab) saTab.style.display = isSuperAdmin ? '' : 'none';
 
   // Keep compat references (some downstream code references these IDs)
   var adminBtn = document.getElementById('hbg-admin-btn');
@@ -6127,6 +6188,169 @@ function authShowApp(user) {
   ST(0);
   initDZ(); // attach drag-drop listeners now that p0 is visible
   syncInit(); // load offline queue, audit log, persisted jobs
+}
+
+// ── Billing page ──────────────────────────────────────────────────────────────
+function billingShow() {
+  var planName   = document.getElementById('billing-plan-name');
+  var planStatus = document.getElementById('billing-plan-status');
+  var planBadge  = document.getElementById('billing-plan-badge');
+  var companyEl  = document.getElementById('billing-company-name');
+  var portalBtn  = document.getElementById('billing-portal-btn');
+  var checkoutBtn= document.getElementById('billing-checkout-btn');
+  var msgEl      = document.getElementById('billing-msg');
+
+  if (planName) planName.textContent = '—';
+  if (planStatus) planStatus.textContent = 'Loading…';
+  if (planBadge) planBadge.textContent = '';
+  if (msgEl) msgEl.textContent = '';
+
+  var INDUSTRY_LABELS = {
+    hvac:'HVAC', electrical:'Electrical', plumbing:'Plumbing', roofing:'Roofing',
+    painting:'Painting & Drywall', millwork:'Millwork & Cabinetry', flooring:'Flooring',
+    tile:'Tile & Stone', countertops:'Countertops', general_contracting:'General Contracting',
+    framing:'Framing & Structural', concrete:'Concrete & Masonry', landscaping:'Landscaping',
+    property_management:'Property Management', inspection:'Home Inspection', other:'Other'
+  };
+
+  mmApi('GET', '/tenants/me')
+    .then(function(t) {
+      if (planName) planName.textContent = (t.plan || 'trial').toUpperCase();
+      if (planStatus) planStatus.textContent = 'Status: ' + (t.status || 'active');
+      if (planBadge) { planBadge.textContent = t.plan || 'trial'; }
+      if (companyEl) companyEl.textContent = t.companyName || '';
+
+      var tidEl = document.getElementById('billing-tenant-id');
+      var indEl = document.getElementById('billing-industry');
+      var trialEl = document.getElementById('billing-trial-ends');
+      if (tidEl) tidEl.textContent = t.tenantId || '—';
+      if (indEl) indEl.textContent = (t.industry ? (INDUSTRY_LABELS[t.industry] || t.industry) : '—');
+      if (trialEl) trialEl.textContent = t.trialEndsAt ? t.trialEndsAt.slice(0,10) : '—';
+
+      var hasStripe = !!t.stripeCustomerId;
+      if (portalBtn) portalBtn.style.display = hasStripe ? '' : 'none';
+      if (checkoutBtn) checkoutBtn.style.display = hasStripe ? 'none' : '';
+    })
+    .catch(function(err) {
+      if (planStatus) planStatus.textContent = 'Could not load plan info.';
+      if (msgEl) msgEl.textContent = String(err);
+    });
+}
+
+function billingOpenPortal() {
+  var btn = document.getElementById('billing-portal-btn');
+  var msg = document.getElementById('billing-msg');
+  if (btn) btn.disabled = true;
+  if (msg) msg.textContent = 'Opening billing portal…';
+
+  mmApi('GET', '/billing/session')
+    .then(function(res) {
+      if (res.url) {
+        window.open(res.url, '_blank');
+        if (msg) msg.textContent = '';
+      } else {
+        if (msg) msg.textContent = res.message || 'Billing not configured.';
+      }
+    })
+    .catch(function(err) {
+      if (msg) msg.textContent = 'Error: ' + String(err);
+    })
+    .finally(function() {
+      if (btn) btn.disabled = false;
+    });
+}
+
+function billingStartCheckout() {
+  var btn = document.getElementById('billing-checkout-btn');
+  var msg = document.getElementById('billing-msg');
+  if (btn) btn.disabled = true;
+  if (msg) msg.textContent = 'Preparing checkout…';
+
+  mmApi('POST', '/billing/checkout', {})
+    .then(function(res) {
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        if (msg) msg.textContent = res.message || 'Billing not configured.';
+      }
+    })
+    .catch(function(err) {
+      if (msg) msg.textContent = 'Error: ' + String(err);
+    })
+    .finally(function() {
+      if (btn) btn.disabled = false;
+    });
+}
+
+// ── Super-admin tenant list ────────────────────────────────────────────────────
+function saTenantsShow() {
+  var list = document.getElementById('sa-tenants-list');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:48px;font-family:\'DM Mono\',monospace;font-size:.72rem;color:var(--muted);">Loading tenants…</div>';
+
+  mmApi('GET', '/admin/tenants')
+    .then(function(tenants) {
+      if (!tenants.length) {
+        list.innerHTML = '<div style="text-align:center;padding:48px;font-family:\'DM Mono\',monospace;font-size:.72rem;color:var(--muted);">No tenants found.</div>';
+        return;
+      }
+
+      var SA_IND = {
+        hvac:'HVAC', electrical:'Electrical', plumbing:'Plumbing', roofing:'Roofing',
+        painting:'Painting', millwork:'Millwork', flooring:'Flooring', tile:'Tile',
+        countertops:'Countertops', general_contracting:'Gen. Contracting', framing:'Framing',
+        concrete:'Concrete', landscaping:'Landscaping', property_management:'Prop. Mgmt',
+        inspection:'Inspection', other:'Other'
+      };
+
+      var rows = tenants.map(function(t) {
+        var statusColor = t.status === 'active' ? 'var(--accent)' : (t.status === 'suspended' ? '#e74c3c' : 'var(--muted)');
+        return '<tr>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.68rem;">' + (t.companyName || t.tenantId) + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.62rem;color:var(--muted);">' + (t.tenantId || '') + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.62rem;color:var(--muted);">' + (t.industry ? (SA_IND[t.industry] || t.industry) : '—') + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.62rem;color:' + statusColor + ';">' + (t.status || '—') + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.62rem;">' + (t.plan || '—') + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.62rem;text-align:center;">' + (t.userCount != null ? t.userCount : '—') + '</td>' +
+          '<td style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.6rem;color:var(--muted);">' + (t.createdAt ? t.createdAt.slice(0,10) : '—') + '</td>' +
+          '<td style="padding:8px 10px;">' +
+            '<button onclick="saSuspendTenant(\'' + t.tenantId + '\',\'' + t.status + '\')" ' +
+              'style="font-family:\'DM Mono\',monospace;font-size:.58rem;padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;border-radius:2px;" ' +
+              'title="Toggle active/suspended">' +
+              (t.status === 'active' ? 'Suspend' : 'Activate') +
+            '</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      list.innerHTML =
+        '<div class="card" style="padding:0;overflow:auto;">' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+        '<thead><tr style="border-bottom:1px solid var(--border);">' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Company</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Code</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Industry</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Status</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Plan</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:center;">Users</th>' +
+          '<th style="padding:8px 10px;font-family:\'DM Mono\',monospace;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;">Created</th>' +
+          '<th style="padding:8px 10px;"></th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+    })
+    .catch(function(err) {
+      list.innerHTML = '<div style="text-align:center;padding:48px;font-family:\'DM Mono\',monospace;font-size:.72rem;color:#e74c3c;">Error: ' + String(err) + '</div>';
+    });
+}
+
+function saSuspendTenant(tenantId, currentStatus) {
+  var newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  if (!confirm('Set tenant "' + tenantId + '" to ' + newStatus + '?')) return;
+
+  mmApi('PUT', '/admin/tenants/' + tenantId, { status: newStatus })
+    .then(function() { saTenantsShow(); })
+    .catch(function(err) { alert('Error: ' + String(err)); });
 }
 
 // ── Sign out ──────────────────────────────────────────────────────────────────
@@ -6161,13 +6385,6 @@ function authSignOut() {
   authShowOverlay();
 }
 
-// ── Helper: fill demo credentials ─────────────────────────────────────────────
-function authFill(u, p) {
-  document.getElementById('auth-username').value = u;
-  document.getElementById('auth-password').value = p;
-  authClearError();
-  document.getElementById('auth-password').focus();
-}
 
 // ── Helper: show / clear error ────────────────────────────────────────────────
 function authShowError(msg) {
@@ -6187,6 +6404,11 @@ function authClearError() {
 // ══════════════════════════════════════════════════════════════════════════════
 //  USER MANAGEMENT PAGE
 // ══════════════════════════════════════════════════════════════════════════════
+
+function umRoleLabel(role) {
+  var labels = { admin: 'Admin', user: 'User', installer: 'Installer', lead_installer: 'Lead Installer', foreman: 'Foreman' };
+  return labels[role] || role;
+}
 
 function umRenderPage() {
   var isAdmin = AUTH_CURRENT_USER && AUTH_CURRENT_USER.role === 'admin';
@@ -6209,7 +6431,7 @@ function umRenderList() {
           '<td>' + u.username + (isSelf ? '<span class="um-you">you</span>' : '') + '</td>' +
           '<td>' + (name || '—') + '</td>' +
           '<td style="color:var(--muted);font-size:.8rem">' + (u.email || '—') + '</td>' +
-          '<td><span class="um-role-badge ' + u.role + '">' + u.role + '</span></td>' +
+          '<td><span class="um-role-badge ' + u.role + '">' + umRoleLabel(u.role) + '</span></td>' +
           '<td>' + (isSelf ? '' : '<button onclick="umDeleteUser(\'' + u.username.replace(/'/g,'\\\'') + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.75rem;padding:2px 6px">Delete</button>') + '</td>' +
         '</tr>';
       }).join('');
@@ -6250,6 +6472,7 @@ function umCreateUser() {
       document.getElementById('um-new-role').value     = 'user';
       umShowMsg('User "' + username + '" created in Cognito.', 'success');
       umRenderList();
+      crewRefreshRoster();
     })
     .catch(function(err) {
       umShowMsg(err.message || 'Failed to create user.', 'error');
@@ -6289,6 +6512,7 @@ function umDeleteUser(username) {
     .then(function() {
       umShowMsg('User "' + username + '" deleted.', 'success');
       umRenderList();
+      crewRefreshRoster();
     })
     .catch(function(err) {
       umShowMsg(err.message || 'Failed to delete user.', 'error');
@@ -6509,8 +6733,8 @@ function nciExportPDF() {
 
   var html = '<div style="background:#fff;padding:36px 40px;font-family:\'DM Sans\',sans-serif;max-width:780px;">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;margin-bottom:20px;border-bottom:3px solid #e8a427;">' +
-      '<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:26px;letter-spacing:3px;color:#1a1916">Morrison Millwork</div>' +
-      '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px">Install Pro · Customer Intake Form</div></div>' +
+      '<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:26px;letter-spacing:3px;color:#1a1916">Tailwind OS</div>' +
+      '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px">Customer Intake Form</div></div>' +
       '<div style="text-align:right">' +
         '<div style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#888">Date</div>' +
         '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:2px;color:#e8a427">'+today+'</div>' +
@@ -6538,7 +6762,7 @@ function nciExportPDF() {
     sec('Internal Notes &amp; Follow-Up') +
     row('Notes', f.notes) + row('Follow-Up Action', f.followup) +
     row('Follow-Up Date', f.followupDate) +
-    '<div style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;color:#bbb;letter-spacing:1px;padding-top:16px;border-top:1px solid #eee;margin-top:20px;">Morrison Millwork · Install Pro · Generated '+today+' · Confidential — Internal Use</div>' +
+    '<div style="text-align:center;font-family:\'DM Mono\',monospace;font-size:9px;color:#bbb;letter-spacing:1px;padding-top:16px;border-top:1px solid #eee;margin-top:20px;">Tailwind OS · Generated '+today+' · Confidential — Internal Use</div>' +
   '</div>';
 
   var pr = G('nci-pr');
@@ -7544,7 +7768,6 @@ window.addEventListener('offline', syncHandleOffline);
 // Expose for boot
 function syncInit() {
   syncLoadFromStorage();
-  crewSeedFromUsers();
 
   if (mmGetToken()) {
     // Load NCI intake records
@@ -7557,16 +7780,8 @@ function syncInit() {
       if (res && Array.isArray(res)) { CDB = res; if (typeof cdbRender === 'function') cdbRender(); }
     }).catch(function(){});
 
-    // Load crew roster (override seeded defaults only if DB has data)
-    mmApi('GET', '/crew').then(function(res) {
-      if (res && Array.isArray(res) && res.length) {
-        CREW_ROSTER = res;
-      } else if (CREW_ROSTER.length) {
-        // Seed crew to DB from AUTH_USERS on first run
-        CREW_ROSTER.forEach(function(c) { mmApi('POST', '/crew', c); });
-      }
-      if (typeof autoRenderCrewPanel === 'function') autoRenderCrewPanel();
-    }).catch(function(){});
+    // Load crew roster from the same users API as the Users tab
+    crewRefreshRoster();
 
     // Load automation rules (seed defaults if DB empty)
     mmApi('GET', '/automations').then(function(res) {
@@ -8248,20 +8463,19 @@ var CREW_ROSTER = [];   // [{id, name, email, role, phone, available}]
 var _crewUID = 0;
 function crewUID() { return 'cr_' + (++_crewUID); }
 
-// Seed from AUTH_USERS on first load
-function crewSeedFromUsers() {
-  if (CREW_ROSTER.length) return;
-  (AUTH_USERS || []).forEach(function(u) {
-    CREW_ROSTER.push({
-      id:        crewUID(),
-      name:      u.username,
-      email:     u.email || (u.username.toLowerCase() + '@morrisonmillwork.com'),
-      role:      u.role === 'admin' ? 'Foreman' : 'Installer',
-      phone:     '',
-      available: true
-    });
-  });
+function crewRefreshRoster() {
+  if (!mmGetToken()) return;
+  mmApi('GET', '/users').then(function(res) {
+    if (res && Array.isArray(res) && res.length) {
+      CREW_ROSTER = res.map(function(u) {
+        var name = ((u.givenName || '') + ' ' + (u.familyName || '')).trim() || u.username;
+        return { id: u.username, name: name, email: u.email || '', role: u.role || 'installer', phone: '', available: true };
+      });
+    }
+    if (typeof autoRenderCrewPanel === 'function') autoRenderCrewPanel();
+  }).catch(function(){});
 }
+
 
 function crewInitials(name) {
   return (name||'?').split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase();
@@ -8272,14 +8486,13 @@ function crewInitials(name) {
 // Selected crew IDs are stored directly on calDrawerJob._crewIds[]
 
 function crewPickerHTML(job) {
-  crewSeedFromUsers();
   if (!job._crewIds) job._crewIds = [];
   var chips = job._crewIds.map(function(id) {
     var m = CREW_ROSTER.find(function(c){ return c.id===id; });
     if (!m) return '';
     return '<span class="crew-chip">' +
       '<span class="crew-chip-av">'+crewInitials(m.name)+'</span>' +
-      m.name + (m.role ? ' · <span style="color:var(--muted)">'+m.role+'</span>' : '') +
+      m.name + (m.role ? ' · <span style="color:var(--muted)">'+umRoleLabel(m.role)+'</span>' : '') +
       '<button class="crew-chip-x" onclick="crewRemove(\''+id+'\')" title="Remove">✕</button>' +
     '</span>';
   }).join('');
@@ -8294,7 +8507,6 @@ function crewPickerHTML(job) {
 }
 
 function crewSearch(q) {
-  crewSeedFromUsers();
   var dd = G('crew-dd'); if (!dd || !calDrawerJob) return;
   var ids = calDrawerJob._crewIds || [];
   var q2 = q.toLowerCase();
@@ -8311,7 +8523,7 @@ function crewSearch(q) {
       return '<div class="crew-opt'+(sel?' sel':'')+'" onmousedown="crewToggle(\''+c.id+'\')">'+
         '<div class="crew-opt-av">'+crewInitials(c.name)+'</div>'+
         '<div style="flex:1;"><div class="crew-opt-name">'+c.name+'</div>'+
-        '<div class="crew-opt-role">'+(c.role||'')+(c.email?' · '+c.email:'')+'</div></div>'+
+        '<div class="crew-opt-role">'+(c.role?umRoleLabel(c.role):'')+(c.email?' · '+c.email:'')+'</div></div>'+
         (sel?'<span style="color:var(--green);font-size:.9rem;">✓</span>':'')+
         '</div>';
     }).join('');
@@ -8360,7 +8572,6 @@ function crewCloseDD() {
 
 // Get crew objects for a job
 function crewForJob(job) {
-  crewSeedFromUsers();
   return (job._crewIds||[]).map(function(id){
     return CREW_ROSTER.find(function(c){return c.id===id;});
   }).filter(Boolean);
@@ -8584,7 +8795,6 @@ function autoRenderLog() {
 }
 
 function autoRenderCrewPanel() {
-  crewSeedFromUsers();
   var el = G('auto-crew-list'); if (!el) return;
   if (!CREW_ROSTER.length) { el.innerHTML='<div style="color:var(--muted);">No crew yet.</div>'; return; }
   el.innerHTML = CREW_ROSTER.map(function(c) {
@@ -9475,7 +9685,7 @@ var SMS_CONFIG = {
 // SMS templates — tokens replaced at send time
 var SMS_TEMPLATES = {
   crew_dispatch:    'Your job has been scheduled for [Date] at [Time]. Job: [Job Name]. Address: [Job Address]. Please confirm when en route.',
-  customer_confirm: 'Your installation/service appointment is scheduled for [Date] between [Time Window]. Morrison Millwork will contact you with any updates.',
+  customer_confirm: 'Your installation/service appointment is scheduled for [Date] between [Time Window]. We will contact you with any updates.',
   crew_enroute:     'You have been dispatched to [Job Address]. Please update your status when you arrive.',
   customer_enroute: 'Our team is on the way to your job site. Estimated arrival: [ETA].',
   delay:            'We are currently running behind schedule. Updated ETA: [ETA]. Thank you for your patience.'
@@ -9486,7 +9696,7 @@ var DASH_STATUSES = {
   'Unscheduled':                   '#7a7570',
   'Scheduled':                     '#5b9bd5',
   'In Progress':                   '#e8a427',
-  'Ready for Post Install Walk':   '#9c6bce',
+  'Ready for Site Review':         '#9c6bce',
   'Final Walkthrough Ready':       '#26c6da',
   'Completed':                     '#4caf79',
   'Canceled':                      '#e05252',
@@ -9700,7 +9910,7 @@ function reportsRender() {
   if (isAI && G('rpt-ai-summary')) {
     var total     = jobs.length;
     var completed = jobs.filter(function(j){ return j.status === 'Completed'; }).length;
-    var active    = jobs.filter(function(j){ return ['Scheduled','In Progress','Ready for Post Install Walk','Final Walkthrough Ready'].indexOf(j.status) !== -1; }).length;
+    var active    = jobs.filter(function(j){ return ['Scheduled','In Progress','Ready for Site Review','Final Walkthrough Ready'].indexOf(j.status) !== -1; }).length;
     var canceled  = jobs.filter(function(j){ return j.status === 'Canceled'; }).length;
     var pct       = total ? Math.round(completed / total * 100) : 0;
     G('rpt-ai-summary').innerHTML =
@@ -9746,7 +9956,7 @@ function reportsPrint() {
   var el = G('rpt-preview-wrap');
   if (!el) return;
   var w = window.open('', '_blank');
-  w.document.write('<html><head><title>Morrison Millwork Report</title><style>body{font-family:monospace;font-size:12px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;}th{background:#f0f0f0;}</style></head><body>' + el.innerHTML + '</body></html>');
+  w.document.write('<html><head><title>Tailwind OS Report</title><style>body{font-family:monospace;font-size:12px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;}th{background:#f0f0f0;}</style></head><body>' + el.innerHTML + '</body></html>');
   w.document.close();
   w.print();
 }
@@ -9981,7 +10191,7 @@ function dashRenderKPI() {
     { label:'Unscheduled',          val: DASH_JOBS.filter(function(j){return j.status==='Unscheduled';}).length,                                   color:'#7a7570' },
     { label:'Scheduled Today',      val: DASH_JOBS.filter(function(j){return j.status==='Scheduled'&&j.scheduledDate===today;}).length,             color:'#5b9bd5' },
     { label:'In Progress',          val: DASH_JOBS.filter(function(j){return j.status==='In Progress';}).length,                                    color:'#e8a427' },
-    { label:'Post Install Walk',    val: DASH_JOBS.filter(function(j){return j.status==='Ready for Post Install Walk';}).length,                    color:'#9c6bce' },
+    { label:'Site Review',          val: DASH_JOBS.filter(function(j){return j.status==='Ready for Site Review';}).length,                         color:'#9c6bce' },
     { label:'Final Walkthrough',    val: DASH_JOBS.filter(function(j){return j.status==='Final Walkthrough Ready';}).length,                        color:'#26c6da' },
     { label:'Completed Today',      val: DASH_JOBS.filter(function(j){return j.status==='Completed'&&j.scheduledDate===today;}).length,             color:'#4caf79' },
     { label:'Canceled',             val: DASH_JOBS.filter(function(j){return j.status==='Canceled';}).length,                                      color:'#e05252' },
@@ -10095,7 +10305,7 @@ function dashRender() {
 // ── Statuses that must never regress ─────────────────────────────────────────
 var DASH_NO_REGRESS = {
   'In Progress':1,
-  'Ready for Post Install Walk':1,
+  'Ready for Site Review':1,
   'Final Walkthrough Ready':1,
   'Completed':1
 };
@@ -10104,7 +10314,7 @@ var DASH_NO_REGRESS = {
 var CAL_TO_DASH_STATUS = {
   'Scheduled':                   'Scheduled',
   'In Progress':                 'In Progress',
-  'Ready for Post Install Walk': 'Ready for Post Install Walk',
+  'Ready for Site Review':       'Ready for Site Review',
   'Final Walkthrough Ready':     'Final Walkthrough Ready',
   'Completed':                   'Completed',
   'Canceled':                    'Canceled',
@@ -10350,7 +10560,7 @@ function dashDetectConflicts() {
   });
 
   // 3. Missing required fields on scheduled/dispatched jobs
-  var advanced = ['Scheduled','In Progress','Ready for Post Install Walk','Final Walkthrough Ready'];
+  var advanced = ['Scheduled','In Progress','Ready for Site Review','Final Walkthrough Ready'];
   DASH_JOBS.forEach(function(j) {
     if (advanced.indexOf(j.status) === -1) return;
     if (!j.jobAddress)    warnings.push({ type:'missing', level:'warn', msg: '⚠ Missing address: "' + j.jobName + '"' });
@@ -10458,7 +10668,7 @@ function dashProgressStatus(dashId, newStatus) {
   if (newStatus === 'In Progress' && !job._startedAt) {
     job._startedAt = new Date().toISOString();
   }
-  if (newStatus === 'Ready for Post Install Walk') {
+  if (newStatus === 'Ready for Site Review') {
     piwrFlagJobReady(job);
   }
   if (newStatus === 'Final Walkthrough Ready') {
@@ -11153,7 +11363,7 @@ function dashRestoreState() {
 if ('serviceWorker' in navigator) {
   // Inline service worker as a blob — no separate sw.js file needed
   var swCode = [
-    "const CACHE = 'mm-install-pro-v1';",
+    "const CACHE = 'tailwind-os-v1';",
     "const ASSETS = [self.location.href];",
     "self.addEventListener('install', e => {",
     "  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));",
@@ -11179,7 +11389,7 @@ if ('serviceWorker' in navigator) {
   var blob = new Blob([swCode], { type: 'application/javascript' });
   var swUrl = URL.createObjectURL(blob);
   navigator.serviceWorker.register(swUrl)
-    .then(function(reg) { console.log('MM Install Pro: SW registered'); })
+    .then(function(reg) { console.log('Tailwind OS: SW registered'); })
     .catch(function(err) { console.log('SW registration skipped:', err.message); });
 }
 </script>
@@ -11386,7 +11596,7 @@ if ('serviceWorker' in navigator) {
         <div class="fi"><label>Other Bids / Quotes Requested?</label>
           <select id="nci-competing" oninput="nciDirty()">
             <option value="">— Select —</option>
-            <option>No — Morrison Millwork only</option>
+            <option>No — us only</option>
             <option>Yes — 1 other company</option>
             <option>Yes — 2+ other companies</option>
             <option>Unknown</option>
@@ -11741,7 +11951,7 @@ if ('serviceWorker' in navigator) {
       <select id="dash-filter-status" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:.7rem;padding:6px 10px;outline:none;">
         <option value="">All Statuses</option>
         <option>Scheduled</option><option>In Progress</option>
-        <option>Ready for Post Install Walk</option><option>Final Walkthrough Ready</option>
+        <option>Ready for Site Review</option><option>Final Walkthrough Ready</option>
         <option>Completed</option><option>Canceled</option>
       </select>
       <select id="dash-filter-priority" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:.7rem;padding:6px 10px;outline:none;">
@@ -11836,7 +12046,7 @@ if ('serviceWorker' in navigator) {
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;">
             <button class="btn bp" onclick="dashDispatch()" id="dash-dispatch-btn" style="font-size:.68rem;background:#e8a427;border-color:#e8a427;">▶ Mark In Progress</button>
-            <button class="btn bo" onclick="dashProgressStatus(DASH_SELECTED_ID,'Ready for Post Install Walk')" style="font-size:.62rem;color:#9c6bce;border-color:#9c6bce;">🔍 Post Install Walk Ready</button>
+            <button class="btn bo" onclick="dashProgressStatus(DASH_SELECTED_ID,'Ready for Site Review')" style="font-size:.62rem;color:#9c6bce;border-color:#9c6bce;">🔍 Site Review Ready</button>
             <button class="btn bo" onclick="dashProgressStatus(DASH_SELECTED_ID,'Final Walkthrough Ready')" style="font-size:.62rem;color:#26c6da;border-color:#26c6da;">✓ Final Walkthrough Ready</button>
             <button class="btn bp" onclick="dashProgressStatus(DASH_SELECTED_ID,'Completed')" style="font-size:.68rem;background:#4caf79;border-color:#4caf79;">✓✓ Mark Completed</button>
             <button class="btn bo" onclick="dashViewOnMap()" style="font-size:.65rem;">📍 View Route &amp; Navigate</button>
@@ -12243,7 +12453,7 @@ if ('serviceWorker' in navigator) {
         <select id="rpt-f-status" onchange="reportsRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'DM Mono',monospace;font-size:.72rem;padding:6px 8px;outline:none;width:100%;">
           <option value="">All Statuses</option>
           <option>Unscheduled</option><option>Scheduled</option><option>In Progress</option>
-          <option>Ready for Post Install Walk</option><option>Final Walkthrough Ready</option>
+          <option>Ready for Site Review</option><option>Final Walkthrough Ready</option>
           <option>Completed</option><option>Canceled</option>
         </select>
       </div>
@@ -12375,6 +12585,74 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
 
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 18 · BILLING ═══════════ -->
+<div class="pg" id="p18">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">💳 Billing &amp; Plan</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Manage your subscription and billing details</div>
+    </div>
+  </div>
+
+  <div style="max-width:600px;">
+    <div class="card" style="padding:20px 24px;margin-bottom:16px;" id="billing-plan-card">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Current Plan</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;color:var(--text);" id="billing-plan-name">—</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:2px;" id="billing-plan-status">Loading…</div>
+        </div>
+        <div id="billing-plan-badge" style="padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:1px;text-transform:uppercase;background:var(--accent);color:#000;"></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.63rem;color:var(--muted);margin-top:12px;" id="billing-company-name"></div>
+      <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);">Company Code</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text);letter-spacing:1px;margin-top:2px;" id="billing-tenant-id">—</div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);">Industry</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text);margin-top:2px;" id="billing-industry">—</div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);">Trial Ends</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--text);margin-top:2px;" id="billing-trial-ends">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn-primary" id="billing-portal-btn" onclick="billingOpenPortal()" style="display:none;">
+        Manage Billing
+      </button>
+      <button class="btn-primary" id="billing-checkout-btn" onclick="billingStartCheckout()" style="background:var(--accent2,var(--accent));display:none;">
+        Upgrade Plan
+      </button>
+    </div>
+
+    <div id="billing-msg" style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:16px;"></div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 19 · SUPER-ADMIN TENANTS ═══════════ -->
+<div class="pg" id="p19">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+    <div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">🏢 All Tenants</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Super admin · All organizations · Status · Plan · Users</div>
+    </div>
+    <button class="btn-primary" onclick="saTenantsShow()" style="font-size:.65rem;padding:6px 14px;">↺ Refresh</button>
+  </div>
+
+  <div id="sa-tenants-list">
+    <div style="text-align:center;padding:48px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);">Loading tenants…</div>
   </div>
 
 </div>
