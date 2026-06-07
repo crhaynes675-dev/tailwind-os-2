@@ -5583,7 +5583,14 @@ function calDrawerDetailsHTML() {
   var crewSection = fi('Crew / Assigned To', crewPickerHTML(j));
 
   // ── Build the full form ───────────────────────────────────────────────────────
-  return  fi('Job / Site Name',      inp('cd-job',      j.job,          'e.g. Rhyne Residence'))+
+  var woBanner = '<div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid '+(j.workOrderNumber?'var(--accent)':'var(--border)')+';border-radius:5px;padding:10px 14px;margin-bottom:16px;">' +
+    '<div style="font-family:\'Outfit\',sans-serif;font-size:.55rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex-shrink:0;">Work Order</div>' +
+    '<div style="font-family:\'Outfit\',sans-serif;font-size:.95rem;font-weight:800;letter-spacing:1px;color:'+(j.workOrderNumber?'var(--accent)':'var(--muted)')+';flex:1;">' + (j.workOrderNumber || '—') + '</div>' +
+    (j.workOrderNumber ? '<div style="font-family:\'Outfit\',sans-serif;font-size:.52rem;background:var(--accent);color:#fff;padding:2px 7px;border-radius:3px;white-space:nowrap;">AUTO ASSIGNED</div>' : '') +
+    '</div>';
+
+  return  woBanner+
+          fi('Job / Site Name',      inp('cd-job',      j.job,          'e.g. Rhyne Residence'))+
           fi('Service Address',       inp('cd-addr',     j.addr,         '123 Main St, Charlotte NC'))+
           row2(
             col('Customer Name',  inp('cd-custname', j.customerName||'',  'e.g. John Smith')),
@@ -5603,10 +5610,6 @@ function calDrawerDetailsHTML() {
           row2(
             col('Priority',            sel('cd-priority',['Low','Normal','High','Urgent'], j.priority||'Normal')),
             col('Quote / Order Ref',   inp('cd-quoteref', j.quoteRef, 'e.g. 225910'))
-          )+
-          row2(
-            col('Work Order #', '<div style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:'+(j.workOrderNumber?'var(--accent)':'var(--muted)')+';font-family:\'Outfit\',sans-serif;font-size:.82rem;font-weight:700;padding:8px 10px;letter-spacing:.5px;">' + (j.workOrderNumber || '—') + '</div>'),
-            col('', '')
           )+
           (j.status === 'Issue / Hold' ?
             fi('Hold Reason', inp('cd-hold-reason', j.holdReason||'', 'Hold reason…')) : '')+
