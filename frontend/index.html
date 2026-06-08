@@ -946,11 +946,6 @@ input,select,textarea,button { touch-action:manipulation; }
 #qs-reset{margin:14px 0 0;font-family:'Outfit',sans-serif;font-size:.62rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:3px;padding:8px;width:100%;cursor:pointer;flex-shrink:0;transition:border-color .15s,color .15s;}
 #qs-reset:hover{border-color:var(--accent);color:var(--accent);}
 /* ── Offline / Sync indicator ── */
-#sync-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:9500;padding:7px 16px;font-family:'Outfit',sans-serif;font-size:.68rem;letter-spacing:.8px;text-align:center;transition:all .3s;}
-#sync-bar.offline{display:block;background:#e05c5c;color:#fff;}
-#sync-bar.syncing{display:block;background:#22b2de;color:#090e18;}
-#sync-bar.synced{display:block;background:#4caf79;color:#fff;}
-#sync-bar.pending{display:block;background:rgba(30,28,26,.95);color:var(--accent);border-bottom:1px solid var(--border);}
 .sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle;}
 /* ── Audit log ── */
 .audit-entry{padding:8px 12px;border-left:2px solid var(--border);margin-bottom:6px;background:var(--bg);border-radius:0 3px 3px 0;}
@@ -1173,10 +1168,6 @@ input,select,textarea,button { touch-action:manipulation; }
 </div>
 
 <!-- ── Sync / Offline status bar ── -->
-<div id="sync-bar">
-  <span class="sync-dot" id="sync-dot"></span>
-  <span id="sync-msg">Offline — changes saved locally and will sync when reconnected</span>
-</div>
 
 <!-- ── Mobile camera FAB (shown on small screens when drawer is open) ── -->
 <button id="cal-field-camera" title="Capture photo">
@@ -8392,20 +8383,7 @@ function syncHandleOffline() {
 }
 
 // ── UI state helpers ──────────────────────────────────────────────────────────
-function syncSetState(state, msg) {
-  var bar  = G('sync-bar');
-  var dot  = G('sync-dot');
-  var msgEl= G('sync-msg');
-  if (!bar) return;
-  bar.className = '';
-  if (state === 'hide') { bar.style.display='none'; return; }
-  bar.classList.add(state);
-  bar.style.display = 'block';
-  if (msgEl) msgEl.textContent = msg||'';
-  if (dot) {
-    dot.style.background = state==='offline'?'#fff':state==='syncing'?'#090e18':state==='synced'?'#fff':'var(--accent)';
-  }
-}
+function syncSetState(state, msg) { /* sync-bar removed */ }
 function syncUpdateBadge() {
   var badge = G('sync-queue-badge'), cnt = G('sync-queue-count');
   if (!badge||!cnt) return;
