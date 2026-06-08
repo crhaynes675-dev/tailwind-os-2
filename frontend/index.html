@@ -5727,11 +5727,13 @@ function calDrawerSave(){
     j.endDate = '';
   }
   j.type=gv3('cd-type');
-  // Read crew from structured picker (assigned crew IDs stored on job)
-  j.crew = (j._crewIds||[]).map(function(id){
-    var m = CREW_ROSTER.find(function(c){return c.id===id;});
-    return m ? m.name : id;
-  }).join(', ');
+  // Read crew from structured picker — only overwrite if user actually changed it
+  if (j._crewModified) {
+    j.crew = (j._crewIds||[]).map(function(id){
+      var m = CREW_ROSTER.find(function(c){return c.id===id;});
+      return m ? m.name : id;
+    }).join(', ');
+  }
   j.priority=gv3('cd-priority');j.quoteRef=gv3('cd-quoteref');j.tags=gv3('cd-tags');
   j.internalNotes=gv3('cd-inotes');j.customerNotes=gv3('cd-cnotes');
   j._modified=calNow();
@@ -8353,7 +8355,9 @@ function syncSendOne(entry) {
         assignedTo:   cp.assignedTo   || cp.crew || '',
         status:       cp.status       || 'Scheduled',
         notes:        cp.notes        || cp.internalNotes || '',
-        quoteNum:     cp.quoteNum     || cp.quoteRef || ''
+        quoteNum:     cp.quoteNum     || cp.quoteRef || '',
+        customerName: cp.customerName  || '',
+        customerPhone:cp.customerPhone || ''
       });
     case 'JOB_UPDATE':
     case 'STATUS_CHANGE':
@@ -8521,11 +8525,15 @@ calDrawerSave = function() {
   j.time         = gv3('cd-time');
   j.duration     = parseInt(gv3('cd-dur'))  || 60;
   j.type         = gv3('cd-type');
-  // Crew uses a structured picker — read from _crewIds not a plain text input
-  j.crew = (j._crewIds||[]).map(function(id){
-    var m = (CREW_ROSTER||[]).find(function(c){return c.id===id;});
-    return m ? m.name : id;
-  }).join(', ');
+  // Crew uses a structured picker — only overwrite if user actually changed it
+  // (_crewModified is set by crewToggle/crewRemove; prevents blanking crew when CREW_ROSTER
+  // wasn't loaded during picker init, which would cause the API to clear assignedTo)
+  if (j._crewModified) {
+    j.crew = (j._crewIds||[]).map(function(id){
+      var m = (CREW_ROSTER||[]).find(function(c){return c.id===id;});
+      return m ? m.name : id;
+    }).join(', ');
+  }
   // Customer fields
   var cn = gv3('cd-custname');  if (cn)  j.customerName  = cn;
   var cp = gv3('cd-custphone'); if (cp)  j.customerPhone = cp;
@@ -8553,7 +8561,8 @@ calDrawerSave = function() {
     syncEnqueue('JOB_CREATE', j._id, {
       job: j.job, addr: j.addr, date: j.date, time: j.time,
       duration: j.duration, type: j.type, status: j.status,
-      crew: j.crew, priority: j.priority, tags: j.tags, quoteRef: j.quoteRef
+      crew: j.crew, priority: j.priority, tags: j.tags, quoteRef: j.quoteRef,
+      customerName: j.customerName || '', customerPhone: j.customerPhone || ''
     });
   } else {
     syncEnqueue('JOB_UPDATE', syncId, {
@@ -9406,6 +9415,7 @@ function crewInitials(name) {
 
 function crewPickerHTML(job) {
   if (!job._crewIds) job._crewIds = [];
+  job._crewModified = false; // reset on each open — only set true if user touches the picker
   // Reconstruct _crewIds from crew name string when loading from API (ids are not stored in backend)
   if (!job._crewIds.length && job.crew) {
     var crewNames = job.crew.split(',').map(function(n){ return n.trim().toLowerCase(); });
@@ -9460,6 +9470,7 @@ function crewSearch(q) {
 function crewToggle(id) {
   if (!calDrawerJob) return;
   if (!calDrawerJob._crewIds) calDrawerJob._crewIds = [];
+  calDrawerJob._crewModified = true;
   var idx = calDrawerJob._crewIds.indexOf(id);
   var wasNew = idx === -1;
   if (idx === -1) calDrawerJob._crewIds.push(id);
@@ -9482,6 +9493,7 @@ function crewToggle(id) {
 
 function crewRemove(id) {
   if (!calDrawerJob || !calDrawerJob._crewIds) return;
+  calDrawerJob._crewModified = true;
   calDrawerJob._crewIds = calDrawerJob._crewIds.filter(function(x){ return x!==id; });
   var chips = G('crew-chips');
   if (chips) chips.innerHTML = (calDrawerJob._crewIds||[]).map(function(cid) {
