@@ -8304,7 +8304,9 @@ function syncFlush() {
 
   // Process one at a time for reliability
   var entry = SYNC_QUEUE[0];
+  console.log('[SYNC] sending', entry.op, entry.jobId, JSON.stringify(entry.payload));
   syncSendOne(entry).then(function(res) {
+    console.log('[SYNC] success', entry.op, entry.jobId, JSON.stringify(res));
     // When a new calendar job is created, write the server-assigned ids back
     if (entry.op === 'JOB_CREATE' && res && res.jobId) {
       var appt = (CAL_APPTS || []).find(function(a){ return a._id === entry.jobId; });
@@ -8328,7 +8330,8 @@ function syncFlush() {
       syncSetState('synced', '\u2713 All changes synced');
       setTimeout(function(){ syncSetState('hide'); }, 2500);
     }
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[SYNC] FAILED', entry.op, entry.jobId, err && err.message);
     entry.retries = (entry.retries||0) + 1;
     syncPersistQueue();
     if (entry.retries >= 5) {
@@ -8557,6 +8560,7 @@ calDrawerSave = function() {
 
   // Sync queue — use _apiId (raw UUID) for updates; map cal field names to API field names
   var syncId = j._apiId || j._id;
+  console.log('[SAVE] isNew='+isNew+' syncId='+syncId+' apiId='+j._apiId+' custName='+j.customerName+' custPhone='+j.customerPhone);
   if (isNew) {
     syncEnqueue('JOB_CREATE', j._id, {
       job: j.job, addr: j.addr, date: j.date, time: j.time,
