@@ -8545,15 +8545,29 @@ calDrawerSave = function() {
     job: j.job, date: j.date, type: j.type, status: j.status, crew: j.crew
   });
 
-  // Sync queue
-  syncEnqueue(isNew ? 'JOB_CREATE' : 'JOB_UPDATE', j._id, {
-    job: j.job, addr: j.addr, date: j.date, time: j.time,
-    duration: j.duration, type: j.type, status: j.status,
-    crew: j.crew, priority: j.priority, tags: j.tags, quoteRef: j.quoteRef
-  });
+  // Sync queue — use _apiId (raw UUID) for updates; map cal field names to API field names
+  var syncId = j._apiId || j._id;
+  if (isNew) {
+    syncEnqueue('JOB_CREATE', j._id, {
+      job: j.job, addr: j.addr, date: j.date, time: j.time,
+      duration: j.duration, type: j.type, status: j.status,
+      crew: j.crew, priority: j.priority, tags: j.tags, quoteRef: j.quoteRef
+    });
+  } else {
+    syncEnqueue('JOB_UPDATE', syncId, {
+      jobName:       j.job          || '',
+      address:       j.addr         || '',
+      scheduledDate: j.date         || '',
+      assignedTo:    j.crew         || '',
+      status:        j.status       || 'Scheduled',
+      notes:         j.internalNotes|| '',
+      quoteNum:      j.quoteRef     || ''
+    });
+  }
 
   var t = G('cal-drawer-title'); if(t) t.textContent = j.job;
   calDrawerClose(); calRender();
+  dashNotifyCalendarChange(j._id);
 };
 
 // ── Augmented status change with audit ───────────────────────────────────────
@@ -8565,8 +8579,9 @@ calDrawerSetStatus = function(s) {
   calDrawerJob._modified = calNow();
   calDrawerRenderStatus();
   if (prev !== s) {
+    var scId = calDrawerJob._apiId || calDrawerJob._id;
     auditAppend('STATUS_CHANGE', calDrawerJob._id, { from: prev, to: s });
-    syncEnqueue('STATUS_CHANGE', calDrawerJob._id, { status: s });
+    syncEnqueue('STATUS_CHANGE', scId, { status: s });
   }
 };
 
