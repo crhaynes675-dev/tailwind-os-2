@@ -850,6 +850,7 @@ input,select,textarea,button { touch-action:manipulation; }
    ══════════════════════════════════════════════ */
 #auth-bar{
   display:none;
+  position:sticky;top:0;z-index:8500;
   background:#0f1628;border-bottom:1px solid #1e2a3d;
   padding:0 20px;height:40px;
   align-items:center;justify-content:flex-end;
@@ -1400,8 +1401,12 @@ input,select,textarea,button { touch-action:manipulation; }
           </div>
         </div>
 
-        <!-- Hidden divider kept for JS compat -->
-        <div id="hbg-divider" style="display:none;"></div>
+        <!-- Sign Out -->
+        <div style="border-top:1px solid var(--border);margin:3px 0;"></div>
+        <button class="hbg-item" onclick="authSignOut();hbgClose();"
+          style="color:#ef4444;display:flex;align-items:center;gap:8px;">
+          ⎋ Sign Out
+        </button>
       </div>
     </div>
     <!-- ── /Hamburger ──────────────────────────────────────────────── -->
@@ -8536,7 +8541,15 @@ calDrawerSave = function() {
   j.time         = gv3('cd-time');
   j.duration     = parseInt(gv3('cd-dur'))  || 60;
   j.type         = gv3('cd-type');
-  j.crew         = gv3('cd-crew');
+  // Crew uses a structured picker — read from _crewIds not a plain text input
+  j.crew = (j._crewIds||[]).map(function(id){
+    var m = (CREW_ROSTER||[]).find(function(c){return c.id===id;});
+    return m ? m.name : id;
+  }).join(', ');
+  // Customer fields
+  var cn = gv3('cd-custname');  if (cn)  j.customerName  = cn;
+  var cp = gv3('cd-custphone'); if (cp)  j.customerPhone = cp;
+  var hr = gv3('cd-hold-reason'); if (hr !== undefined) j.holdReason = hr;
   j.priority     = gv3('cd-priority');
   j.quoteRef     = gv3('cd-quoteref');
   j.tags         = gv3('cd-tags');
