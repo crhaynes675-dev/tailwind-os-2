@@ -93,6 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         quoteNum: body.quoteNum ?? '',
         customerName: body.customerName ?? '',
         customerPhone: body.customerPhone ?? '',
+        scheduledTime: body.scheduledTime ?? '',
         createdBy: callerUsername(event),
         createdAt: now,
         updatedAt: now,
@@ -122,7 +123,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const body = JSON.parse(event.body ?? '{}');
       const now  = new Date().toISOString();
 
-      const allowed = ['jobName', 'address', 'scheduledDate', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerPhone'];
+      const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerPhone'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No valid fields to update');
 

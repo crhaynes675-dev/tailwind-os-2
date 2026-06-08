@@ -8257,6 +8257,7 @@ function syncLoadFromStorage() {
             job:      j.jobName,
             addr:     j.address      || '',
             date:     j.scheduledDate|| '',
+            time:     j.scheduledTime|| '',
             crew:     j.assignedTo   || '',
             quoteRef: j.quoteNum     || ''
           }), {
@@ -8355,6 +8356,7 @@ function syncSendOne(entry) {
         jobName:      cp.jobName      || cp.job  || 'Untitled',
         address:      cp.address      || cp.addr || '',
         scheduledDate:cp.scheduledDate|| cp.date || '',
+        scheduledTime:cp.scheduledTime|| cp.time || '',
         assignedTo:   cp.assignedTo   || cp.crew || '',
         status:       cp.status       || 'Scheduled',
         notes:        cp.notes        || cp.internalNotes || '',
@@ -8564,6 +8566,7 @@ calDrawerSave = function() {
   if (isNew) {
     syncEnqueue('JOB_CREATE', j._id, {
       job: j.job, addr: j.addr, date: j.date, time: j.time,
+      scheduledTime: j.time || '',
       duration: j.duration, type: j.type, status: j.status,
       crew: j.crew, priority: j.priority, tags: j.tags, quoteRef: j.quoteRef,
       customerName: j.customerName || '', customerPhone: j.customerPhone || ''
@@ -8573,6 +8576,7 @@ calDrawerSave = function() {
       jobName:       j.job          || '',
       address:       j.addr         || '',
       scheduledDate: j.date         || '',
+      scheduledTime: j.time         || '',
       assignedTo:    j.crew         || '',
       status:        j.status       || 'Scheduled',
       notes:         j.internalNotes|| '',
