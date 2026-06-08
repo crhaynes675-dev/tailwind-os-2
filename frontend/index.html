@@ -9406,6 +9406,13 @@ function crewInitials(name) {
 
 function crewPickerHTML(job) {
   if (!job._crewIds) job._crewIds = [];
+  // Reconstruct _crewIds from crew name string when loading from API (ids are not stored in backend)
+  if (!job._crewIds.length && job.crew) {
+    var crewNames = job.crew.split(',').map(function(n){ return n.trim().toLowerCase(); });
+    job._crewIds = (CREW_ROSTER||[])
+      .filter(function(c){ return crewNames.indexOf(c.name.toLowerCase()) !== -1; })
+      .map(function(c){ return c.id; });
+  }
   var chips = job._crewIds.map(function(id) {
     var m = CREW_ROSTER.find(function(c){ return c.id===id; });
     if (!m) return '';
