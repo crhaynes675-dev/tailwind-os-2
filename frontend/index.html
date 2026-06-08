@@ -8263,7 +8263,9 @@ function syncLoadFromStorage() {
             parentJobId:     j.parentJobId     || '',
             workOrderNumber: j.workOrderNumber || '',
             status:          j.status || 'Scheduled',
-            internalNotes: j.notes || ''
+            internalNotes:   j.notes          || '',
+            customerName:    j.customerName   || '',
+            customerPhone:   j.customerPhone  || ''
           });
         });
       }
@@ -8561,7 +8563,9 @@ calDrawerSave = function() {
       assignedTo:    j.crew         || '',
       status:        j.status       || 'Scheduled',
       notes:         j.internalNotes|| '',
-      quoteNum:      j.quoteRef     || ''
+      quoteNum:      j.quoteRef     || '',
+      customerName:  j.customerName || '',
+      customerPhone: j.customerPhone|| ''
     });
   }
 
@@ -11910,6 +11914,8 @@ function _dashJobApiPayload(job) {
     status:        job.status        || 'Needs Review',
     notes:         job.notes         || '',
     quoteNum:      job.quoteNum      || '',
+    customerName:  job.customerName  || '',
+    customerPhone: job.customerPhone || '',
   };
 }
 
@@ -11991,7 +11997,9 @@ function dashAssignWorkOrderNumber(job) {
     assignedTo:    job.crew          || '',
     status:        job.status        || 'Unscheduled',
     notes:         job.notes         || '',
-    quoteNum:      job.quoteNum      || ''
+    quoteNum:      job.quoteNum      || '',
+    customerName:  job.customerName  || '',
+    customerPhone: job.customerPhone || ''
   }).then(function(res) {
     delete job._woPending;
     if (res && res.jobId) {
