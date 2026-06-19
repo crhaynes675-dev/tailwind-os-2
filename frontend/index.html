@@ -12026,11 +12026,10 @@ function dashSaveModal() {
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
-    } else if (job._woPending) {
-      // dashAssignWorkOrderNumber POST is in flight — mark dirty so its callback sends a PUT
-      job._pendingSave = true;
     } else {
+      job._woPending = true; // prevent dashCloseModal from discarding while POST is in flight
       mmApi('POST', '/jobs', payload).then(function(res) {
+        delete job._woPending;
         if (res && res.jobId) {
           job._apiId = res.jobId;
           job.workOrderNumber = res.workOrderNumber || '';
@@ -12041,7 +12040,7 @@ function dashSaveModal() {
         }
         dashPersistState();
         dashRender();
-      }).catch(function(){});
+      }).catch(function(){ delete job._woPending; });
     }
     dashPersistState();
   }
@@ -12059,7 +12058,9 @@ function dashSaveModalAndSchedule() {
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
     } else {
+      job._woPending = true; // prevent dashCloseModal from discarding while POST is in flight
       mmApi('POST', '/jobs', payload).then(function(res) {
+        delete job._woPending;
         if (res && res.jobId) {
           job._apiId = res.jobId;
           job.workOrderNumber = res.workOrderNumber || '';
@@ -12070,7 +12071,7 @@ function dashSaveModalAndSchedule() {
         }
         dashPersistState();
         dashRender();
-      }).catch(function(){});
+      }).catch(function(){ delete job._woPending; });
     }
   }
   // Parse the scheduled date and time for calendar placement
@@ -12088,7 +12089,16 @@ function dashSaveModalAndSchedule() {
   ST(9); // switch to Schedule tab
 }
 
-function dashCloseModal() { G('dash-job-modal').style.display='none'; }
+function dashCloseModal() {
+  // If the open job was never saved (no API id, no WO#), discard it entirely
+  var job = DASH_SELECTED_ID ? DASH_JOBS.find(function(j){ return j.dashId === DASH_SELECTED_ID; }) : null;
+  if (job && !job._apiId && !job.workOrderNumber && !job._woPending) {
+    DASH_JOBS = DASH_JOBS.filter(function(j){ return j.dashId !== DASH_SELECTED_ID; });
+    dashRender();
+  }
+  DASH_SELECTED_ID = null;
+  G('dash-job-modal').style.display = 'none';
+}
 
 function dashDeleteJob(dashId) {
   var job = DASH_JOBS.find(function(j){ return j.dashId === dashId; });
@@ -12161,7 +12171,7 @@ function dashOpenNewJob() {
   var job = dashMakeJob({ status:'Unscheduled', source:'Manual', priority:'Normal' });
   DASH_JOBS.push(job);
   DASH_SELECTED_ID = job.dashId;
-  dashAssignWorkOrderNumber(job);
+  // Do NOT pre-create in the API here — WO# is assigned on Save
   dashOpenJobModal(job.dashId);
 }
 
