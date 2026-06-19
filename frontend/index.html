@@ -5635,12 +5635,24 @@ function calDrawerDetailsHTML() {
 
 function calDrawerNotesHTML(){
   var j=calDrawerJob, notes=(j.notes||[]).slice().reverse();
-  var html='<div style="margin-bottom:16px;">'+
+  var html='';
+
+  // Show job-creation notes (internalNotes from dashboard modal) as a pinned block
+  if(j.internalNotes && j.internalNotes.trim()){
+    html+='<div style="border:1px solid var(--border);border-radius:5px;padding:11px 14px;margin-bottom:14px;background:rgba(232,164,39,.05);border-color:rgba(232,164,39,.3);">'+
+      '<div style="font-family:\'Outfit\',sans-serif;font-size:.56rem;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Job Notes</div>'+
+      '<div style="font-family:\'Outfit\',sans-serif;font-size:.84rem;color:var(--text);white-space:pre-wrap;line-height:1.55;">'+
+        (j.internalNotes||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
+      '</div>'+
+    '</div>';
+  }
+
+  html+='<div style="margin-bottom:16px;">'+
     '<div style="font-family:\'Outfit\',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Add Note</div>'+
     '<textarea id="cd-new-note" rows="3" placeholder="Type a note\u2026" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.84rem;padding:9px 11px;outline:none;resize:vertical;"></textarea>'+
     '<button class="btn bp" onclick="calAddNote()" style="margin-top:8px;font-size:.65rem;">+ Add Note</button></div>';
   if(!notes.length){
-    html+='<div style="text-align:center;color:var(--muted);font-family:\'Outfit\',sans-serif;font-size:.7rem;padding:28px 0;">No notes yet \u2014 add the first one above.</div>';
+    html+='<div style="text-align:center;color:var(--muted);font-family:\'Outfit\',sans-serif;font-size:.7rem;padding:28px 0;">No thread notes yet \u2014 add the first one above.</div>';
   } else {
     html+=notes.map(function(n){
       var flags=(n._ai_flags||[]).length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">'+n._ai_flags.map(function(f){return'<span style="font-size:.55rem;background:rgba(232,164,39,.12);color:var(--accent);border:1px solid rgba(232,164,39,.25);border-radius:2px;padding:1px 5px;">'+f+'</span>';}).join('')+'</div>':'';
@@ -12138,10 +12150,21 @@ function _dashJobApiPayload(job) {
   };
 }
 
+function _dashSyncNotesToCal(job) {
+  // Push job.notes (dashboard string) into the matching CAL_APPTS entry's
+  // internalNotes so the calendar drawer Notes tab sees them immediately.
+  var appt = (CAL_APPTS || []).find(function(a) {
+    return (job.calApptId && a._id === job.calApptId) ||
+           (job._apiId    && a._apiId === job._apiId);
+  });
+  if (appt) appt.internalNotes = job.notes || '';
+}
+
 function dashSaveModal() {
   var job = DASH_JOBS.find(function(j){return j.dashId===DASH_SELECTED_ID;});
   if (job && mmGetToken()) {
     delete job._draft; // user is intentionally saving — lift draft protection
+    _dashSyncNotesToCal(job);
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
@@ -12180,6 +12203,7 @@ function dashSaveModalAndSchedule() {
   if (!job.scheduledDate) { alert('Please set a Scheduled Date before adding to the schedule.'); return; }
   if (mmGetToken()) {
     delete job._draft; // user is intentionally saving — lift draft protection
+    _dashSyncNotesToCal(job);
     var payload = _dashJobApiPayload(job);
     payload.status = 'Scheduled';
     if (job._apiId) {
