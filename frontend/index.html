@@ -2262,7 +2262,7 @@ function mmParseJwt(token) {
   } catch(e) { return null; }
 }
 function mmGetToken() {
-  try { return sessionStorage.getItem('mm_id_token'); } catch(e) { return null; }
+  try { return localStorage.getItem('mm_id_token'); } catch(e) { return null; }
 }
 function mmApi(method, path, body) {
   var opts = {
@@ -6324,9 +6324,9 @@ function authSubmit() {
     var tokens = d.AuthenticationResult;
     var claims = mmParseJwt(tokens.IdToken) || {};
     try {
-      sessionStorage.setItem('mm_id_token',      tokens.IdToken);
-      sessionStorage.setItem('mm_access_token',  tokens.AccessToken);
-      sessionStorage.setItem('mm_refresh_token', tokens.RefreshToken);
+      localStorage.setItem('mm_id_token',      tokens.IdToken);
+      localStorage.setItem('mm_access_token',  tokens.AccessToken);
+      localStorage.setItem('mm_refresh_token', tokens.RefreshToken);
     } catch(e) {}
     var safeUser = {
       username: claims['cognito:username']  || username,
@@ -6335,7 +6335,7 @@ function authSubmit() {
       tenantId: claims['custom:tenantId']   || ''
     };
     AUTH_CURRENT_USER = safeUser;
-    try { sessionStorage.setItem('mm_auth_user', JSON.stringify(safeUser)); } catch(e) {}
+    try { localStorage.setItem('mm_auth_user', JSON.stringify(safeUser)); } catch(e) {}
     authShowApp(safeUser);
   })
   .catch(function() {
@@ -7124,10 +7124,10 @@ function saSuspendTenant(tenantId, currentStatus) {
 function authSignOut() {
   AUTH_CURRENT_USER = null;
   try {
-    sessionStorage.removeItem('mm_auth_user');
-    sessionStorage.removeItem('mm_id_token');
-    sessionStorage.removeItem('mm_access_token');
-    sessionStorage.removeItem('mm_refresh_token');
+    localStorage.removeItem('mm_auth_user');
+    localStorage.removeItem('mm_id_token');
+    localStorage.removeItem('mm_access_token');
+    localStorage.removeItem('mm_refresh_token');
   } catch(e) {}
 
   // Reset login form
@@ -12215,16 +12215,16 @@ function dashRestoreState() {
   dashRestoreState();
 
   try {
-    var saved = sessionStorage.getItem('mm_auth_user');
-    var token = sessionStorage.getItem('mm_id_token');
+    var saved = localStorage.getItem('mm_auth_user');
+    var token = localStorage.getItem('mm_id_token');
     if (saved && token) {
       var claims = mmParseJwt(token) || {};
       // Reject expired tokens
       if (claims.exp && claims.exp < Math.floor(Date.now() / 1000)) {
-        sessionStorage.removeItem('mm_auth_user');
-        sessionStorage.removeItem('mm_id_token');
-        sessionStorage.removeItem('mm_access_token');
-        sessionStorage.removeItem('mm_refresh_token');
+        localStorage.removeItem('mm_auth_user');
+        localStorage.removeItem('mm_id_token');
+        localStorage.removeItem('mm_access_token');
+        localStorage.removeItem('mm_refresh_token');
         throw new Error('expired');
       }
       var user = JSON.parse(saved);
@@ -12232,7 +12232,7 @@ function dashRestoreState() {
       if (claims['custom:role']) user.role = claims['custom:role'];
       if (user && user.username && user.role) {
         AUTH_CURRENT_USER = user;
-        sessionStorage.setItem('mm_auth_user', JSON.stringify(user));
+        localStorage.setItem('mm_auth_user', JSON.stringify(user));
         authShowApp(user);
         return;
       }
