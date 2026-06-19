@@ -4578,15 +4578,22 @@ function calParseDate(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2
 function calFmtTime(t){ if(!t)return''; var p=t.split(':'),h=+p[0],m=+p[1],a=h>=12?'PM':'AM'; h=h%12||12; return h+':'+(m<10?'0':'')+m+' '+a; }
 function calFmtDate(s){ if(!s)return''; return calParseDate(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function calMins(t){ if(!t)return 480; var p=t.split(':'); return +p[0]*60+ +p[1]; }
-function calJobsOnDate(ds){ 
-  return CAL_APPTS.filter(function(j){
+function calCrewFilter(appts) {
+  if (!window.MM_IS_CREW || !window.MM_CREW_NAME) return appts;
+  var me = window.MM_CREW_NAME.toLowerCase();
+  return appts.filter(function(j) {
+    return (j.crew || j.assignedTo || '').toLowerCase().indexOf(me) !== -1;
+  });
+}
+function calJobsOnDate(ds){
+  return calCrewFilter(CAL_APPTS).filter(function(j){
     if (j._unscheduled || !j.date) return false;
     // Single-day or start date
     if (j.date === ds) return true;
     // Multi-day — covers this date
     if (j.endDate && j.endDate > j.date) return ds > j.date && ds <= j.endDate;
     return false;
-  }).sort(function(a,b){return calMins(a.time)-calMins(b.time);}); 
+  }).sort(function(a,b){return calMins(a.time)-calMins(b.time);});
 }
 function calTc(t){ return CAL_TYPE_COLORS[t]||'#5a7090'; }
 function calSc(s){ return CAL_STATUS_COLORS[s]||'#5a7090'; }
@@ -4775,7 +4782,7 @@ function calRenderMonth(year, month) {
   var monthStart = year + '-' + String(month+1).padStart(2,'0') + '-01';
   var monthEnd   = calDateStr(new Date(year, month + 1, 0));
 
-  var monthJobs = CAL_APPTS.filter(function(j) {
+  var monthJobs = calCrewFilter(CAL_APPTS).filter(function(j) {
     if (j._unscheduled || !j.date) return false;
     var jEnd = j.endDate || j.date;
     return j.date <= monthEnd && jEnd >= monthStart;
@@ -6048,11 +6055,19 @@ function piwrRender() {
   var tbody     = document.getElementById('piwr-tbody');
   if (!emptyEl || !contentEl) return;
 
-  if (!PIWR_ROWS.length) {
+  var visibleRows = PIWR_ROWS;
+  if (window.MM_IS_CREW && window.MM_CREW_NAME) {
+    var meLC = window.MM_CREW_NAME.toLowerCase();
+    visibleRows = PIWR_ROWS.filter(function(r) {
+      return (r.created_by || '').toLowerCase().indexOf(meLC) !== -1;
+    });
+  }
+
+  if (!visibleRows.length) {
     emptyEl.style.display = 'block'; contentEl.style.display = 'none'; return;
   }
   emptyEl.style.display = 'none'; contentEl.style.display = 'block';
-  if (countEl) countEl.textContent = PIWR_ROWS.length + ' row(s) \u00b7 ' + PIWR_SCHEMA.length + ' column(s)';
+  if (countEl) countEl.textContent = visibleRows.length + ' row(s) \u00b7 ' + PIWR_SCHEMA.length + ' column(s)';
 
   // Header — sticky # column
   thead.innerHTML = '<tr><th style="position:sticky;left:0;z-index:11;background:var(--surface);box-shadow:2px 0 4px rgba(0,0,0,.15);">#</th>' + PIWR_SCHEMA.map(function(c) {
@@ -6060,7 +6075,7 @@ function piwrRender() {
   }).join('') + '<th></th></tr>';
 
   // Rows
-  tbody.innerHTML = PIWR_ROWS.map(function(row, rowIdx) {
+  tbody.innerHTML = visibleRows.map(function(row, rowIdx) {
     var rid  = row._id;
     var cols = PIWR_SCHEMA.map(function(c) {
       var val = row[c.key] != null ? row[c.key] : '';
@@ -6949,9 +6964,43 @@ function authShowApp(user) {
   var crewTab = document.getElementById('tab-crew');
   if (crewTab) crewTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
 
-  // Restore last visited page (or default to 0)
+  // ── Crew / field-worker role restrictions ────────────────────────
+  var isCrewMember = (user.role === 'installer' || user.role === 'technician' || user.role === 'field_worker');
+  if (isCrewMember) {
+    // Hide entire nav groups that crew never need
+    ['sales', 'reports'].forEach(function(g) {
+      var btn = document.getElementById('ng-' + g);
+      var sub = document.getElementById('st-' + g);
+      if (btn) btn.style.display = 'none';
+      if (sub) sub.style.display = 'none';
+    });
+
+    // Within the Install group: hide Estimator (1), Dashboard (14), Dispatch (21)
+    [1, 14, 21].forEach(function(idx) {
+      var btn = document.querySelector('.tb[data-idx="' + idx + '"]');
+      if (btn) btn.style.display = 'none';
+    });
+
+    // Within the Customer group: hide Projects (17) — crew only see Customer Database (11)
+    [17].forEach(function(idx) {
+      var btn = document.querySelector('.tb[data-idx="' + idx + '"]');
+      if (btn) btn.style.display = 'none';
+    });
+
+    // Store crew flag for use in data-filtering functions
+    window.MM_IS_CREW = true;
+    window.MM_CREW_NAME = user.username || user.email || '';
+  } else {
+    window.MM_IS_CREW = false;
+    window.MM_CREW_NAME = '';
+  }
+
+  // Restore last visited page, but redirect crew to their default (Schedule) if
+  // their last page is one they can no longer access
+  var CREW_ALLOWED_PAGES = [8, 9, 11, 13, 16];
   var lastPage = 0;
   try { var lp = localStorage.getItem('mm_last_page'); if (lp !== null) lastPage = parseInt(lp) || 0; } catch(e) {}
+  if (isCrewMember && CREW_ALLOWED_PAGES.indexOf(lastPage) === -1) lastPage = 9;
   ST(lastPage);
   initDZ(); // attach drag-drop listeners now that p0 is visible
   syncInit(); // load offline queue, audit log, persisted jobs
@@ -10962,8 +11011,10 @@ function cjRender() {
   var count = G('cj-count');
   if (!list) return;
   var q    = (G('cj-search') ? G('cj-search').value : '').toLowerCase();
+  var me   = (window.MM_IS_CREW && window.MM_CREW_NAME) ? window.MM_CREW_NAME.toLowerCase() : null;
   var jobs = (DASH_JOBS || []).filter(function(j){
     if (j.status !== 'Completed') return false;
+    if (me && (j.crew || j.assignedTo || '').toLowerCase().indexOf(me) === -1) return false;
     if (q && ![j.jobName,j.customerName,j.jobAddress,j.crew].join(' ').toLowerCase().includes(q)) return false;
     return true;
   }).sort(function(a,b){ return (b._closedAt||'') > (a._closedAt||'') ? 1 : -1; });

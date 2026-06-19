@@ -22,26 +22,30 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const isPasswordPath = event.path?.endsWith('/password') ?? false;
 
     // GET /users — list Cognito users scoped to this tenant
+    // Note: Cognito does not support filtering by custom attributes, so we
+    // list all users and filter by tenantId client-side.
     if (httpMethod === 'GET') {
       const tenantId = getTenantId(event);
       const result = await cognito.send(new ListUsersCommand({
         UserPoolId: USER_POOL_ID,
-        Filter: `custom:tenantId = "${tenantId}"`,
         Limit: 60,
       }));
-      const users = (result.Users ?? []).map(u => {
-        const attrs: Record<string, string> = {};
-        (u.Attributes ?? []).forEach(a => { if (a.Name && a.Value) attrs[a.Name] = a.Value; });
-        return {
-          username: u.Username ?? '',
-          email: attrs['email'] ?? '',
-          givenName: attrs['given_name'] ?? '',
-          familyName: attrs['family_name'] ?? '',
-          role: attrs['custom:role'] ?? 'user',
-          status: u.UserStatus ?? '',
-          enabled: u.Enabled ?? true,
-        };
-      });
+      const users = (result.Users ?? [])
+        .map(u => {
+          const attrs: Record<string, string> = {};
+          (u.Attributes ?? []).forEach(a => { if (a.Name && a.Value) attrs[a.Name] = a.Value; });
+          return {
+            username: u.Username ?? '',
+            email: attrs['email'] ?? '',
+            givenName: attrs['given_name'] ?? '',
+            familyName: attrs['family_name'] ?? '',
+            role: attrs['custom:role'] ?? 'user',
+            tenantId: attrs['custom:tenantId'] ?? '',
+            status: u.UserStatus ?? '',
+            enabled: u.Enabled ?? true,
+          };
+        })
+        .filter(u => u.tenantId === tenantId);
       return ok(users, event);
     }
 
