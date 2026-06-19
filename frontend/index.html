@@ -12208,21 +12208,35 @@ function dashDeleteJob(dashId) {
   var label = job.jobName + (job.workOrderNumber ? ' (' + job.workOrderNumber + ')' : '');
   if (!confirm('Delete "' + label + '"?\n\nThis will permanently remove it from the dashboard, calendar, and the system.')) return;
 
-  // Remove from CAL_APPTS
-  if (job.calApptId) {
-    CAL_APPTS = CAL_APPTS.filter(function(a){ return a._id !== job.calApptId; });
-  }
+  // Remove every matching CAL_APPTS entry — match by calApptId OR by _apiId
+  // (API-loaded appts use _id='api_'+jobId so calApptId may be stale/missing)
+  CAL_APPTS = CAL_APPTS.filter(function(a) {
+    if (job.calApptId && a._id === job.calApptId) return false;
+    if (job._apiId   && a._apiId === job._apiId)  return false;
+    return true;
+  });
 
   // Remove from DASH_JOBS
   DASH_JOBS = DASH_JOBS.filter(function(j){ return j.dashId !== dashId; });
 
-  // Delete from API
+  // Cancel any pending sync-queue operations for this job so they don't
+  // fire after deletion (e.g. a JOB_UPDATE queued while offline)
+  if (job._apiId) {
+    SYNC_QUEUE = SYNC_QUEUE.filter(function(e){ return e.jobId !== job._apiId; });
+    syncPersistQueue();
+  }
+
+  // Clear the WO-assignment attempt tracker so the slot isn't wasted
+  _woAssignAttempted.delete(dashId);
+
+  // Delete from API (fire-and-forget; we've already cleaned up locally)
   if (job._apiId && mmGetToken()) {
     mmApi('DELETE', '/jobs/' + encodeURIComponent(job._apiId)).catch(function(){});
   }
 
   dashCloseModal();
   dashPersistState();
+  if (typeof syncPersistJobs === 'function') syncPersistJobs();
   dashRender();
   if (typeof calRender === 'function') calRender();
 }
