@@ -11528,6 +11528,7 @@ function dashSyncCalendarUpdates() {
         source:       'Calendar',
         status:       'Scheduled',
         calApptId:       appt._id,
+        _apiId:          appt._apiId || '',
         priority:        appt.priority || 'Normal',
         workOrderNumber: appt.workOrderNumber || ''
       });
@@ -11587,9 +11588,11 @@ function dashRenderCalPreview() {
   // ── Crew schedule view ──────────────────────────────────────────────────────
   var crewEl = G('dash-crew-schedule');
   if (crewEl) {
-    // Group scheduled jobs by crew
+    // Group scheduled jobs by crew — exclude completed/canceled
     var crewMap = {};
-    scheduled.forEach(function(j) {
+    scheduled.filter(function(j){
+      return j.status !== 'Completed' && j.status !== 'Canceled';
+    }).forEach(function(j) {
       var crew = j.crew || '(unassigned)';
       if (!crewMap[crew]) crewMap[crew] = [];
       crewMap[crew].push(j);
@@ -12247,22 +12250,25 @@ function dashDeleteJob(dashId) {
   // Remove from DASH_JOBS
   DASH_JOBS = DASH_JOBS.filter(function(j){ return j.dashId !== dashId; });
 
-  // Cancel any pending sync-queue operations for this job so they don't
-  // fire after deletion (e.g. a JOB_UPDATE queued while offline)
-  if (job._apiId) {
-    SYNC_QUEUE = SYNC_QUEUE.filter(function(e){ return e.jobId !== job._apiId; });
-    syncPersistQueue();
-  }
-
   // Clear the WO-assignment attempt tracker so the slot isn't wasted
   _woAssignAttempted.delete(dashId);
 
+  // Resolve the backend ID: prefer _apiId, fall back to extracting from calApptId
+  // (API-loaded CAL_APPTS entries set calApptId = 'api_' + jobId but may not set _apiId)
+  var backendId = job._apiId || '';
+  if (!backendId && job.calApptId && job.calApptId.indexOf('api_') === 0) {
+    backendId = job.calApptId.slice(4);
+  }
+
   // Tombstone the job so it can't be re-imported by GET /jobs on next refresh
-  if (job._apiId) {
-    if (DASH_DELETED_IDS.indexOf(job._apiId) === -1) DASH_DELETED_IDS.push(job._apiId);
+  if (backendId) {
+    if (DASH_DELETED_IDS.indexOf(backendId) === -1) DASH_DELETED_IDS.push(backendId);
     dashPersistDeletedIds();
+    // Cancel any pending updates for this job before queuing the delete
+    SYNC_QUEUE = SYNC_QUEUE.filter(function(e){ return e.jobId !== backendId; });
+    syncPersistQueue();
     // Queue DELETE via sync so it retries automatically if offline or API fails
-    syncEnqueue('JOB_DELETE', job._apiId, {});
+    syncEnqueue('JOB_DELETE', backendId, {});
   }
 
   dashCloseModal();
@@ -12467,7 +12473,9 @@ function dashRestoreState() {
         return true;
       });
     }
-    if (state.CAL_APPTS   && state.CAL_APPTS.length)   CAL_APPTS   = state.CAL_APPTS;
+    if (state.CAL_APPTS   && state.CAL_APPTS.length)   CAL_APPTS   = state.CAL_APPTS.filter(function(a){
+      return !a._apiId || DASH_DELETED_IDS.indexOf(a._apiId) === -1;
+    });
     if (state.NCI_RECORDS && state.NCI_RECORDS.length) NCI_RECORDS = state.NCI_RECORDS;
     if (state.CDB         && state.CDB.length)         CDB         = state.CDB;
     if (state.SMS_QUEUE   && state.SMS_QUEUE.length)   SMS_QUEUE   = state.SMS_QUEUE;
