@@ -13755,106 +13755,87 @@ if ('serviceWorker' in navigator) {
 </div>
 
 
-<!-- ═══════════ PAGE 21 · DISPATCH COMMAND CENTER ═══════════ -->
+<!-- ═══════════ PAGE 21 · DISPATCH / FIELD VIEW ═══════════ -->
 <div class="pg" id="p21">
 
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-    <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);">📡 Dispatch Command Center</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live crew tracking · Job assignment · Real-time routing</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input type="date" id="dispatch-date" onchange="dispatchLoadJobs()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 10px;outline:none;">
-      <div id="dispatch-gps-badge" style="display:none;background:rgba(34,178,94,.12);border:1px solid rgba(34,178,94,.3);color:var(--green);font-family:'Outfit',sans-serif;font-size:.65rem;padding:4px 10px;border-radius:20px;">📍 GPS Active</div>
-      <button onclick="dispatchRefresh()" class="btn" style="font-size:.72rem;padding:5px 14px;">↺ Refresh</button>
-    </div>
-  </div>
+  <!-- ── DISPATCHER VIEW ──────────────────────────────────── -->
 
-  <!-- My Status Bar -->
-  <div class="card" style="padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-    <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">My Status</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      <button id="dsb-available" onclick="dispatchSetMyStatus('available')" style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;">✓ Available</button>
-      <button id="dsb-enroute"   onclick="dispatchSetMyStatus('enroute')"   style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">🚗 En Route</button>
-      <button id="dsb-onsite"    onclick="dispatchSetMyStatus('onsite')"    style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">🏠 On Site</button>
-      <button id="dsb-break"     onclick="dispatchSetMyStatus('break')"     style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">☕ Break</button>
-      <button id="dsb-done"      onclick="dispatchSetMyStatus('done')"      style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">✓ Done for Day</button>
-    </div>
-    <div id="dispatch-gps-info" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);margin-left:auto;">Checking GPS…</div>
-  </div>
-
-  <!-- Main Split Layout -->
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px;height:calc(100vh - 300px);min-height:460px;">
-
-    <!-- LEFT: Map -->
-    <div class="card" style="padding:0;overflow:visible;position:relative;border-radius:6px;">
-      <div id="dispatch-map" style="width:100%;height:100%;min-height:460px;background:#0f1628;border-radius:6px;overflow:hidden;"></div>
-
-      <!-- Map not loaded placeholder -->
-      <div id="dispatch-map-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f1628;border-radius:6px;gap:10px;z-index:5;">
-        <div style="font-size:2rem;">🗺</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--muted);">Loading map…</div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);">📡 Dispatch</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live crew tracking · Job assignment</div>
       </div>
-
-      <!-- Map type buttons -->
-      <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;z-index:10;">
-        <button onclick="dispatchSetMapType('roadmap')"  id="dmt-road" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;">🗺 Map</button>
-        <button onclick="dispatchSetMapType('satellite')" id="dmt-sat" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;">🛰 Satellite</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="date" id="dispatch-date" onchange="dispatchLoadJobs()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 10px;outline:none;">
+        <button onclick="dispatchRefresh()" class="btn" style="font-size:.72rem;padding:5px 14px;">↺ Refresh</button>
       </div>
-
-      <!-- Legend -->
-      <div style="position:absolute;bottom:10px;left:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;z-index:10;">
-        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Legend</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--text);">
-          <span><span style="color:#ef4444;">●</span> Unassigned</span>
-          <span><span style="color:#f59e0b;">●</span> Dispatched</span>
-          <span><span style="color:#8b5cf6;">●</span> En Route</span>
-          <span><span style="color:#22c55e;">●</span> On Site</span>
-          <span><span style="color:#6b7280;">●</span> Completed</span>
-          <span><span style="color:#22b2de;">👤</span> Crew</span>
-        </div>
-      </div>
-
-      <!-- Pulse while loading jobs -->
-      <div id="dispatch-map-loading" style="display:none;position:absolute;top:10px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);z-index:10;">⏳ Geocoding jobs…</div>
     </div>
 
-    <!-- RIGHT: Sidebar -->
-    <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;">
+    <!-- 3-Column Layout: Crew | Map | Jobs -->
+    <div style="display:grid;grid-template-columns:260px 1fr 300px;gap:12px;height:calc(100vh - 190px);min-height:540px;">
 
-      <!-- Crew Section -->
-      <div class="card" style="flex:0 0 auto;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <!-- LEFT: Crew panel -->
+      <div class="card" style="overflow:hidden;display:flex;flex-direction:column;padding:14px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
           <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">👥 Crew</div>
-          <div id="dispatch-crew-online" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--green);"></div>
+          <div id="dispatch-crew-online" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--green);font-weight:600;"></div>
         </div>
-        <div id="dispatch-crew-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;"></div>
+        <div id="dispatch-crew-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
-      <!-- Jobs Section -->
-      <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <!-- CENTER: Map -->
+      <div class="card" style="padding:0;overflow:visible;position:relative;border-radius:6px;">
+        <div id="dispatch-map" style="width:100%;height:100%;min-height:540px;background:var(--surface2);border-radius:6px;overflow:hidden;"></div>
+
+        <div id="dispatch-map-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface2);border-radius:6px;gap:10px;z-index:5;">
+          <div style="font-size:2.5rem;">🗺</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--muted);">Loading map…</div>
+        </div>
+
+        <!-- Map type buttons -->
+        <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;z-index:10;">
+          <button onclick="dispatchSetMapType('roadmap')"   id="dmt-road" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;font-weight:600;">🗺 Map</button>
+          <button onclick="dispatchSetMapType('satellite')" id="dmt-sat"  style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;">🛰 Satellite</button>
+        </div>
+
+        <!-- Legend -->
+        <div style="position:absolute;bottom:10px;left:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+          <div style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Legend</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--text);">
+            <span><span style="color:#ef4444;font-size:.8rem;">●</span> Unassigned</span>
+            <span><span style="color:#f59e0b;font-size:.8rem;">●</span> Dispatched</span>
+            <span><span style="color:#8b5cf6;font-size:.8rem;">●</span> En Route</span>
+            <span><span style="color:#22c55e;font-size:.8rem;">●</span> On Site</span>
+            <span><span style="color:#6b7280;font-size:.8rem;">●</span> Completed</span>
+            <span><span style="color:#22b2de;font-size:.8rem;">👤</span> Crew</span>
+          </div>
+        </div>
+
+        <div id="dispatch-map-loading" style="display:none;position:absolute;top:10px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);z-index:10;">⏳ Geocoding…</div>
+      </div>
+
+      <!-- RIGHT: Jobs panel -->
+      <div class="card" style="overflow:hidden;display:flex;flex-direction:column;padding:14px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
           <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">📋 Jobs</div>
-          <div id="dispatch-job-count" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);"></div>
+          <div id="dispatch-job-count" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--accent);font-weight:600;"></div>
         </div>
-        <!-- Filter pills -->
-        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
-          <button onclick="dispatchFilterJobs('all')"        id="djf-all"        style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;">All</button>
-          <button onclick="dispatchFilterJobs('unassigned')" id="djf-unassigned" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🔴 Unassigned</button>
-          <button onclick="dispatchFilterJobs('active')"     id="djf-active"     style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🟢 Active</button>
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;flex-shrink:0;">
+          <button onclick="dispatchFilterJobs('all')"        id="djf-all"        style="font-family:'Outfit',sans-serif;font-size:.6rem;padding:3px 10px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-weight:600;">All</button>
+          <button onclick="dispatchFilterJobs('unassigned')" id="djf-unassigned" style="font-family:'Outfit',sans-serif;font-size:.6rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Unassigned</button>
+          <button onclick="dispatchFilterJobs('active')"     id="djf-active"     style="font-family:'Outfit',sans-serif;font-size:.6rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Active</button>
         </div>
-        <div id="dispatch-job-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
+        <div id="dispatch-job-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
     </div>
-  </div>
 
-  <!-- Job assign popover (shown below job card) -->
-  <div id="dispatch-assign-pop" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
-    <div style="font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:700;color:var(--text);margin-bottom:8px;">Assign to crew:</div>
-    <div id="dispatch-assign-crew-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;"></div>
-    <button onclick="G('dispatch-assign-pop').style.display='none'" style="margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);background:none;border:none;cursor:pointer;">✕ Cancel</button>
+  <!-- Assign popover -->
+  <div id="dispatch-assign-pop" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:10px;">Assign to crew:</div>
+    <div id="dispatch-assign-crew-list" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;"></div>
+    <button onclick="G('dispatch-assign-pop').style.display='none'" style="margin-top:10px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);background:none;border:none;cursor:pointer;">✕ Cancel</button>
   </div>
 
 </div>
@@ -13864,24 +13845,18 @@ if ('serviceWorker' in navigator) {
 //  DISPATCH COMMAND CENTER  (page 21)
 // ═══════════════════════════════════════════════
 var DISPATCH = {
-  map:         null,
-  geocoder:    null,
-  jobMarkers:  {},   // jobId → google.maps.Marker
-  crewMarkers: {},   // crewId → google.maps.Marker
-  crewInfoWins:{},   // crewId → InfoWindow
-  jobInfoWins: {},   // jobId → InfoWindow
-  geocache:    {},   // address → {lat,lng}
-  crew:        [],   // raw crew from /crew
-  jobs:        [],   // today's jobs
-  filter:      'all',
-  myStatus:    'available',
-  gpsWatcher:  null,
-  pingTimer:   null,
-  pollTimer:   null,
-  myLat:       null,
-  myLng:       null,
-  gpsGranted:  false,
-  mapReady:    false,
+  map:           null,
+  geocoder:      null,
+  jobMarkers:    {},
+  crewMarkers:   {},
+  crewInfoWins:  {},
+  jobInfoWins:   {},
+  geocache:      {},
+  crew:          [],
+  jobs:          [],
+  filter:        'all',
+  pollTimer:     null,
+  mapReady:      false,
   assigningJobId: null
 };
 
@@ -13926,25 +13901,19 @@ function dispatchInit() {
     dateEl.value = new Date().toISOString().slice(0, 10);
   }
 
-  // Start background GPS
-  dispatchStartGPS();
-
-  // Load crew and jobs
+  // Load data
   dispatchRefresh();
 
-  // Initialize map — shares the same API key and load as the Navigation page.
-  // geoMapsReady (Navigation's callback) will call dispatchInitMap() when ready.
+  // Initialize map — shares API key and load with the Navigation page
   if (GEO.mapsLoaded || (typeof google !== 'undefined' && google.maps)) {
     dispatchInitMap();
   } else {
-    geoLoadMapsIfNeeded(); // no-op if already loading; geoMapsReady fires dispatchInitMap
+    geoLoadMapsIfNeeded();
   }
 
   // Poll crew locations every 45s
   if (!DISPATCH.pollTimer) {
-    DISPATCH.pollTimer = setInterval(function() {
-      dispatchLoadCrew();
-    }, 45000);
+    DISPATCH.pollTimer = setInterval(dispatchLoadCrew, 45000);
   }
 }
 
@@ -14263,29 +14232,35 @@ function dispatchRenderCrewSidebar() {
 
   var online = DISPATCH.crew.filter(function(c) {
     if (!c.lastSeen) return false;
-    var age = Date.now() - new Date(c.lastSeen).getTime();
-    return age < 4 * 60 * 60 * 1000; // seen in last 4 hours
+    return (Date.now() - new Date(c.lastSeen).getTime()) < 4 * 3600000;
   });
-  if (onlineEl) onlineEl.textContent = online.length ? online.length + ' online' : '';
+  if (onlineEl) onlineEl.textContent = online.length ? online.length + ' active' : '';
 
   if (!DISPATCH.crew.length) {
-    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);padding:8px 0;">No crew tracking data yet.<br><span style="font-size:.62rem;">Crew will appear here once they open the app and set their status.</span></div>';
+    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);padding:6px 0;line-height:1.6;">No crew check-ins yet.<br><span style="font-size:.62rem;">Crew appear here once they open this screen and set their status.</span></div>';
     return;
   }
 
   el.innerHTML = DISPATCH.crew.map(function(c) {
-    var status = c.status || 'available';
-    var color = DISPATCH_CREW_STATUS_COLOR[status] || '#6b7280';
-    var label = DISPATCH_CREW_STATUS_LABEL[status] || status;
-    var hasLoc = c.lat && c.lng;
+    var status   = c.status || 'available';
+    var color    = DISPATCH_CREW_STATUS_COLOR[status] || '#6b7280';
+    var label    = DISPATCH_CREW_STATUS_LABEL[status] || status;
+    var hasGps   = c.lat && c.lng;
+    var gpsStr   = hasGps ? (c.gpsActive ? '📍 GPS' : '📵 Manual') : '📵 No location';
     var lastSeen = c.lastSeen ? new Date(c.lastSeen).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border);cursor:pointer;" onclick="dispatchFocusCrew(\'' + c.id + '\')">' +
-      '<div style="width:30px;height:30px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:.65rem;font-weight:700;color:#fff;flex-shrink:0;">' + crewInitials(c.name||c.id||'?') + '</div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-family:Outfit,sans-serif;font-size:.72rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (c.name||c.id||'Unknown') + '</div>' +
-        '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:' + color + ';">' + label + (hasLoc ? (c.gpsActive ? ' · 📍 GPS' : ' · 📵 Manual') : '') + '</div>' +
+    var isRecent = c.lastSeen && (Date.now() - new Date(c.lastSeen).getTime()) < 4 * 3600000;
+    return '<div onclick="dispatchFocusCrew(\'' + c.id + '\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+      '<div style="position:relative;flex-shrink:0;">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:.7rem;font-weight:700;color:#fff;">' + crewInitials(c.name||c.id||'?') + '</div>' +
+        (isRecent ? '<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:' + color + ';border:2px solid var(--bg);"></div>' : '') +
       '</div>' +
-      (lastSeen ? '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:var(--muted);flex-shrink:0;">' + lastSeen + '</div>' : '') +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+          '<div style="font-family:Outfit,sans-serif;font-size:.78rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (c.name||c.id||'Unknown') + '</div>' +
+          '<span style="flex-shrink:0;font-family:Outfit,sans-serif;font-size:.6rem;padding:2px 8px;border-radius:10px;background:' + color + '20;color:' + color + ';border:1px solid ' + color + '40;font-weight:600;">' + label + '</span>' +
+        '</div>' +
+        '<div style="font-family:Outfit,sans-serif;font-size:.62rem;color:var(--muted);margin-top:2px;">' + gpsStr + (lastSeen ? ' · ' + lastSeen : '') + '</div>' +
+      '</div>' +
     '</div>';
   }).join('');
 }
@@ -14296,47 +14271,57 @@ function dispatchRenderJobSidebar() {
   if (!el) return;
 
   var jobs = DISPATCH.jobs.filter(function(j) {
-    if (DISPATCH.filter === 'unassigned') return !j.crew && j.status !== 'Completed' && j.status !== 'Canceled';
-    if (DISPATCH.filter === 'active') return ['En Route','In Progress','On Site','Dispatched'].indexOf(j.status) !== -1;
+    if (DISPATCH.filter === 'unassigned') return !(j.crew||'').trim() && j.status !== 'Completed' && j.status !== 'Canceled';
+    if (DISPATCH.filter === 'active')     return ['En Route','In Progress','On Site','Dispatched'].indexOf(j.status) !== -1;
     return true;
   });
 
-  if (countEl) countEl.textContent = DISPATCH.jobs.length + ' total';
+  if (countEl) {
+    var unassigned = DISPATCH.jobs.filter(function(j){ return !(j.crew||'').trim(); }).length;
+    countEl.textContent = DISPATCH.jobs.length + ' jobs' + (unassigned ? ' · ' + unassigned + ' unassigned' : '');
+  }
 
   if (!jobs.length) {
-    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.72rem;color:var(--muted);padding:10px 0;text-align:center;">No jobs match this filter.</div>';
+    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.72rem;color:var(--muted);padding:16px 0;text-align:center;">No jobs match this filter.</div>';
     return;
   }
 
-  // Sort: unassigned first, then by time
   jobs.sort(function(a, b) {
-    var aHasCrew = (a.crew||'').trim() ? 1 : 0;
-    var bHasCrew = (b.crew||'').trim() ? 1 : 0;
-    if (aHasCrew !== bHasCrew) return aHasCrew - bHasCrew;
+    var aU = (a.crew||'').trim() ? 1 : 0;
+    var bU = (b.crew||'').trim() ? 1 : 0;
+    if (aU !== bU) return aU - bU;
     return (a.scheduledTime||'99:99').localeCompare(b.scheduledTime||'99:99');
   });
 
   el.innerHTML = jobs.map(function(j) {
-    var jid = j._apiId || j.dashId;
+    var jid   = j._apiId || j.dashId;
     var color = DISPATCH_STATUS_COLOR[j.status] || '#3b82f6';
-    var wo = j.workOrderNumber || '';
-    var time = j.scheduledTime || '';
-    var hasAddr = (j.jobAddress||j.addr||'').length > 0;
-    return '<div style="border:1px solid var(--border);border-left:3px solid ' + color + ';border-radius:4px;padding:7px 10px;background:var(--bg);cursor:pointer;" onclick="dispatchFocusJob(\'' + jid + '\')">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">' +
+    var wo    = j.workOrderNumber || '';
+    var time  = j.scheduledTime || '';
+    var addr  = (j.jobAddress || j.addr || '').split(',')[0];
+    var unassigned = !(j.crew||'').trim();
+    return '<div onclick="dispatchFocusJob(\'' + jid + '\')" style="border:1px solid var(--border);border-left:4px solid ' + color + ';border-radius:6px;padding:10px 12px;background:var(--bg);cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor=\'' + color + '\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
         '<div style="flex:1;min-width:0;">' +
-          (wo ? '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:var(--accent);font-weight:700;">' + wo + '</div>' : '') +
-          '<div style="font-family:Outfit,sans-serif;font-size:.72rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobName||'Unnamed') + '</div>' +
-          '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:var(--muted);">' +
-            (time ? time + ' · ' : '') +
-            '<span style="color:' + color + ';">' + (j.status||'') + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
+            (wo ? '<span style="font-family:Outfit,sans-serif;font-size:.62rem;font-weight:700;color:var(--accent);">' + wo + '</span>' : '') +
+            (time ? '<span style="font-family:Outfit,sans-serif;font-size:.6rem;color:var(--muted);">· 🕐 ' + time + '</span>' : '') +
+            '<span style="margin-left:auto;font-family:Outfit,sans-serif;font-size:.58rem;padding:2px 7px;border-radius:10px;background:' + color + '20;color:' + color + ';font-weight:600;">' + (j.status||'') + '</span>' +
           '</div>' +
-          (j.crew ? '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:#22c55e;margin-top:1px;">👷 ' + j.crew + '</div>' : '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:#ef4444;margin-top:1px;">⚠ Unassigned</div>') +
+          '<div style="font-family:Outfit,sans-serif;font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobName||'Unnamed Job') + '</div>' +
+          (addr ? '<div style="font-family:Outfit,sans-serif;font-size:.62rem;color:var(--muted);margin-top:2px;">📍 ' + addr + '</div>' : '') +
+          (j.customerName ? '<div style="font-family:Outfit,sans-serif;font-size:.62rem;color:var(--muted);">👤 ' + j.customerName + '</div>' : '') +
+          '<div style="margin-top:5px;">' +
+            (unassigned
+              ? '<span style="font-family:Outfit,sans-serif;font-size:.62rem;color:#ef4444;font-weight:600;">⚠ Needs assignment</span>'
+              : '<span style="font-family:Outfit,sans-serif;font-size:.62rem;color:var(--green);">👷 ' + j.crew + '</span>') +
+          '</div>' +
         '</div>' +
-        '<button onmousedown="event.stopPropagation();dispatchOpenAssign(\'' + jid + '\',event)" style="flex-shrink:0;font-family:Outfit,sans-serif;font-size:.6rem;padding:3px 8px;border-radius:3px;background:var(--accent);color:#fff;border:none;cursor:pointer;white-space:nowrap;">⚡ Assign</button>' +
+        '<button onmousedown="event.stopPropagation();dispatchOpenAssign(\'' + jid + '\',event)" style="flex-shrink:0;margin-top:2px;font-family:Outfit,sans-serif;font-size:.62rem;padding:5px 10px;border-radius:4px;background:' + (unassigned ? '#ef4444' : 'var(--accent)') + ';color:#fff;border:none;cursor:pointer;white-space:nowrap;font-weight:600;">' + (unassigned ? '⚡ Assign' : '↺ Reassign') + '</button>' +
       '</div>' +
     '</div>';
   }).join('');
+
 }
 
 // ── Assign popover ────────────────────────────────────────────────
@@ -14455,82 +14440,6 @@ function dispatchSetMapType(type) {
   if (satBtn)  { satBtn.style.color  = type === 'satellite' ? 'var(--accent)' : 'var(--muted)'; }
 }
 
-// ── GPS & status ──────────────────────────────────────────────────
-function dispatchStartGPS() {
-  var infoEl = G('dispatch-gps-info');
-  var badge  = G('dispatch-gps-badge');
-  if (!navigator.geolocation) {
-    if (infoEl) infoEl.textContent = '📵 GPS not supported — using manual status';
-    return;
-  }
-  if (infoEl) infoEl.textContent = 'Requesting GPS…';
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      DISPATCH.gpsGranted = true;
-      DISPATCH.myLat = pos.coords.latitude;
-      DISPATCH.myLng = pos.coords.longitude;
-      if (infoEl) infoEl.textContent = '📍 GPS active — sharing location every 60s';
-      if (badge) badge.style.display = 'block';
-      dispatchPingMyLocation();
-
-      // Watch for updates
-      if (!DISPATCH.gpsWatcher) {
-        DISPATCH.gpsWatcher = navigator.geolocation.watchPosition(
-          function(p) { DISPATCH.myLat = p.coords.latitude; DISPATCH.myLng = p.coords.longitude; },
-          function() {},
-          { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
-        );
-      }
-      // Ping every 60s
-      if (!DISPATCH.pingTimer) {
-        DISPATCH.pingTimer = setInterval(dispatchPingMyLocation, 60000);
-      }
-    },
-    function() {
-      DISPATCH.gpsGranted = false;
-      if (infoEl) infoEl.textContent = '📵 GPS blocked — set status manually above';
-    },
-    { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
-  );
-}
-
-function dispatchPingMyLocation() {
-  if (!mmGetToken() || !AUTH_CURRENT_USER) return;
-  var uid = AUTH_CURRENT_USER.username || AUTH_CURRENT_USER.email;
-  if (!uid) return;
-
-  var payload = {
-    id: uid,
-    name: ((AUTH_CURRENT_USER.given_name || '') + ' ' + (AUTH_CURRENT_USER.family_name || '')).trim() || uid,
-    status: DISPATCH.myStatus,
-    lastSeen: new Date().toISOString()
-  };
-  if (DISPATCH.gpsGranted && DISPATCH.myLat !== null) {
-    payload.lat = DISPATCH.myLat;
-    payload.lng = DISPATCH.myLng;
-    payload.gpsActive = true;
-  }
-  mmApi('PUT', '/crew/' + encodeURIComponent(uid), payload).catch(function() {});
-}
-
-function dispatchSetMyStatus(status) {
-  DISPATCH.myStatus = status;
-  var statuses = ['available','enroute','onsite','break','done'];
-  statuses.forEach(function(s) {
-    var btn = G('dsb-' + s);
-    if (!btn) return;
-    if (s === status) {
-      btn.style.background = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
-      btn.style.color = '#fff';
-      btn.style.borderColor = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--text)';
-      btn.style.borderColor = 'var(--border)';
-    }
-  });
-  dispatchPingMyLocation();
-}
 </script>
 
 </body>
