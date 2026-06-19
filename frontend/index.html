@@ -11257,7 +11257,7 @@ function dashRenderUnscheduled() {
   var pc_fn = function(p){ return p==='High'?'var(--red)':p==='Low'?'var(--muted)':'var(--text)'; };
   tbody.innerHTML = jobs.map(function(j) {
     return '<tr style="cursor:pointer;transition:background .1s;" onclick="dashSelectJob(\''+j.dashId+'\')" onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'" onmouseleave="this.style.background=\'\'">'+
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">'+(j.workOrderNumber||'—')+'</td>'+
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">'+(j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : '—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+j.jobName+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerCompany||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerName||'—')+'</td>'+
@@ -11311,7 +11311,7 @@ function dashRender() {
       ' onclick="dashSelectJob(\'' + j.dashId + '\')"' +
       ' onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'"' +
       ' onmouseleave="this.style.background=\'\'">' +
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber||'—') + '</td>' +
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : '—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + subBadge + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerCompany||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerName||'—') + '</td>' +
@@ -12036,6 +12036,15 @@ function dashModalApplyScheduleFields(status) {
 }
 
 function dashModalStatusChange(val) {
+  if (val === 'Unscheduled') {
+    // Clear scheduling data so jobAutoAdvanceStatus won't immediately re-promote
+    // the job back to Scheduled when it sees a pre-filled date.
+    var job = DASH_JOBS.find(function(j){ return j.dashId === DASH_SELECTED_ID; });
+    if (job) { job.scheduledDate = ''; job.scheduledTime = ''; job.crew = ''; }
+    var df = G('dm-date'); if (df) df.value = '';
+    var tf = G('dm-time'); if (tf) tf.value = '';
+    var cf = G('dm-crew'); if (cf) cf.value = '';
+  }
   dashModalChange('status', val);
   dashModalApplyScheduleFields(val);
 }
