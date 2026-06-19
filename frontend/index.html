@@ -11956,20 +11956,54 @@ function dashOpenJobModal(dashId) {
       return '<option value="'+c.name+'"'+(c.name===job.crew?' selected':'')+'>'+c.name+(c.role?' ('+c.role+')':'')+'</option>';
     }).join('') : '');
 
+  // Customer dropdown from CDB
+  var matchedCustId = '';
+  var custOpts = '<option value="">— Select Customer —</option>';
+  if (typeof CDB !== 'undefined' && CDB.length) {
+    CDB.forEach(function(c) {
+      var cname = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || '';
+      if (cname && cname.toLowerCase() === (job.customerName||'').toLowerCase()) matchedCustId = String(c.id);
+    });
+    custOpts += CDB.map(function(c) {
+      var name = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || 'Unknown';
+      var label = c.company && name !== c.company ? name + ' · ' + c.company : name;
+      return '<option value="'+c.id+'"'+(String(c.id)===matchedCustId?' selected':'')+'>'+label+'</option>';
+    }).join('');
+    custOpts += '<option value="__other__"'+(!matchedCustId && job.customerName ? ' selected' : '')+'>✏ Other / Not in Database</option>';
+  }
+  var showManual = !!((!matchedCustId && job.customerName) || !(typeof CDB !== 'undefined' && CDB.length));
+
+  // Normalize timeWindow to HH:MM for <input type="time">
+  var timeVal = '';
+  if (job.timeWindow) {
+    var tm = job.timeWindow.match(/(\d{1,2}):(\d{2})/);
+    if (tm) {
+      var h = parseInt(tm[1]), m = tm[2];
+      if (job.timeWindow.toLowerCase().indexOf('pm') !== -1 && h < 12) h += 12;
+      if (job.timeWindow.toLowerCase().indexOf('am') !== -1 && h === 12) h = 0;
+      timeVal = String(h).padStart(2,'0') + ':' + m;
+    }
+  }
+
   G('dash-modal-title').textContent = job.jobName;
   G('dash-modal-body').innerHTML =
     '<div style="font-family:\'Outfit\',sans-serif;font-size:.62rem;color:'+(job.workOrderNumber?'var(--accent)':'var(--muted)')+';font-weight:700;margin-bottom:12px;letter-spacing:.5px;">Work Order: ' + esc(job.workOrderNumber || '—') + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
-    fi2('Job Name',     '<input id="dm-jobname"  value="'+esc(job.jobName)+'"      oninput="dashModalChange(\'jobName\',this.value)">') +
-    fi2('Customer',     '<input id="dm-custname" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)">') +
-    fi2('Phone',        '<input id="dm-phone"    value="'+esc(job.customerPhone)+'" oninput="dashModalChange(\'customerPhone\',this.value)">') +
-    fi2('Job Address',  '<input id="dm-addr"     value="'+esc(job.jobAddress)+'"   oninput="dashModalChange(\'jobAddress\',this.value)">') +
-    fi2('Status',       '<select id="dm-status"  onchange="dashModalChange(\'status\',this.value)">'+statusOpts+'</select>') +
-    fi2('Priority',     '<select id="dm-priority" onchange="dashModalChange(\'priority\',this.value)"><option'+(job.priority==='High'?' selected':'')+'>High</option><option'+(job.priority==='Normal'?' selected':'')+'>Normal</option><option'+(job.priority==='Low'?' selected':'')+'>Low</option></select>') +
-    fi2('Scheduled Date','<input type="date" id="dm-date"  value="'+esc(job.scheduledDate)+'" oninput="dashModalChange(\'scheduledDate\',this.value)">') +
-    fi2('Time Window',  '<input id="dm-time"    value="'+esc(job.timeWindow)+'"   oninput="dashModalChange(\'timeWindow\',this.value)" placeholder="e.g. 8:00 AM – 11:00 AM">') +
-    fi2('Crew',         '<select id="dm-crew"  onchange="dashModalChange(\'crew\',this.value)">'+crewOpts+'</select>') +
-    fi2('Source',       '<input id="dm-source"  value="'+esc(job.source)+'" readonly style="opacity:.6;">') +
+    fi2('Job Name',        '<input id="dm-jobname" value="'+esc(job.jobName)+'" oninput="dashModalChange(\'jobName\',this.value)">') +
+    (typeof CDB !== 'undefined' && CDB.length
+      ? fi2('Customer',    '<select id="dm-cust-select" onchange="dashModalSelectCust(this.value)">'+custOpts+'</select>')
+      : fi2('Customer',    '<input id="dm-custname" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)">')) +
+    (showManual
+      ? fi2('Customer Name','<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="Type customer name" oninput="dashModalChange(\'customerName\',this.value)">')
+      : '<div id="dm-custname-wrap" style="display:none;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Customer Name</label><input id="dm-custname" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.78rem;padding:7px 9px;outline:none;" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)"></div>') +
+    fi2('Phone',           '<input id="dm-phone" value="'+esc(job.customerPhone)+'" oninput="dashModalChange(\'customerPhone\',this.value)">') +
+    fi2('Job Address',     '<input id="dm-addr"  value="'+esc(job.jobAddress)+'"   oninput="dashModalChange(\'jobAddress\',this.value)">') +
+    fi2('Status',          '<select id="dm-status" onchange="dashModalChange(\'status\',this.value)">'+statusOpts+'</select>') +
+    fi2('Priority',        '<select id="dm-priority" onchange="dashModalChange(\'priority\',this.value)"><option'+(job.priority==='High'?' selected':'')+'>High</option><option'+(job.priority==='Normal'?' selected':'')+'>Normal</option><option'+(job.priority==='Low'?' selected':'')+'>Low</option></select>') +
+    fi2('Scheduled Date',  '<input type="date" id="dm-date" value="'+esc(job.scheduledDate)+'" oninput="dashModalChange(\'scheduledDate\',this.value)">') +
+    fi2('Start Time',      '<input type="time" id="dm-time" value="'+esc(timeVal)+'" onchange="dashModalChange(\'timeWindow\',this.value)">') +
+    fi2('Crew',            '<select id="dm-crew" onchange="dashModalChange(\'crew\',this.value)">'+crewOpts+'</select>') +
+    fi2('Source',          '<input id="dm-source" value="'+esc(job.source)+'" readonly style="opacity:.6;">') +
     '</div>' +
     '<div style="margin-top:14px;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Notes</label>' +
     '<textarea rows="3" id="dm-notes" oninput="dashModalChange(\'notes\',this.value)" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.75rem;padding:8px 10px;outline:none;resize:vertical;">'+esc(job.notes)+'</textarea></div>' +
@@ -11977,7 +12011,6 @@ function dashOpenJobModal(dashId) {
     '<button class="btn bp" onclick="dashSaveModalAndSchedule()" style="font-size:.68rem;">📅 Save &amp; Add to Schedule</button>' +
     '<button class="btn bp" onclick="dashSaveModal()" style="font-size:.68rem;background:var(--green);border-color:var(--green);">✓ Save</button>' +
     '<button class="btn bo" onclick="dashCloseModal()" style="font-size:.68rem;">Cancel</button>' +
-    '<button class="btn bo" onclick="dashDeleteJob(DASH_SELECTED_ID)" style="font-size:.68rem;color:var(--red);border-color:var(--red);margin-left:auto;">🗑 Delete Job</button>' +
     '</div>';
 
   G('dash-job-modal').style.display='flex';
@@ -12004,6 +12037,28 @@ function dashModalChange(field, val) {
       var testEl = G('geo-test-addr'); if (testEl) testEl.value = val;
     }
   }
+}
+
+function dashModalSelectCust(id) {
+  if (id === '__other__') {
+    // Show manual name input
+    var wrap = G('dm-custname-wrap');
+    if (wrap) wrap.style.display = '';
+    return;
+  }
+  var cust = (typeof CDB !== 'undefined' ? CDB : []).find(function(c){ return String(c.id) === String(id); });
+  if (!cust) return;
+  var name = ((cust.fname||'') + ' ' + (cust.lname||'')).trim() || cust.company || '';
+  var addr = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
+  var phone = cust.phone || '';
+  dashModalChange('customerName',  name);
+  dashModalChange('customerPhone', phone);
+  dashModalChange('jobAddress',    addr);
+  var ni = G('dm-custname'); if (ni) ni.value = name;
+  var pi = G('dm-phone');    if (pi) pi.value = phone;
+  var ai = G('dm-addr');     if (ai) ai.value = addr;
+  // Hide manual name field when a real customer is selected
+  var wrap = G('dm-custname-wrap'); if (wrap) wrap.style.display = 'none';
 }
 
 function _dashJobApiPayload(job) {
