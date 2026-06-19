@@ -12023,6 +12023,7 @@ function _dashJobApiPayload(job) {
 function dashSaveModal() {
   var job = DASH_JOBS.find(function(j){return j.dashId===DASH_SELECTED_ID;});
   if (job && mmGetToken()) {
+    delete job._draft; // user is intentionally saving — lift draft protection
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
@@ -12053,6 +12054,7 @@ function dashSaveModalAndSchedule() {
   if (!job) { dashCloseModal(); return; }
   if (!job.scheduledDate) { alert('Please set a Scheduled Date before adding to the schedule.'); return; }
   if (mmGetToken()) {
+    delete job._draft; // user is intentionally saving — lift draft protection
     var payload = _dashJobApiPayload(job);
     payload.status = 'Scheduled';
     if (job._apiId) {
@@ -12132,6 +12134,7 @@ var _woAssignAttempted = new Set();
 // ── Assign WO# immediately after a DASH_JOB is created (before the user saves) ─
 function dashAssignWorkOrderNumber(job) {
   if (!mmGetToken()) return;
+  if (job._draft) return; // never auto-create unsaved draft jobs
   if (job._apiId || job.workOrderNumber || job._woPending) return;
   if (_woAssignAttempted.has(job.dashId)) return;
   _woAssignAttempted.add(job.dashId);
@@ -12169,9 +12172,9 @@ function dashAssignWorkOrderNumber(job) {
 // ── New manual job ────────────────────────────────────────────────────────────
 function dashOpenNewJob() {
   var job = dashMakeJob({ status:'Unscheduled', source:'Manual', priority:'Normal' });
+  job._draft = true; // prevents auto-WO# assignment until user explicitly saves
   DASH_JOBS.push(job);
   DASH_SELECTED_ID = job.dashId;
-  // Do NOT pre-create in the API here — WO# is assigned on Save
   dashOpenJobModal(job.dashId);
 }
 
