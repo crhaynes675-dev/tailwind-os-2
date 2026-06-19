@@ -11960,22 +11960,20 @@ function dashOpenJobModal(dashId) {
       return '<option value="'+c.name+'"'+(c.name===job.crew?' selected':'')+'>'+c.name+(c.role?' ('+c.role+')':'')+'</option>';
     }).join('') : '');
 
-  // Customer dropdown from CDB
+  // Customer dropdown from CDB — always a <select> regardless of CDB size
   var matchedCustId = '';
-  var custOpts = '<option value="">— Select Customer —</option>';
-  if (typeof CDB !== 'undefined' && CDB.length) {
-    CDB.forEach(function(c) {
-      var cname = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || '';
-      if (cname && cname.toLowerCase() === (job.customerName||'').toLowerCase()) matchedCustId = String(c.id);
-    });
-    custOpts += CDB.map(function(c) {
+  var custList = (typeof CDB !== 'undefined' ? CDB : []);
+  custList.forEach(function(c) {
+    var cname = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || '';
+    if (cname && cname.toLowerCase() === (job.customerName||'').toLowerCase()) matchedCustId = String(c.id);
+  });
+  var custOpts = '<option value="">— Select from Customer Database —</option>' +
+    custList.map(function(c) {
       var name = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || 'Unknown';
       var label = c.company && name !== c.company ? name + ' · ' + c.company : name;
       return '<option value="'+c.id+'"'+(String(c.id)===matchedCustId?' selected':'')+'>'+label+'</option>';
-    }).join('');
-    custOpts += '<option value="__other__"'+(!matchedCustId && job.customerName ? ' selected' : '')+'>✏ Other / Not in Database</option>';
-  }
-  var showManual = !!((!matchedCustId && job.customerName) || !(typeof CDB !== 'undefined' && CDB.length));
+    }).join('') +
+    '<option value="__other__"'+(!matchedCustId && job.customerName ? ' selected' : '')+'>✏ Not in Database</option>';
 
   // Normalize timeWindow to HH:MM for <input type="time">
   var timeVal = '';
@@ -11994,12 +11992,8 @@ function dashOpenJobModal(dashId) {
     '<div style="font-family:\'Outfit\',sans-serif;font-size:.62rem;color:'+(job.workOrderNumber?'var(--accent)':'var(--muted)')+';font-weight:700;margin-bottom:12px;letter-spacing:.5px;">Work Order: ' + esc(job.workOrderNumber || '—') + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
     fi2('Job Name',        '<input id="dm-jobname" value="'+esc(job.jobName)+'" oninput="dashModalChange(\'jobName\',this.value)">') +
-    (typeof CDB !== 'undefined' && CDB.length
-      ? fi2('Customer',    '<select id="dm-cust-select" onchange="dashModalSelectCust(this.value)">'+custOpts+'</select>')
-      : fi2('Customer',    '<input id="dm-custname" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)">')) +
-    (showManual
-      ? fi2('Customer Name','<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="Type customer name" oninput="dashModalChange(\'customerName\',this.value)">')
-      : '<div id="dm-custname-wrap" style="display:none;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Customer Name</label><input id="dm-custname" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.78rem;padding:7px 9px;outline:none;" value="'+esc(job.customerName)+'" oninput="dashModalChange(\'customerName\',this.value)"></div>') +
+    fi2('Customer',        '<select id="dm-cust-select" onchange="dashModalSelectCust(this.value)">'+custOpts+'</select>') +
+    fi2('Customer Name',   '<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="Auto-fills on selection, or type manually" oninput="dashModalChange(\'customerName\',this.value)">') +
     fi2('Phone',           '<input id="dm-phone" value="'+esc(job.customerPhone)+'" oninput="dashModalChange(\'customerPhone\',this.value)">') +
     fi2('Job Address',     '<input id="dm-addr"  value="'+esc(job.jobAddress)+'"   oninput="dashModalChange(\'jobAddress\',this.value)">') +
     fi2('Status',          '<select id="dm-status" onchange="dashModalChange(\'status\',this.value)">'+statusOpts+'</select>') +
@@ -12044,16 +12038,11 @@ function dashModalChange(field, val) {
 }
 
 function dashModalSelectCust(id) {
-  if (id === '__other__') {
-    // Show manual name input
-    var wrap = G('dm-custname-wrap');
-    if (wrap) wrap.style.display = '';
-    return;
-  }
+  if (!id || id === '__other__') return; // user will type name manually
   var cust = (typeof CDB !== 'undefined' ? CDB : []).find(function(c){ return String(c.id) === String(id); });
   if (!cust) return;
-  var name = ((cust.fname||'') + ' ' + (cust.lname||'')).trim() || cust.company || '';
-  var addr = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
+  var name  = ((cust.fname||'') + ' ' + (cust.lname||'')).trim() || cust.company || '';
+  var addr  = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
   var phone = cust.phone || '';
   dashModalChange('customerName',  name);
   dashModalChange('customerPhone', phone);
@@ -12061,8 +12050,6 @@ function dashModalSelectCust(id) {
   var ni = G('dm-custname'); if (ni) ni.value = name;
   var pi = G('dm-phone');    if (pi) pi.value = phone;
   var ai = G('dm-addr');     if (ai) ai.value = addr;
-  // Hide manual name field when a real customer is selected
-  var wrap = G('dm-custname-wrap'); if (wrap) wrap.style.display = 'none';
 }
 
 function _dashJobApiPayload(job) {
