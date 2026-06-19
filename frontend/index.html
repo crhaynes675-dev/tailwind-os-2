@@ -11251,7 +11251,7 @@ function dashRenderUnscheduled() {
   var countEl = G('dash-unsched-count');
   if (countEl) countEl.textContent = jobs.length ? jobs.length + ' job' + (jobs.length>1?'s':'') : '';
   if (!jobs.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>';
     return;
   }
   var pc_fn = function(p){ return p==='High'?'var(--red)':p==='Low'?'var(--muted)':'var(--text)'; };
@@ -11259,10 +11259,10 @@ function dashRenderUnscheduled() {
     return '<tr style="cursor:pointer;transition:background .1s;" onclick="dashSelectJob(\''+j.dashId+'\')" onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'" onmouseleave="this.style.background=\'\'">'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">'+(j.workOrderNumber||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+j.jobName+'</td>'+
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerCompany||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerName||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(j.jobAddress||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:'+pc_fn(j.priority)+';">'+j.priority+'</td>'+
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.58rem;color:var(--muted);">'+j.source+'</td>'+
       '<td style="padding:9px 12px;white-space:nowrap;">'+
         '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;margin-right:4px;">Edit</button>'+
         '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bp" style="font-size:.56rem;padding:3px 8px;margin-right:4px;">📅 Schedule</button>'+
@@ -11313,13 +11313,13 @@ function dashRender() {
       ' onmouseleave="this.style.background=\'\'">' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + subBadge + '</td>' +
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerCompany||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerName||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobAddress||'—') + '</td>' +
       '<td style="padding:9px 12px;"><span style="font-family:\'Outfit\',sans-serif;font-size:.58rem;padding:2px 8px;border-radius:3px;background:' + sc + '22;color:' + sc + ';border:1px solid ' + sc + '44;white-space:nowrap;">' + j.status + '</span></td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:' + pc + ';">' + j.priority + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);">' + (j.crew||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--text);">' + (j.scheduledDate||'—') + '</td>' +
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.58rem;color:var(--muted);">' + j.source + '</td>' +
       '<td style="padding:9px 12px;display:flex;gap:4px;align-items:center;">' +
         '<button onclick="event.stopPropagation();dashOpenJobModal(\'' + j.dashId + '\')" class="btn bo" style="font-size:.56rem;padding:3px 8px;white-space:nowrap;">'+(locked?'View':'Edit')+'</button>' +
         '<button onclick="event.stopPropagation();dashDeleteJob(\'' + j.dashId + '\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;color:var(--red);border-color:var(--red);">🗑</button>' +
@@ -12006,7 +12006,6 @@ function dashOpenJobModal(dashId) {
     fi2('Scheduled Date',  '<input type="date" id="dm-date" value="'+esc(job.scheduledDate)+'" oninput="dashModalChange(\'scheduledDate\',this.value)">') +
     fi2('Start Time',      '<input type="time" id="dm-time" value="'+esc(timeVal)+'" onchange="dashModalChange(\'timeWindow\',this.value)">') +
     fi2('Crew',            '<select id="dm-crew" onchange="dashModalChange(\'crew\',this.value)">'+crewOpts+'</select>') +
-    fi2('Source',          '<input id="dm-source" value="'+esc(job.source)+'" readonly style="opacity:.6;">') +
     '</div>' +
     '<div style="margin-top:14px;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Notes</label>' +
     '<textarea rows="3" id="dm-notes" oninput="dashModalChange(\'notes\',this.value)" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.75rem;padding:8px 10px;outline:none;resize:vertical;">'+esc(job.notes)+'</textarea></div>' +
@@ -13235,11 +13234,10 @@ if ('serviceWorker' in navigator) {
             <thead><tr>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">WO #</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Job</th>
+              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Company</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Customer</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Address</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Priority</th>
-              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Source</th>
-              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Added</th>
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
             <tbody id="dash-unsched-tbody">
@@ -13259,13 +13257,13 @@ if ('serviceWorker' in navigator) {
             <thead><tr id="dash-thead">
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">WO #</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Job</th>
+              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Company</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Customer</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Address</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Status</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Priority</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Crew</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Scheduled</th>
-              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Source</th>
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
             <tbody id="dash-tbody">
