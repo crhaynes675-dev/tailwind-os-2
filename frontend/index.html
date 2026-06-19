@@ -1419,6 +1419,9 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="ng"    id="ng-install"  onclick="setGroup('install')"  role="tab" aria-selected="false">
     <span class="ng-dot"></span>Installation &amp; Service
   </button>
+  <button class="ng"    id="ng-ops"      onclick="setGroup('ops')"      role="tab" aria-selected="false">
+    <span class="ng-dot"></span>Operations
+  </button>
   <button class="ng"    id="ng-customer" onclick="setGroup('customer')" role="tab" aria-selected="false">
     <span class="ng-dot"></span>Customer Database
   </button>
@@ -1443,13 +1446,17 @@ input,select,textarea,button { touch-action:manipulation; }
 
 <!-- SUB-TABS: INSTALLATION & SERVICE -->
 <div class="sub-tabs" id="st-install" role="tablist">
-  <button class="tb" data-idx="14" onclick="ST(14)" title="Operations Dashboard">⚡ Dashboard</button>
   <button class="tb" data-idx="1"  onclick="ST(1)"  title="Install Estimator">🔧 Estimator</button>
-  <button class="tb" data-idx="9"  onclick="ST(9)"  title="Schedule">📅 Schedule</button>
   <button class="tb" data-idx="8"  onclick="ST(8)"  title="Site Report" id="tab-piwr">🔍 Site Report</button>
-  <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
-  <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
+</div>
+
+<!-- SUB-TABS: OPERATIONS -->
+<div class="sub-tabs" id="st-ops" role="tablist">
+  <button class="tb" data-idx="14" onclick="ST(14)" title="Operations Dashboard">⚡ Dashboard</button>
+  <button class="tb" data-idx="9"  onclick="ST(9)"  title="Schedule">📅 Schedule</button>
   <button class="tb" data-idx="21" onclick="ST(21)" title="Dispatch Command Center">📡 Dispatch</button>
+  <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
+  <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
 </div>
 
 <!-- SUB-TABS: CUSTOMER DATABASE -->
@@ -2285,7 +2292,8 @@ function mmApi(method, path, body) {
 // hamburger Admin section only, not through the main sub-tab navigation.
 var NAV_GROUPS = {
   sales:    [0, 4, 5, 10],
-  install:  [1, 8, 9, 13, 14, 16, 21],
+  install:  [1, 8],
+  ops:      [14, 9, 21, 13, 16],
   customer: [7, 11, 12, 17, 20],
   reports:  [15],
   billing:  [18],
@@ -2294,7 +2302,7 @@ var NAV_GROUPS = {
 
 function setGroup(g) {
   // Activate group tab
-  ['sales','install','customer','reports','billing','sa'].forEach(function(gid) {
+  ['sales','install','ops','customer','reports','billing','sa'].forEach(function(gid) {
     var btn = document.getElementById('ng-' + gid);
     var sub = document.getElementById('st-' + gid);
     if (btn) { btn.classList.toggle('on', gid === g); btn.setAttribute('aria-selected', gid===g); }
@@ -2327,7 +2335,7 @@ function ST(idx) {
     if (NAV_GROUPS[g].indexOf(idx) !== -1) groupForIdx = g;
   });
   if (groupForIdx) {
-    ['sales','install','customer','reports','billing','sa'].forEach(function(gid) {
+    ['sales','install','ops','customer','reports','billing','sa'].forEach(function(gid) {
       var btn = document.getElementById('ng-' + gid);
       var sub = document.getElementById('st-' + gid);
       var match = gid === groupForIdx;
@@ -6756,7 +6764,7 @@ function authSignupSubmit() {
       adminPhone:     '',
       adminUsername:  username,
       password:       password,
-      features:       ['sales','install','customer','reports','billing']
+      features:       ['sales','install','ops','customer','reports','billing']
     })
   })
   .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
@@ -6975,7 +6983,8 @@ function authShowApp(user) {
       if (sub) sub.style.display = 'none';
     });
 
-    // Within the Install group: hide Estimator (1), Dashboard (14), Dispatch (21)
+    // Within Install: hide Estimator (1) — crew only see Site Report
+    // Within Ops: hide Dashboard (14) and Dispatch (21) — crew see Schedule, Navigation, Completed Jobs
     [1, 14, 21].forEach(function(idx) {
       var btn = document.querySelector('.tb[data-idx="' + idx + '"]');
       if (btn) btn.style.display = 'none';
