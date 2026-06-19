@@ -1449,6 +1449,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="tb" data-idx="8"  onclick="ST(8)"  title="Site Report" id="tab-piwr">🔍 Site Report</button>
   <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
   <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
+  <button class="tb" data-idx="21" onclick="ST(21)" title="Dispatch Command Center">📡 Dispatch</button>
 </div>
 
 <!-- SUB-TABS: CUSTOMER DATABASE -->
@@ -2284,7 +2285,7 @@ function mmApi(method, path, body) {
 // hamburger Admin section only, not through the main sub-tab navigation.
 var NAV_GROUPS = {
   sales:    [0, 4, 5, 10],
-  install:  [1, 8, 9, 13, 14, 16],
+  install:  [1, 8, 9, 13, 14, 16, 21],
   customer: [7, 11, 12, 17, 20],
   reports:  [15],
   billing:  [18],
@@ -2311,7 +2312,7 @@ function setGroup(g) {
 }
 
 function ST(idx) {
-  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19','p20'];
+  var pages = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19','p20','p21'];
   pages.forEach(function(id, i) {
     var el = document.getElementById(id);
     if (el) el.classList.toggle('on', i === idx);
@@ -2346,11 +2347,15 @@ function ST(idx) {
   if (idx === 11) cdbRender();
   if (idx === 12) autoRender();
   if (idx === 13) geoInit();
+  if (idx === 21) dispatchInit();
   if (idx === 14) dashRender();
   if (idx === 15) reportsRender();
   if (idx === 16) cjRender();
   if (idx === 17) projRender();
   if (idx === 0)  { initDZ(); meInit(); }
+
+  // Remember current page across refreshes
+  try { localStorage.setItem('mm_last_page', idx); } catch(e) {}
 
   // Persist state on every tab switch
   if (typeof dashPersistState === 'function') dashPersistState();
@@ -6944,8 +6949,10 @@ function authShowApp(user) {
   var crewTab = document.getElementById('tab-crew');
   if (crewTab) crewTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
 
-  // Now it's safe to initialise the calculator tab
-  ST(0);
+  // Restore last visited page (or default to 0)
+  var lastPage = 0;
+  try { var lp = localStorage.getItem('mm_last_page'); if (lp !== null) lastPage = parseInt(lp) || 0; } catch(e) {}
+  ST(lastPage);
   initDZ(); // attach drag-drop listeners now that p0 is visible
   syncInit(); // load offline queue, audit log, persisted jobs
 }
@@ -10169,6 +10176,8 @@ window.geoMapsReady = function() {
   if (GEO._pendingOptimize) { GEO._pendingOptimize(); GEO._pendingOptimize = null; }
   else if (GEO.destAddr) geoGetRoute(GEO._pendingNav || false);
   GEO._pendingNav = false;
+  // Also initialise the dispatch map if that page is open
+  if (typeof dispatchInitMap === 'function') dispatchInitMap();
 };
 
 // ── Route when ready — loads Maps API if needed, then calculates ──────────────
@@ -13744,6 +13753,785 @@ if ('serviceWorker' in navigator) {
     <button id="qs-reset" onclick="qsReset()">↺ Reset All On</button>
   </div>
 </div>
+
+
+<!-- ═══════════ PAGE 21 · DISPATCH COMMAND CENTER ═══════════ -->
+<div class="pg" id="p21">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);">📡 Dispatch Command Center</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live crew tracking · Job assignment · Real-time routing</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="date" id="dispatch-date" onchange="dispatchLoadJobs()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 10px;outline:none;">
+      <div id="dispatch-gps-badge" style="display:none;background:rgba(34,178,94,.12);border:1px solid rgba(34,178,94,.3);color:var(--green);font-family:'Outfit',sans-serif;font-size:.65rem;padding:4px 10px;border-radius:20px;">📍 GPS Active</div>
+      <button onclick="dispatchRefresh()" class="btn" style="font-size:.72rem;padding:5px 14px;">↺ Refresh</button>
+    </div>
+  </div>
+
+  <!-- My Status Bar -->
+  <div class="card" style="padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">My Status</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button id="dsb-available" onclick="dispatchSetMyStatus('available')" style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;">✓ Available</button>
+      <button id="dsb-enroute"   onclick="dispatchSetMyStatus('enroute')"   style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">🚗 En Route</button>
+      <button id="dsb-onsite"    onclick="dispatchSetMyStatus('onsite')"    style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">🏠 On Site</button>
+      <button id="dsb-break"     onclick="dispatchSetMyStatus('break')"     style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">☕ Break</button>
+      <button id="dsb-done"      onclick="dispatchSetMyStatus('done')"      style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">✓ Done for Day</button>
+    </div>
+    <div id="dispatch-gps-info" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);margin-left:auto;">Checking GPS…</div>
+  </div>
+
+  <!-- Main Split Layout -->
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px;height:calc(100vh - 300px);min-height:460px;">
+
+    <!-- LEFT: Map -->
+    <div class="card" style="padding:0;overflow:visible;position:relative;border-radius:6px;">
+      <div id="dispatch-map" style="width:100%;height:100%;min-height:460px;background:#0f1628;border-radius:6px;overflow:hidden;"></div>
+
+      <!-- Map not loaded placeholder -->
+      <div id="dispatch-map-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f1628;border-radius:6px;gap:10px;z-index:5;">
+        <div style="font-size:2rem;">🗺</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--muted);">Loading map…</div>
+      </div>
+
+      <!-- Map type buttons -->
+      <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;z-index:10;">
+        <button onclick="dispatchSetMapType('roadmap')"  id="dmt-road" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;">🗺 Map</button>
+        <button onclick="dispatchSetMapType('satellite')" id="dmt-sat" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;">🛰 Satellite</button>
+      </div>
+
+      <!-- Legend -->
+      <div style="position:absolute;bottom:10px;left:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;z-index:10;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Legend</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--text);">
+          <span><span style="color:#ef4444;">●</span> Unassigned</span>
+          <span><span style="color:#f59e0b;">●</span> Dispatched</span>
+          <span><span style="color:#8b5cf6;">●</span> En Route</span>
+          <span><span style="color:#22c55e;">●</span> On Site</span>
+          <span><span style="color:#6b7280;">●</span> Completed</span>
+          <span><span style="color:#22b2de;">👤</span> Crew</span>
+        </div>
+      </div>
+
+      <!-- Pulse while loading jobs -->
+      <div id="dispatch-map-loading" style="display:none;position:absolute;top:10px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);z-index:10;">⏳ Geocoding jobs…</div>
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;">
+
+      <!-- Crew Section -->
+      <div class="card" style="flex:0 0 auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">👥 Crew</div>
+          <div id="dispatch-crew-online" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--green);"></div>
+        </div>
+        <div id="dispatch-crew-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- Jobs Section -->
+      <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">📋 Jobs</div>
+          <div id="dispatch-job-count" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);"></div>
+        </div>
+        <!-- Filter pills -->
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+          <button onclick="dispatchFilterJobs('all')"        id="djf-all"        style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;">All</button>
+          <button onclick="dispatchFilterJobs('unassigned')" id="djf-unassigned" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🔴 Unassigned</button>
+          <button onclick="dispatchFilterJobs('active')"     id="djf-active"     style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🟢 Active</button>
+        </div>
+        <div id="dispatch-job-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Job assign popover (shown below job card) -->
+  <div id="dispatch-assign-pop" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+    <div style="font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:700;color:var(--text);margin-bottom:8px;">Assign to crew:</div>
+    <div id="dispatch-assign-crew-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;"></div>
+    <button onclick="G('dispatch-assign-pop').style.display='none'" style="margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);background:none;border:none;cursor:pointer;">✕ Cancel</button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DISPATCH COMMAND CENTER  (page 21)
+// ═══════════════════════════════════════════════
+var DISPATCH = {
+  map:         null,
+  geocoder:    null,
+  jobMarkers:  {},   // jobId → google.maps.Marker
+  crewMarkers: {},   // crewId → google.maps.Marker
+  crewInfoWins:{},   // crewId → InfoWindow
+  jobInfoWins: {},   // jobId → InfoWindow
+  geocache:    {},   // address → {lat,lng}
+  crew:        [],   // raw crew from /crew
+  jobs:        [],   // today's jobs
+  filter:      'all',
+  myStatus:    'available',
+  gpsWatcher:  null,
+  pingTimer:   null,
+  pollTimer:   null,
+  myLat:       null,
+  myLng:       null,
+  gpsGranted:  false,
+  mapReady:    false,
+  assigningJobId: null
+};
+
+var DISPATCH_STATUS_COLOR = {
+  'Unscheduled':        '#6b7280',
+  'Needs Review':       '#6b7280',
+  'Ready to Schedule':  '#f59e0b',
+  'Imported':           '#6b7280',
+  'Scheduled':          '#3b82f6',
+  'Dispatched':         '#f59e0b',
+  'En Route':           '#8b5cf6',
+  'In Progress':        '#22c55e',
+  'On Site':            '#22c55e',
+  'Ready for Site Review':'#14b8a6',
+  'Final Walkthrough Ready':'#06b6d4',
+  'Completed':          '#4b5563',
+  'Canceled':           '#374151'
+};
+
+var DISPATCH_CREW_STATUS_COLOR = {
+  'available': '#22c55e',
+  'enroute':   '#8b5cf6',
+  'onsite':    '#22b2de',
+  'break':     '#f59e0b',
+  'done':      '#4b5563'
+};
+
+var DISPATCH_CREW_STATUS_LABEL = {
+  'available': '✓ Available',
+  'enroute':   '🚗 En Route',
+  'onsite':    '🏠 On Site',
+  'break':     '☕ Break',
+  'done':      '✓ Done'
+};
+
+function dispatchInit() {
+  if (!mmGetToken()) return;
+
+  // Set date to today if blank
+  var dateEl = G('dispatch-date');
+  if (dateEl && !dateEl.value) {
+    dateEl.value = new Date().toISOString().slice(0, 10);
+  }
+
+  // Start background GPS
+  dispatchStartGPS();
+
+  // Load crew and jobs
+  dispatchRefresh();
+
+  // Initialize map — shares the same API key and load as the Navigation page.
+  // geoMapsReady (Navigation's callback) will call dispatchInitMap() when ready.
+  if (GEO.mapsLoaded || (typeof google !== 'undefined' && google.maps)) {
+    dispatchInitMap();
+  } else {
+    geoLoadMapsIfNeeded(); // no-op if already loading; geoMapsReady fires dispatchInitMap
+  }
+
+  // Poll crew locations every 45s
+  if (!DISPATCH.pollTimer) {
+    DISPATCH.pollTimer = setInterval(function() {
+      dispatchLoadCrew();
+    }, 45000);
+  }
+}
+
+function dispatchInitMap() {
+  var el = G('dispatch-map');
+  var ph = G('dispatch-map-placeholder');
+  if (!el) return;
+  if (DISPATCH.mapReady) return;
+
+  var darkStyles = [
+    {elementType:'geometry',stylers:[{color:'#0f1628'}]},
+    {elementType:'labels.text.stroke',stylers:[{color:'#0f1628'}]},
+    {elementType:'labels.text.fill',stylers:[{color:'#8899aa'}]},
+    {featureType:'road',elementType:'geometry',stylers:[{color:'#1e2a3d'}]},
+    {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#142236'}]},
+    {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#22365a'}]},
+    {featureType:'water',elementType:'geometry',stylers:[{color:'#0a0e1a'}]},
+    {featureType:'poi',stylers:[{visibility:'off'}]},
+    {featureType:'transit',stylers:[{visibility:'off'}]}
+  ];
+
+  DISPATCH.map = new google.maps.Map(el, {
+    zoom: 10,
+    center: { lat: 35.2271, lng: -80.8431 },
+    mapTypeId: 'roadmap',
+    styles: darkStyles,
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true
+  });
+  DISPATCH.geocoder = new google.maps.Geocoder();
+  DISPATCH.mapReady = true;
+  if (ph) ph.style.display = 'none';
+
+  // If data already loaded, render pins
+  if (DISPATCH.jobs.length || DISPATCH.crew.length) {
+    dispatchRenderMapPins();
+  }
+}
+
+// ── Data loading ─────────────────────────────────────────────────
+function dispatchRefresh() {
+  dispatchLoadCrew();
+  dispatchLoadJobs();
+}
+
+function dispatchLoadCrew() {
+  mmApi('GET', '/crew').then(function(members) {
+    DISPATCH.crew = members || [];
+    dispatchRenderCrewSidebar();
+    if (DISPATCH.mapReady) dispatchRenderCrewPins();
+  }).catch(function() {});
+}
+
+function dispatchLoadJobs() {
+  var DONE_STATUSES = { 'Completed': true, 'Canceled': true };
+
+  // Fetch from API: 90 days back → 30 days forward, then show anything not done
+  var now = new Date();
+  var from = new Date(now); from.setDate(from.getDate() - 90);
+  var to   = new Date(now); to.setDate(to.getDate() + 30);
+  var fromStr = from.toISOString().slice(0, 10);
+  var toStr   = to.toISOString().slice(0, 10);
+
+  mmApi('GET', '/jobs?from=' + fromStr + '&to=' + toStr).then(function(items) {
+    var jobs = (items || [])
+      .filter(function(j) { return !DONE_STATUSES[j.status]; })
+      .map(function(j) {
+        return {
+          _apiId:          j.jobId,
+          dashId:          j.jobId,
+          jobName:         j.jobName || 'Unnamed Job',
+          jobAddress:      j.address || '',
+          scheduledDate:   j.scheduledDate || '',
+          scheduledTime:   j.scheduledTime || '',
+          crew:            j.assignedTo || '',
+          status:          j.status || 'Scheduled',
+          workOrderNumber: j.workOrderNumber || '',
+          customerName:    j.customerName || '',
+          customerPhone:   j.customerPhone || ''
+        };
+      });
+
+    DISPATCH.jobs = jobs;
+    dispatchRenderJobSidebar();
+    if (DISPATCH.mapReady) dispatchGeocodeAndRenderJobPins();
+  }).catch(function() {
+    // Fallback to in-memory data if API fails
+    var DONE = { 'Completed': true, 'Canceled': true };
+    var jobs = [];
+    var seen = {};
+    (DASH_JOBS || []).concat(CAL_APPTS || []).forEach(function(j) {
+      var id = j._apiId || j.jobId || j.dashId;
+      if (!id || seen[id]) return;
+      if (DONE[j.status]) return;
+      seen[id] = true;
+      jobs.push({
+        _apiId:          id,
+        dashId:          id,
+        jobName:         j.jobName || j.job || 'Unnamed Job',
+        jobAddress:      j.address || j.jobAddress || j.addr || '',
+        scheduledDate:   j.scheduledDate || j.date || '',
+        scheduledTime:   j.scheduledTime || j.time || '',
+        crew:            j.assignedTo || j.crew || '',
+        status:          j.status || 'Scheduled',
+        workOrderNumber: j.workOrderNumber || '',
+        customerName:    j.customerName || ''
+      });
+    });
+    DISPATCH.jobs = jobs;
+    dispatchRenderJobSidebar();
+    if (DISPATCH.mapReady) dispatchGeocodeAndRenderJobPins();
+  });
+}
+
+// ── Map rendering ─────────────────────────────────────────────────
+function dispatchRenderMapPins() {
+  dispatchGeocodeAndRenderJobPins();
+  dispatchRenderCrewPins();
+}
+
+function dispatchGeocodeAndRenderJobPins() {
+  if (!DISPATCH.mapReady || !DISPATCH.geocoder) return;
+  var loadingEl = G('dispatch-map-loading');
+  var pending = [];
+  DISPATCH.jobs.forEach(function(j) {
+    var addr = j.jobAddress || j.addr || '';
+    if (!addr || DISPATCH.geocache[addr]) return;
+    pending.push({ job: j, addr: addr });
+  });
+
+  if (!pending.length) { dispatchRenderJobPins(); return; }
+  if (loadingEl) loadingEl.style.display = 'block';
+
+  var i = 0;
+  function next() {
+    if (i >= pending.length) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      dispatchRenderJobPins();
+      return;
+    }
+    var item = pending[i++];
+    DISPATCH.geocoder.geocode({ address: item.addr }, function(results, status) {
+      if (status === 'OK' && results[0]) {
+        DISPATCH.geocache[item.addr] = {
+          lat: results[0].geometry.location.lat(),
+          lng: results[0].geometry.location.lng()
+        };
+      }
+      setTimeout(next, 250);
+    });
+  }
+  next();
+  // Show cached ones immediately
+  dispatchRenderJobPins();
+}
+
+function dispatchRenderJobPins() {
+  if (!DISPATCH.mapReady) return;
+  var bounds = new google.maps.LatLngBounds();
+  var hasBounds = false;
+
+  // Clear stale markers
+  Object.keys(DISPATCH.jobMarkers).forEach(function(jid) {
+    var existing = DISPATCH.jobs.find(function(j){ return (j._apiId||j.dashId) === jid; });
+    if (!existing) { DISPATCH.jobMarkers[jid].setMap(null); delete DISPATCH.jobMarkers[jid]; }
+  });
+
+  DISPATCH.jobs.forEach(function(j) {
+    var addr = j.jobAddress || j.addr || '';
+    var pos = addr ? DISPATCH.geocache[addr] : null;
+    if (!pos) return;
+
+    var jid = j._apiId || j.dashId;
+    var color = DISPATCH_STATUS_COLOR[j.status] || '#3b82f6';
+    var wo = j.workOrderNumber || '';
+    var label = wo ? wo.replace('WO-', '').replace(/^\d{4}-/, '') : (j.jobName||'').slice(0, 3);
+
+    if (DISPATCH.jobMarkers[jid]) {
+      DISPATCH.jobMarkers[jid].setPosition(pos);
+    } else {
+      var marker = new google.maps.Marker({
+        position: pos,
+        map: DISPATCH.map,
+        title: (j.jobName || '') + (wo ? ' · ' + wo : ''),
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 14,
+          fillColor: color,
+          fillOpacity: 0.95,
+          strokeColor: '#fff',
+          strokeWeight: 2
+        },
+        label: { text: label, color: '#fff', fontSize: '9px', fontWeight: '700', fontFamily: 'Outfit,sans-serif' },
+        zIndex: 10
+      });
+
+      // InfoWindow on click
+      (function(m, job) {
+        m.addListener('click', function() {
+          dispatchShowJobInfo(job, m);
+        });
+      })(marker, j);
+
+      DISPATCH.jobMarkers[jid] = marker;
+    }
+
+    bounds.extend(pos);
+    hasBounds = true;
+  });
+
+  if (hasBounds) {
+    DISPATCH.map.fitBounds(bounds, { padding: 60 });
+    if (DISPATCH.map.getZoom() > 14) DISPATCH.map.setZoom(14);
+  }
+}
+
+function dispatchRenderCrewPins() {
+  if (!DISPATCH.mapReady) return;
+
+  DISPATCH.crew.forEach(function(c) {
+    if (!c.lat || !c.lng) return;
+    var pos = { lat: parseFloat(c.lat), lng: parseFloat(c.lng) };
+    var status = c.status || 'available';
+    var color = DISPATCH_CREW_STATUS_COLOR[status] || '#22b2de';
+    var initials = crewInitials(c.name || c.id || '?');
+
+    if (DISPATCH.crewMarkers[c.id]) {
+      DISPATCH.crewMarkers[c.id].setPosition(pos);
+    } else {
+      var marker = new google.maps.Marker({
+        position: pos,
+        map: DISPATCH.map,
+        title: (c.name || c.id) + ' · ' + (DISPATCH_CREW_STATUS_LABEL[status] || status),
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 16,
+          fillColor: color,
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2.5
+        },
+        label: { text: initials, color: '#fff', fontSize: '10px', fontWeight: '700', fontFamily: 'Outfit,sans-serif' },
+        zIndex: 20
+      });
+
+      (function(m, crew) {
+        m.addListener('click', function() {
+          dispatchShowCrewInfo(crew, m);
+        });
+      })(marker, c);
+
+      DISPATCH.crewMarkers[c.id] = marker;
+    }
+  });
+
+  // Remove crew who no longer have location
+  Object.keys(DISPATCH.crewMarkers).forEach(function(cid) {
+    var found = DISPATCH.crew.find(function(c){ return c.id === cid && c.lat; });
+    if (!found) { DISPATCH.crewMarkers[cid].setMap(null); delete DISPATCH.crewMarkers[cid]; }
+  });
+}
+
+function dispatchShowJobInfo(job, marker) {
+  // Close all info windows
+  Object.values(DISPATCH.jobInfoWins).forEach(function(w){ w.close(); });
+  Object.values(DISPATCH.crewInfoWins).forEach(function(w){ w.close(); });
+
+  var wo = job.workOrderNumber ? '<span style="color:var(--accent);">' + job.workOrderNumber + '</span> · ' : '';
+  var color = DISPATCH_STATUS_COLOR[job.status] || '#3b82f6';
+  var jid = job._apiId || job.dashId;
+  var content = '<div style="font-family:Outfit,sans-serif;max-width:220px;background:#0f1628;color:#e8eaf0;padding:2px;">' +
+    '<div style="font-size:.8rem;font-weight:700;margin-bottom:4px;">' + wo + (job.jobName||'Job') + '</div>' +
+    '<div style="font-size:.65rem;color:#7a8a9a;margin-bottom:2px;">📍 ' + (job.jobAddress||job.addr||'No address') + '</div>' +
+    (job.customerName ? '<div style="font-size:.65rem;color:#7a8a9a;margin-bottom:2px;">👤 ' + job.customerName + '</div>' : '') +
+    (job.scheduledTime ? '<div style="font-size:.65rem;color:#7a8a9a;margin-bottom:6px;">🕐 ' + job.scheduledTime + '</div>' : '') +
+    '<div style="margin-bottom:8px;"><span style="font-size:.6rem;padding:2px 8px;border-radius:10px;background:' + color + '22;color:' + color + ';border:1px solid ' + color + '44;">' + (job.status||'Scheduled') + '</span>' +
+    (job.crew ? '<span style="font-size:.6rem;color:#7a8a9a;margin-left:6px;">👷 ' + job.crew + '</span>' : '') + '</div>' +
+    '<button onmousedown="dispatchOpenAssign(\'' + jid + '\')" style="font-size:.65rem;padding:4px 12px;border-radius:4px;background:var(--accent,#22b2de);color:#fff;border:none;cursor:pointer;width:100%;">⚡ Assign / Dispatch</button>' +
+    '</div>';
+
+  var iw = DISPATCH.jobInfoWins[jid] || new google.maps.InfoWindow();
+  iw.setContent(content);
+  iw.open(DISPATCH.map, marker);
+  DISPATCH.jobInfoWins[jid] = iw;
+}
+
+function dispatchShowCrewInfo(crew, marker) {
+  Object.values(DISPATCH.jobInfoWins).forEach(function(w){ w.close(); });
+  Object.values(DISPATCH.crewInfoWins).forEach(function(w){ w.close(); });
+
+  var status = crew.status || 'available';
+  var color = DISPATCH_CREW_STATUS_COLOR[status] || '#22b2de';
+  var lastSeen = crew.lastSeen ? new Date(crew.lastSeen).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'Unknown';
+  var gpsStr = crew.gpsActive ? '📍 GPS · Last: ' + lastSeen : '📵 Manual · ' + lastSeen;
+
+  var content = '<div style="font-family:Outfit,sans-serif;max-width:200px;background:#0f1628;color:#e8eaf0;padding:2px;">' +
+    '<div style="font-size:.8rem;font-weight:700;margin-bottom:4px;">👤 ' + (crew.name||crew.id||'Unknown') + '</div>' +
+    '<div style="margin-bottom:6px;"><span style="font-size:.6rem;padding:2px 8px;border-radius:10px;background:' + color + '22;color:' + color + ';border:1px solid ' + color + '44;">' + (DISPATCH_CREW_STATUS_LABEL[status]||status) + '</span></div>' +
+    '<div style="font-size:.62rem;color:#7a8a9a;">' + gpsStr + '</div>' +
+    (crew.phone ? '<div style="font-size:.62rem;color:#7a8a9a;margin-top:2px;">📞 ' + crew.phone + '</div>' : '') +
+    '</div>';
+
+  var iw = DISPATCH.crewInfoWins[crew.id] || new google.maps.InfoWindow();
+  iw.setContent(content);
+  iw.open(DISPATCH.map, marker);
+  DISPATCH.crewInfoWins[crew.id] = iw;
+}
+
+// ── Sidebar rendering ─────────────────────────────────────────────
+function dispatchRenderCrewSidebar() {
+  var el = G('dispatch-crew-list');
+  var onlineEl = G('dispatch-crew-online');
+  if (!el) return;
+
+  var online = DISPATCH.crew.filter(function(c) {
+    if (!c.lastSeen) return false;
+    var age = Date.now() - new Date(c.lastSeen).getTime();
+    return age < 4 * 60 * 60 * 1000; // seen in last 4 hours
+  });
+  if (onlineEl) onlineEl.textContent = online.length ? online.length + ' online' : '';
+
+  if (!DISPATCH.crew.length) {
+    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);padding:8px 0;">No crew tracking data yet.<br><span style="font-size:.62rem;">Crew will appear here once they open the app and set their status.</span></div>';
+    return;
+  }
+
+  el.innerHTML = DISPATCH.crew.map(function(c) {
+    var status = c.status || 'available';
+    var color = DISPATCH_CREW_STATUS_COLOR[status] || '#6b7280';
+    var label = DISPATCH_CREW_STATUS_LABEL[status] || status;
+    var hasLoc = c.lat && c.lng;
+    var lastSeen = c.lastSeen ? new Date(c.lastSeen).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border);cursor:pointer;" onclick="dispatchFocusCrew(\'' + c.id + '\')">' +
+      '<div style="width:30px;height:30px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:.65rem;font-weight:700;color:#fff;flex-shrink:0;">' + crewInitials(c.name||c.id||'?') + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-family:Outfit,sans-serif;font-size:.72rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (c.name||c.id||'Unknown') + '</div>' +
+        '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:' + color + ';">' + label + (hasLoc ? (c.gpsActive ? ' · 📍 GPS' : ' · 📵 Manual') : '') + '</div>' +
+      '</div>' +
+      (lastSeen ? '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:var(--muted);flex-shrink:0;">' + lastSeen + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function dispatchRenderJobSidebar() {
+  var el = G('dispatch-job-list');
+  var countEl = G('dispatch-job-count');
+  if (!el) return;
+
+  var jobs = DISPATCH.jobs.filter(function(j) {
+    if (DISPATCH.filter === 'unassigned') return !j.crew && j.status !== 'Completed' && j.status !== 'Canceled';
+    if (DISPATCH.filter === 'active') return ['En Route','In Progress','On Site','Dispatched'].indexOf(j.status) !== -1;
+    return true;
+  });
+
+  if (countEl) countEl.textContent = DISPATCH.jobs.length + ' total';
+
+  if (!jobs.length) {
+    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.72rem;color:var(--muted);padding:10px 0;text-align:center;">No jobs match this filter.</div>';
+    return;
+  }
+
+  // Sort: unassigned first, then by time
+  jobs.sort(function(a, b) {
+    var aHasCrew = (a.crew||'').trim() ? 1 : 0;
+    var bHasCrew = (b.crew||'').trim() ? 1 : 0;
+    if (aHasCrew !== bHasCrew) return aHasCrew - bHasCrew;
+    return (a.scheduledTime||'99:99').localeCompare(b.scheduledTime||'99:99');
+  });
+
+  el.innerHTML = jobs.map(function(j) {
+    var jid = j._apiId || j.dashId;
+    var color = DISPATCH_STATUS_COLOR[j.status] || '#3b82f6';
+    var wo = j.workOrderNumber || '';
+    var time = j.scheduledTime || '';
+    var hasAddr = (j.jobAddress||j.addr||'').length > 0;
+    return '<div style="border:1px solid var(--border);border-left:3px solid ' + color + ';border-radius:4px;padding:7px 10px;background:var(--bg);cursor:pointer;" onclick="dispatchFocusJob(\'' + jid + '\')">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          (wo ? '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:var(--accent);font-weight:700;">' + wo + '</div>' : '') +
+          '<div style="font-family:Outfit,sans-serif;font-size:.72rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (j.jobName||'Unnamed') + '</div>' +
+          '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:var(--muted);">' +
+            (time ? time + ' · ' : '') +
+            '<span style="color:' + color + ';">' + (j.status||'') + '</span>' +
+          '</div>' +
+          (j.crew ? '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:#22c55e;margin-top:1px;">👷 ' + j.crew + '</div>' : '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:#ef4444;margin-top:1px;">⚠ Unassigned</div>') +
+        '</div>' +
+        '<button onmousedown="event.stopPropagation();dispatchOpenAssign(\'' + jid + '\',event)" style="flex-shrink:0;font-family:Outfit,sans-serif;font-size:.6rem;padding:3px 8px;border-radius:3px;background:var(--accent);color:#fff;border:none;cursor:pointer;white-space:nowrap;">⚡ Assign</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Assign popover ────────────────────────────────────────────────
+function dispatchOpenAssign(jobId, event) {
+  DISPATCH.assigningJobId = jobId;
+  var pop = G('dispatch-assign-pop');
+  var list = G('dispatch-assign-crew-list');
+  if (!pop || !list) return;
+
+  var job = DISPATCH.jobs.find(function(j){ return (j._apiId||j.dashId) === jobId; });
+  var crew = DISPATCH.crew.length ? DISPATCH.crew : (CREW_ROSTER || []);
+
+  list.innerHTML = crew.map(function(c) {
+    var cid = c.id || c.username;
+    var name = c.name || cid || 'Unknown';
+    var status = c.status || 'available';
+    var color = DISPATCH_CREW_STATUS_COLOR[status] || '#6b7280';
+    return '<div onmousedown="dispatchAssignJob(\'' + jobId + '\',\'' + cid + '\',\'' + name.replace(/'/g,'') + '\')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer;background:var(--bg);border:1px solid var(--border);">' +
+      '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:.58rem;font-weight:700;color:#fff;">' + crewInitials(name) + '</div>' +
+      '<div>' +
+        '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--text);">' + name + '</div>' +
+        '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:' + color + ';">' + (DISPATCH_CREW_STATUS_LABEL[status]||status) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') || '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);padding:8px;">No crew available.</div>';
+
+  // Position near click or center of screen
+  var x = event ? event.clientX : window.innerWidth/2;
+  var y = event ? event.clientY : window.innerHeight/2;
+  pop.style.left = Math.min(x, window.innerWidth - 240) + 'px';
+  pop.style.top  = Math.min(y + 8, window.innerHeight - 300) + 'px';
+  pop.style.display = 'block';
+
+  // Close on outside click
+  setTimeout(function() {
+    function onOut(e) {
+      if (!pop.contains(e.target)) {
+        pop.style.display = 'none';
+        document.removeEventListener('mousedown', onOut);
+      }
+    }
+    document.addEventListener('mousedown', onOut);
+  }, 10);
+}
+
+function dispatchAssignJob(jobId, crewId, crewName) {
+  G('dispatch-assign-pop').style.display = 'none';
+
+  var job = DISPATCH.jobs.find(function(j){ return (j._apiId||j.dashId) === jobId; });
+  if (!job) return;
+
+  job.crew = crewName;
+  if (job.status === 'Unscheduled' || job.status === 'Needs Review' || job.status === 'Ready to Schedule' || !job.status) {
+    job.status = 'Scheduled';
+  }
+
+  // Persist via API
+  if (job._apiId) {
+    syncEnqueue('JOB_UPDATE', job._apiId, {
+      assignedTo: crewName,
+      status: job.status
+    });
+  }
+
+  // Also update DASH_JOBS if exists
+  var dj = (DASH_JOBS||[]).find(function(j){ return j._apiId === job._apiId || j.dashId === job.dashId; });
+  if (dj) { dj.crew = crewName; dj.status = job.status; }
+
+  dispatchRenderJobSidebar();
+  if (DISPATCH.mapReady) dispatchRenderJobPins();
+}
+
+// ── Focus helpers ─────────────────────────────────────────────────
+function dispatchFocusJob(jobId) {
+  var job = DISPATCH.jobs.find(function(j){ return (j._apiId||j.dashId) === jobId; });
+  if (!job) return;
+  var addr = job.jobAddress || job.addr || '';
+  var pos = addr ? DISPATCH.geocache[addr] : null;
+  if (pos && DISPATCH.map) {
+    DISPATCH.map.panTo(pos);
+    DISPATCH.map.setZoom(14);
+    var marker = DISPATCH.jobMarkers[jobId];
+    if (marker) dispatchShowJobInfo(job, marker);
+  }
+}
+
+function dispatchFocusCrew(crewId) {
+  var c = DISPATCH.crew.find(function(x){ return x.id === crewId; });
+  if (!c || !c.lat) return;
+  DISPATCH.map.panTo({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) });
+  DISPATCH.map.setZoom(14);
+  var marker = DISPATCH.crewMarkers[crewId];
+  if (marker) dispatchShowCrewInfo(c, marker);
+}
+
+// ── Filter ────────────────────────────────────────────────────────
+function dispatchFilterJobs(filter) {
+  DISPATCH.filter = filter;
+  ['all','unassigned','active'].forEach(function(f) {
+    var btn = G('djf-' + f);
+    if (!btn) return;
+    if (f === filter) {
+      btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)';
+    } else {
+      btn.style.background = 'transparent'; btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)';
+    }
+  });
+  dispatchRenderJobSidebar();
+}
+
+// ── Map type ──────────────────────────────────────────────────────
+function dispatchSetMapType(type) {
+  if (DISPATCH.map) DISPATCH.map.setMapTypeId(type);
+  var roadBtn = G('dmt-road'), satBtn = G('dmt-sat');
+  if (roadBtn) { roadBtn.style.color = type === 'roadmap'   ? 'var(--accent)' : 'var(--muted)'; }
+  if (satBtn)  { satBtn.style.color  = type === 'satellite' ? 'var(--accent)' : 'var(--muted)'; }
+}
+
+// ── GPS & status ──────────────────────────────────────────────────
+function dispatchStartGPS() {
+  var infoEl = G('dispatch-gps-info');
+  var badge  = G('dispatch-gps-badge');
+  if (!navigator.geolocation) {
+    if (infoEl) infoEl.textContent = '📵 GPS not supported — using manual status';
+    return;
+  }
+  if (infoEl) infoEl.textContent = 'Requesting GPS…';
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      DISPATCH.gpsGranted = true;
+      DISPATCH.myLat = pos.coords.latitude;
+      DISPATCH.myLng = pos.coords.longitude;
+      if (infoEl) infoEl.textContent = '📍 GPS active — sharing location every 60s';
+      if (badge) badge.style.display = 'block';
+      dispatchPingMyLocation();
+
+      // Watch for updates
+      if (!DISPATCH.gpsWatcher) {
+        DISPATCH.gpsWatcher = navigator.geolocation.watchPosition(
+          function(p) { DISPATCH.myLat = p.coords.latitude; DISPATCH.myLng = p.coords.longitude; },
+          function() {},
+          { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
+        );
+      }
+      // Ping every 60s
+      if (!DISPATCH.pingTimer) {
+        DISPATCH.pingTimer = setInterval(dispatchPingMyLocation, 60000);
+      }
+    },
+    function() {
+      DISPATCH.gpsGranted = false;
+      if (infoEl) infoEl.textContent = '📵 GPS blocked — set status manually above';
+    },
+    { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+  );
+}
+
+function dispatchPingMyLocation() {
+  if (!mmGetToken() || !AUTH_CURRENT_USER) return;
+  var uid = AUTH_CURRENT_USER.username || AUTH_CURRENT_USER.email;
+  if (!uid) return;
+
+  var payload = {
+    id: uid,
+    name: ((AUTH_CURRENT_USER.given_name || '') + ' ' + (AUTH_CURRENT_USER.family_name || '')).trim() || uid,
+    status: DISPATCH.myStatus,
+    lastSeen: new Date().toISOString()
+  };
+  if (DISPATCH.gpsGranted && DISPATCH.myLat !== null) {
+    payload.lat = DISPATCH.myLat;
+    payload.lng = DISPATCH.myLng;
+    payload.gpsActive = true;
+  }
+  mmApi('PUT', '/crew/' + encodeURIComponent(uid), payload).catch(function() {});
+}
+
+function dispatchSetMyStatus(status) {
+  DISPATCH.myStatus = status;
+  var statuses = ['available','enroute','onsite','break','done'];
+  statuses.forEach(function(s) {
+    var btn = G('dsb-' + s);
+    if (!btn) return;
+    if (s === status) {
+      btn.style.background = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  });
+  dispatchPingMyLocation();
+}
+</script>
 
 </body>
 </html>
