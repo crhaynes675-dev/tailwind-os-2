@@ -11969,8 +11969,13 @@ function dashOpenJobModal(dashId) {
   });
   var custOpts = '<option value="">— Select from Customer Database —</option>' +
     custList.map(function(c) {
-      var name = ((c.fname||'') + ' ' + (c.lname||'')).trim() || c.company || 'Unknown';
-      var label = c.company && name !== c.company ? name + ' · ' + c.company : name;
+      var personName = ((c.fname||'') + ' ' + (c.lname||'')).trim();
+      var company    = (c.company||'').trim();
+      var label;
+      if (personName && company)      label = personName + ' — ' + company;
+      else if (personName)            label = personName;
+      else if (company)               label = company;
+      else                            label = 'Unknown';
       return '<option value="'+c.id+'"'+(String(c.id)===matchedCustId?' selected':'')+'>'+label+'</option>';
     }).join('') +
     '<option value="__other__"'+(!matchedCustId && job.customerName ? ' selected' : '')+'>✏ Not in Database</option>';
@@ -12041,7 +12046,10 @@ function dashModalSelectCust(id) {
   if (!id || id === '__other__') return; // user will type name manually
   var cust = (typeof CDB !== 'undefined' ? CDB : []).find(function(c){ return String(c.id) === String(id); });
   if (!cust) return;
-  var name  = ((cust.fname||'') + ' ' + (cust.lname||'')).trim() || cust.company || '';
+  var personName = ((cust.fname||'') + ' ' + (cust.lname||'')).trim();
+  var company    = (cust.company||'').trim();
+  var name = personName && company ? personName + ' — ' + company
+           : personName || company || '';
   var addr  = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
   var phone = cust.phone || '';
   dashModalChange('customerName',  name);
