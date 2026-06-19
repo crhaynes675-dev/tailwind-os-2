@@ -8377,6 +8377,11 @@ function syncFlush() {
   console.log('[SYNC] sending', entry.op, entry.jobId, JSON.stringify(entry.payload));
   syncSendOne(entry).then(function(res) {
     console.log('[SYNC] success', entry.op, entry.jobId, JSON.stringify(res));
+    // Once a DELETE is confirmed by the server, remove from tombstone — job is truly gone
+    if (entry.op === 'JOB_DELETE' && typeof DASH_DELETED_IDS !== 'undefined') {
+      DASH_DELETED_IDS = DASH_DELETED_IDS.filter(function(id){ return id !== entry.jobId; });
+      if (typeof dashPersistDeletedIds === 'function') dashPersistDeletedIds();
+    }
     // When a new calendar job is created, write the server-assigned ids back
     if (entry.op === 'JOB_CREATE' && res && res.jobId) {
       var appt = (CAL_APPTS || []).find(function(a){ return a._id === entry.jobId; });
@@ -10689,6 +10694,16 @@ var DASH_JOBS = [];
 var DASH_UID  = 0;
 var DASH_SELECTED_ID = null;
 
+// Tombstone: _apiIds of jobs that have been deleted by the user.
+// Persisted to localStorage so API re-imports don't resurrect them on refresh.
+var DASH_DELETED_IDS = [];
+function dashLoadDeletedIds() {
+  try { var r = localStorage.getItem('mm_deleted_ids'); if (r) DASH_DELETED_IDS = JSON.parse(r); } catch(e) {}
+}
+function dashPersistDeletedIds() {
+  try { localStorage.setItem('mm_deleted_ids', JSON.stringify(DASH_DELETED_IDS)); } catch(e) {}
+}
+
 // ── SMS queue ─────────────────────────────────────────────────────────────────
 var SMS_QUEUE = [];
 var SMS_CONFIG = {
@@ -11487,6 +11502,7 @@ function dashSyncCalendarUpdates() {
   // Also pick up any CAL_APPTS not yet in DASH_JOBS
   (CAL_APPTS || []).forEach(function(appt) {
     if (appt._unscheduled || !appt._id) return;
+    if (appt._apiId && DASH_DELETED_IDS.indexOf(appt._apiId) !== -1) return; // tombstoned — user deleted this job
     var exists = DASH_JOBS.find(function(j){
       return j.calApptId === appt._id || (appt._apiId && j._apiId === appt._apiId);
     });
@@ -12229,9 +12245,12 @@ function dashDeleteJob(dashId) {
   // Clear the WO-assignment attempt tracker so the slot isn't wasted
   _woAssignAttempted.delete(dashId);
 
-  // Delete from API (fire-and-forget; we've already cleaned up locally)
-  if (job._apiId && mmGetToken()) {
-    mmApi('DELETE', '/jobs/' + encodeURIComponent(job._apiId)).catch(function(){});
+  // Tombstone the job so it can't be re-imported by GET /jobs on next refresh
+  if (job._apiId) {
+    if (DASH_DELETED_IDS.indexOf(job._apiId) === -1) DASH_DELETED_IDS.push(job._apiId);
+    dashPersistDeletedIds();
+    // Queue DELETE via sync so it retries automatically if offline or API fails
+    syncEnqueue('JOB_DELETE', job._apiId, {});
   }
 
   dashCloseModal();
@@ -12421,6 +12440,7 @@ function dashPersistState() {
 
 function dashRestoreState() {
   try {
+    dashLoadDeletedIds(); // must load before filtering DASH_JOBS
     var raw = localStorage.getItem('mm_app_state');
     if (!raw) return false;
     var state = JSON.parse(raw);
@@ -12428,12 +12448,10 @@ function dashRestoreState() {
     var age = Date.now() - new Date(state.savedAt).getTime();
     if (age > 86400000) { localStorage.removeItem('mm_app_state'); return false; } // 24h expiry
     if (state.DASH_JOBS   && state.DASH_JOBS.length) {
-      // Strip transient in-flight flags that don't survive a page reload.
-      // A persisted _woPending blocks WO# assignment forever; _draft jobs
-      // with no apiId are unsaved and should be discarded.
       DASH_JOBS = state.DASH_JOBS.filter(function(j) {
         if (j._draft && !j._apiId && !j.workOrderNumber) return false; // unsaved draft
-        delete j._woPending; // clear in-flight flag so WO# can be fetched on next render
+        if (j._apiId && DASH_DELETED_IDS.indexOf(j._apiId) !== -1) return false; // tombstoned
+        delete j._woPending;
         return true;
       });
     }
