@@ -11261,7 +11261,8 @@ function dashRenderUnscheduled() {
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.58rem;color:var(--muted);">'+j.source+'</td>'+
       '<td style="padding:9px 12px;white-space:nowrap;">'+
         '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;margin-right:4px;">Edit</button>'+
-        '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bp" style="font-size:.56rem;padding:3px 8px;">📅 Schedule</button>'+
+        '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bp" style="font-size:.56rem;padding:3px 8px;margin-right:4px;">📅 Schedule</button>'+
+        '<button onclick="event.stopPropagation();dashDeleteJob(\''+j.dashId+'\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;color:var(--red);border-color:var(--red);">🗑</button>'+
       '</td>'+
     '</tr>';
   }).join('');
@@ -11314,7 +11315,10 @@ function dashRender() {
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);">' + (j.crew||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--text);">' + (j.scheduledDate||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.58rem;color:var(--muted);">' + j.source + '</td>' +
-      '<td style="padding:9px 12px;"><button onclick="event.stopPropagation();dashOpenJobModal(\'' + j.dashId + '\')" class="btn bo" style="font-size:.56rem;padding:3px 8px;white-space:nowrap;">'+(locked?'View':'Edit')+'</button></td>' +
+      '<td style="padding:9px 12px;display:flex;gap:4px;align-items:center;">' +
+        '<button onclick="event.stopPropagation();dashOpenJobModal(\'' + j.dashId + '\')" class="btn bo" style="font-size:.56rem;padding:3px 8px;white-space:nowrap;">'+(locked?'View':'Edit')+'</button>' +
+        '<button onclick="event.stopPropagation();dashDeleteJob(\'' + j.dashId + '\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;color:var(--red);border-color:var(--red);">🗑</button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 }
@@ -11973,6 +11977,7 @@ function dashOpenJobModal(dashId) {
     '<button class="btn bp" onclick="dashSaveModalAndSchedule()" style="font-size:.68rem;">📅 Save &amp; Add to Schedule</button>' +
     '<button class="btn bp" onclick="dashSaveModal()" style="font-size:.68rem;background:var(--green);border-color:var(--green);">✓ Save</button>' +
     '<button class="btn bo" onclick="dashCloseModal()" style="font-size:.68rem;">Cancel</button>' +
+    '<button class="btn bo" onclick="dashDeleteJob(DASH_SELECTED_ID)" style="font-size:.68rem;color:var(--red);border-color:var(--red);margin-left:auto;">🗑 Delete Job</button>' +
     '</div>';
 
   G('dash-job-modal').style.display='flex';
@@ -12084,6 +12089,31 @@ function dashSaveModalAndSchedule() {
 }
 
 function dashCloseModal() { G('dash-job-modal').style.display='none'; }
+
+function dashDeleteJob(dashId) {
+  var job = DASH_JOBS.find(function(j){ return j.dashId === dashId; });
+  if (!job) return;
+  var label = job.jobName + (job.workOrderNumber ? ' (' + job.workOrderNumber + ')' : '');
+  if (!confirm('Delete "' + label + '"?\n\nThis will permanently remove it from the dashboard, calendar, and the system.')) return;
+
+  // Remove from CAL_APPTS
+  if (job.calApptId) {
+    CAL_APPTS = CAL_APPTS.filter(function(a){ return a._id !== job.calApptId; });
+  }
+
+  // Remove from DASH_JOBS
+  DASH_JOBS = DASH_JOBS.filter(function(j){ return j.dashId !== dashId; });
+
+  // Delete from API
+  if (job._apiId && mmGetToken()) {
+    mmApi('DELETE', '/jobs/' + encodeURIComponent(job._apiId)).catch(function(){});
+  }
+
+  dashCloseModal();
+  dashPersistState();
+  dashRender();
+  if (typeof calRender === 'function') calRender();
+}
 
 // Session-only Set so we don't re-POST jobs that already got a WO# attempt this session
 // (not serialized to localStorage, so a page refresh resets it cleanly)
