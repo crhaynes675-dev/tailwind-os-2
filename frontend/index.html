@@ -6999,9 +6999,21 @@ function authShowApp(user) {
     // Store crew flag for use in data-filtering functions
     window.MM_IS_CREW = true;
     window.MM_CREW_NAME = user.username || user.email || '';
+
+    // Show My Status card on Navigation page and hide it on Dispatch
+    var navCard  = document.getElementById('geo-my-status-card');
+    var dispBar  = document.getElementById('dispatch-my-status-bar');
+    if (navCard)  navCard.style.display  = '';
+    if (dispBar)  dispBar.style.display  = 'none';
   } else {
     window.MM_IS_CREW = false;
     window.MM_CREW_NAME = '';
+
+    // Ensure My Status card is hidden for non-crew users
+    var navCard  = document.getElementById('geo-my-status-card');
+    var dispBar  = document.getElementById('dispatch-my-status-bar');
+    if (navCard)  navCard.style.display  = 'none';
+    if (dispBar)  dispBar.style.display  = 'none';
   }
 
   // Restore last visited page, but redirect crew to their default (Schedule) if
@@ -9969,9 +9981,6 @@ function geoAutoMode() {
 
 // ── One-time page init ────────────────────────────────────────────────────────
 function geoInit() {
-  // Show My Status card for crew members; hide for admins/dispatchers
-  var statusCard = G('geo-my-status-card');
-  if (statusCard) statusCard.style.display = window.MM_IS_CREW ? '' : 'none';
   // Start GPS sharing automatically for crew members navigating to jobs
   if (window.MM_IS_CREW && !DISPATCH.gpsWatcher && typeof dispatchStartGPS === 'function') {
     dispatchStartGPS();
@@ -13975,8 +13984,8 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
-  <!-- My Status Bar -->
-  <div class="card" style="padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+  <!-- My Status Bar — crew members only; hidden for dispatchers/admins -->
+  <div id="dispatch-my-status-bar" class="card" style="display:none;padding:10px 14px;margin-bottom:14px;align-items:center;gap:14px;flex-wrap:wrap;">
     <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">My Status</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
       <button id="dsb-available" onclick="dispatchSetMyStatus('available')" style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;">✓ Available</button>
