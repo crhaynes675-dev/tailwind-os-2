@@ -11286,13 +11286,14 @@ function dashRender() {
 
   var jobs = DASH_JOBS.filter(function(j) {
     if (j.status === 'Unscheduled') return false; // handled in unscheduled panel above
+    if (j.status === 'Completed')   return false; // shown only in Completed Jobs tab
     if (filterStatus   && j.status.toLowerCase()   !== filterStatus)   return false;
     if (filterPriority && j.priority.toLowerCase()  !== filterPriority) return false;
     if (search && ![j.jobName,j.customerName,j.jobAddress,j.crew].join(' ').toLowerCase().includes(search)) return false;
     return true;
   });
 
-  var activeCount = DASH_JOBS.filter(function(j){return j.status!=='Unscheduled';}).length;
+  var activeCount = DASH_JOBS.filter(function(j){return j.status!=='Unscheduled' && j.status!=='Completed';}).length;
   if (!jobs.length) {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">' +
       (activeCount ? 'No active jobs match filters.' : 'No active jobs — schedule a job from the Unscheduled queue above.') + '</td></tr>';
@@ -13203,7 +13204,7 @@ if ('serviceWorker' in navigator) {
         <option value="">All Statuses</option>
         <option>Scheduled</option><option>In Progress</option>
         <option>Ready for Site Review</option><option>Final Walkthrough Ready</option>
-        <option>Completed</option><option>Canceled</option>
+        <option>Canceled</option>
       </select>
       <select id="dash-filter-priority" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;">
         <option value="">All Priorities</option>
