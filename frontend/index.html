@@ -11247,7 +11247,7 @@ function dashRenderUnscheduled() {
   var countEl = G('dash-unsched-count');
   if (countEl) countEl.textContent = jobs.length ? jobs.length + ' job' + (jobs.length>1?'s':'') : '';
   if (!jobs.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + Add Job or import from PDF / Intake.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>';
     return;
   }
   var pc_fn = function(p){ return p==='High'?'var(--red)':p==='Low'?'var(--muted)':'var(--text)'; };
@@ -11970,7 +11970,7 @@ function dashOpenJobModal(dashId) {
     '<div style="margin-top:14px;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Notes</label>' +
     '<textarea rows="3" id="dm-notes" oninput="dashModalChange(\'notes\',this.value)" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.75rem;padding:8px 10px;outline:none;resize:vertical;">'+esc(job.notes)+'</textarea></div>' +
     '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">' +
-    '<button class="btn bp" onclick="dashSaveModalAndSchedule()" style="font-size:.68rem;">💾 Save &amp; Schedule to Calendar</button>' +
+    '<button class="btn bp" onclick="dashSaveModalAndSchedule()" style="font-size:.68rem;">📅 Save &amp; Add to Schedule</button>' +
     '<button class="btn bp" onclick="dashSaveModal()" style="font-size:.68rem;background:var(--green);border-color:var(--green);">✓ Save</button>' +
     '<button class="btn bo" onclick="dashCloseModal()" style="font-size:.68rem;">Cancel</button>' +
     '</div>';
@@ -12047,7 +12047,7 @@ function dashSaveModal() {
 function dashSaveModalAndSchedule() {
   var job = DASH_JOBS.find(function(j){return j.dashId===DASH_SELECTED_ID;});
   if (!job) { dashCloseModal(); return; }
-  if (!job.scheduledDate) { alert('Please set a scheduled date first.'); return; }
+  if (!job.scheduledDate) { alert('Please set a Scheduled Date before adding to the schedule.'); return; }
   if (mmGetToken()) {
     var payload = _dashJobApiPayload(job);
     payload.status = 'Scheduled';
@@ -12068,9 +12068,19 @@ function dashSaveModalAndSchedule() {
       }).catch(function(){});
     }
   }
-  dashScheduleJob(job.dashId, job.scheduledDate, job.timeWindow || '08:00', job.crew);
+  // Parse the scheduled date and time for calendar placement
+  var schedDate = job.scheduledDate;
+  var schedTime = (job.timeWindow || '').replace(/[^0-9:]/g,'').split(/[\s\-–]/)[0] || '08:00';
+  if (schedTime.length < 4) schedTime = '08:00'; // fallback if unparseable
+  dashScheduleJob(job.dashId, schedDate, schedTime, job.crew);
   dashCloseModal();
-  if (typeof calRender==='function') calRender();
+  // Navigate the calendar to the job's date and switch to Schedule tab
+  if (typeof calParseDate === 'function') {
+    calAnchor = calParseDate(schedDate);
+    calView = 'day';
+  }
+  if (typeof calRender === 'function') calRender();
+  ST(9); // switch to Schedule tab
 }
 
 function dashCloseModal() { G('dash-job-modal').style.display='none'; }
@@ -13120,7 +13130,7 @@ if ('serviceWorker' in navigator) {
             <div class="ct" style="margin:0;">📥 Unscheduled Jobs</div>
             <span id="dash-unsched-count" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);"></span>
           </div>
-          <button class="btn bp" onclick="dashOpenNewJob()" style="font-size:.62rem;">+ Add Job</button>
+          <button class="btn bp" onclick="dashOpenNewJob()" style="font-size:.62rem;">+ New Job</button>
         </div>
         <div style="overflow-x:auto;">
           <table class="ut" style="width:100%;min-width:700px;">
@@ -13135,7 +13145,7 @@ if ('serviceWorker' in navigator) {
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
             <tbody id="dash-unsched-tbody">
-              <tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:'Outfit',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + Add Job or import from PDF / Intake.</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:'Outfit',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>
             </tbody>
           </table>
         </div>
@@ -13162,7 +13172,7 @@ if ('serviceWorker' in navigator) {
             </tr></thead>
             <tbody id="dash-tbody">
               <tr><td colspan="10" style="text-align:center;padding:32px;font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);">
-                No jobs yet — click ↻ Sync Jobs to import from PDF / Intake / Calendar, or + Add Job to create manually.
+                No jobs yet — click ↻ Sync Jobs to import from PDF / Intake / Calendar, or + New Job to create manually.
               </td></tr>
             </tbody>
           </table>
