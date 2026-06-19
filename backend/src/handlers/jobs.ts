@@ -36,7 +36,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       if (parentJobId) {
         items = items.filter(i => i.parentJobId === parentJobId);
       }
-      return ok(items);
+      return ok(items, event);
     }
 
     // GET /jobs/:jobId — full job detail (metadata + all sub-items)
@@ -46,17 +46,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         KeyConditionExpression: 'PK = :pk',
         ExpressionAttributeValues: { ':pk': tpk(t, 'JOB', jobId) },
       }));
-      if (!result.Items?.length) return notFound();
+      if (!result.Items?.length) return notFound('Not found', event);
 
       const meta  = result.Items.find(i => i.SK === 'METADATA');
       const units = result.Items.filter(i => i.SK.startsWith('UNIT#'));
-      return ok({ ...meta, units });
+      return ok({ ...meta, units }, event);
     }
 
     // POST /jobs — create a new job
     if (httpMethod === 'POST' && !jobId) {
       const body = JSON.parse(event.body ?? '{}');
-      if (!body.jobName) return badRequest('jobName is required');
+      if (!body.jobName) return badRequest('jobName is required', event);
 
       const id  = randomUUID();
       const now = new Date().toISOString();
@@ -116,7 +116,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         },
       }));
 
-      return created(item);
+      return created(item, event);
     }
 
     // PUT /jobs/:jobId — update job
@@ -126,7 +126,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
       const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
-      if (!updates.length) return badRequest('No valid fields to update');
+      if (!updates.length) return badRequest('No valid fields to update', event);
 
       const expr   = updates.map(([k], i) => `#f${i} = :v${i}`).join(', ');
       const names  = Object.fromEntries(updates.map(([k], i) => [`#f${i}`, k]));
@@ -155,7 +155,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         },
       }));
 
-      return ok({ jobId, updated: true });
+      return ok({ jobId, updated: true }, event);
     }
 
     // DELETE /jobs/:jobId — delete job and all sub-items
@@ -168,7 +168,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }));
 
       const items = existing.Items ?? [];
-      if (!items.length) return notFound();
+      if (!items.length) return notFound('Not found', event);
 
       for (let i = 0; i < items.length; i += 25) {
         await ddb.send(new BatchWriteCommand({
@@ -179,11 +179,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           },
         }));
       }
-      return noContent();
+      return noContent(event);
     }
 
-    return badRequest('Method not supported');
+    return badRequest('Method not supported', event);
   } catch (err) {
-    return serverError(err);
+    return serverError(err, event);
   }
 };
