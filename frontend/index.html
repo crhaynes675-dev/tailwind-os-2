@@ -12103,6 +12103,7 @@ function dashSaveModal() {
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
+      dashPersistState();
     } else {
       job._woPending = true; // prevent dashCloseModal from discarding while POST is in flight
       mmApi('POST', '/jobs', payload).then(function(res) {
@@ -12115,11 +12116,10 @@ function dashSaveModal() {
             if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
           }
         }
-        dashPersistState();
+        dashPersistState(); // persist after WO# is set, not before
         dashRender();
-      }).catch(function(){ delete job._woPending; });
+      }).catch(function(){ delete job._woPending; dashPersistState(); });
     }
-    dashPersistState();
   }
   dashRender();
   dashCloseModal();
@@ -12135,6 +12135,7 @@ function dashSaveModalAndSchedule() {
     payload.status = 'Scheduled';
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
+      dashPersistState();
     } else {
       job._woPending = true; // prevent dashCloseModal from discarding while POST is in flight
       mmApi('POST', '/jobs', payload).then(function(res) {
@@ -12147,9 +12148,9 @@ function dashSaveModalAndSchedule() {
             if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
           }
         }
-        dashPersistState();
+        dashPersistState(); // persist after WO# is set, not before
         dashRender();
-      }).catch(function(){ delete job._woPending; });
+      }).catch(function(){ delete job._woPending; dashPersistState(); });
     }
   }
   // Parse the scheduled date and time for calendar placement
@@ -12383,7 +12384,16 @@ function dashRestoreState() {
     if (!state.savedAt) return false;
     var age = Date.now() - new Date(state.savedAt).getTime();
     if (age > 86400000) { localStorage.removeItem('mm_app_state'); return false; } // 24h expiry
-    if (state.DASH_JOBS   && state.DASH_JOBS.length)   DASH_JOBS   = state.DASH_JOBS;
+    if (state.DASH_JOBS   && state.DASH_JOBS.length) {
+      // Strip transient in-flight flags that don't survive a page reload.
+      // A persisted _woPending blocks WO# assignment forever; _draft jobs
+      // with no apiId are unsaved and should be discarded.
+      DASH_JOBS = state.DASH_JOBS.filter(function(j) {
+        if (j._draft && !j._apiId && !j.workOrderNumber) return false; // unsaved draft
+        delete j._woPending; // clear in-flight flag so WO# can be fetched on next render
+        return true;
+      });
+    }
     if (state.CAL_APPTS   && state.CAL_APPTS.length)   CAL_APPTS   = state.CAL_APPTS;
     if (state.NCI_RECORDS && state.NCI_RECORDS.length) NCI_RECORDS = state.NCI_RECORDS;
     if (state.CDB         && state.CDB.length)         CDB         = state.CDB;
