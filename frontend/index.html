@@ -12134,7 +12134,9 @@ function dashSaveModal() {
         console.error('[WO#] POST /jobs failed:', err && err.message ? err.message : err);
         delete job._woPending;
         dashPersistState();
-        dashRender(); // triggers dashRenderKPI → dashAssignWorkOrderNumber retry
+        // Do NOT call dashRender() here — it would trigger dashRenderKPI which
+        // immediately re-sets _woPending via dashAssignWorkOrderNumber, creating
+        // a "Saving…" loop. The next user action will trigger a render and retry.
       });
     }
   }
@@ -12168,10 +12170,9 @@ function dashSaveModalAndSchedule() {
         dashPersistState();
         dashRender();
       }).catch(function(err) {
-        console.error('[WO#] POST /jobs failed:', err && err.message ? err.message : err);
+        console.error('[WO#] POST /jobs failed (schedule):', err && err.message ? err.message : err);
         delete job._woPending;
         dashPersistState();
-        dashRender();
       });
     }
   }
@@ -12268,10 +12269,9 @@ function dashAssignWorkOrderNumber(job) {
   }).catch(function(err) {
     console.error('[WO#] dashAssignWorkOrderNumber failed:', err && err.message ? err.message : err);
     delete job._woPending;
-    // Remove from attempted set so the next user action that triggers a render
-    // will retry — but don't call dashRender() here to avoid an infinite loop
-    // if the error persists across every render cycle.
-    _woAssignAttempted.delete(job.dashId);
+    // Leave job.dashId in _woAssignAttempted so dashRenderKPI does NOT
+    // immediately retry on the next render — prevents "Saving…" oscillation.
+    // A page refresh resets the Set and allows one clean retry per session.
   });
 }
 
