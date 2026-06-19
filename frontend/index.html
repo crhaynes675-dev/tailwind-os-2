@@ -9968,7 +9968,7 @@ var GEO_DEMO_JOBS   = [
 
 // ── Determine auto mode ───────────────────────────────────────────────────────
 function geoAutoMode() {
-  return (window.GEO_MAPS_KEY || '').trim() ? 'live' : 'demo';
+  return 'live'; // always use real job data; Google Maps is optional
 }
 
 // ── One-time page init ────────────────────────────────────────────────────────
@@ -10331,13 +10331,7 @@ function geoRefreshJobSelector() {
     return '<option value="' + j._id + '">' + (j.job||'Unnamed') + ' · ' + j.addr + '</option>';
   }).join('');
 
-  var demoOpts = GEO.mode === 'demo' || !realJobs.length
-    ? GEO_DEMO_JOBS.map(function(j){
-        return '<option value="demo_' + j.id + '">' + j.label + '</option>';
-      }).join('')
-    : '';
-
-  var combined = '<option value="">— Select a job —</option>' + realOpts + demoOpts;
+  var combined = '<option value="">— Select a job —</option>' + realOpts;
   sel.innerHTML  = combined;
   if (sel2) sel2.innerHTML = combined;
 }
@@ -13482,18 +13476,9 @@ if ('serviceWorker' in navigator) {
 
         <!-- Map toolbar -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;background:var(--surface);">
-          <!-- Mode toggle -->
+          <!-- Live mode indicator -->
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Mode:</span>
-            <button id="geo-mode-live" onclick="geoSetMode('live')"
-              style="font-family:'Outfit',sans-serif;font-size:.6rem;padding:3px 10px;border-radius:20px 0 0 20px;cursor:pointer;border:1px solid var(--border);transition:all .15s;background:var(--bg);color:var(--muted);">
-              Live
-            </button>
-            <button id="geo-mode-demo" onclick="geoSetMode('demo')"
-              style="font-family:'Outfit',sans-serif;font-size:.6rem;padding:3px 10px;border-radius:0 20px 20px 0;cursor:pointer;border:1px solid var(--border);border-left:none;transition:all .15s;background:var(--accent);color:#090e18;font-weight:700;">
-              Demo
-            </button>
-            <span id="geo-mode-badge" style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--accent);margin-left:4px;">● Demo Mode — sample data</span>
+            <span id="geo-mode-badge" style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--green);margin-left:4px;">● Live Mode — real job data</span>
           </div>
           <!-- Address test input -->
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:200px;max-width:420px;">
