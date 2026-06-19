@@ -9969,6 +9969,14 @@ function geoAutoMode() {
 
 // ── One-time page init ────────────────────────────────────────────────────────
 function geoInit() {
+  // Show My Status card for crew members; hide for admins/dispatchers
+  var statusCard = G('geo-my-status-card');
+  if (statusCard) statusCard.style.display = window.MM_IS_CREW ? '' : 'none';
+  // Start GPS sharing automatically for crew members navigating to jobs
+  if (window.MM_IS_CREW && !DISPATCH.gpsWatcher && typeof dispatchStartGPS === 'function') {
+    dispatchStartGPS();
+  }
+
   if (GEO.initDone) { geoRefreshJobSelector(); return; }
   GEO.initDone = true;
 
@@ -13591,6 +13599,34 @@ if ('serviceWorker' in navigator) {
     <!-- ── Right: Info panel ─────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
+      <!-- My Status card — crew members only -->
+      <div id="geo-my-status-card" class="card" style="display:none;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">👤 My Status</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+          <button id="nav-sb-available" onclick="dispatchSetMyStatus('available')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
+            ✓ Available
+          </button>
+          <button id="nav-sb-enroute" onclick="dispatchSetMyStatus('enroute')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
+            🚗 En Route
+          </button>
+          <button id="nav-sb-onsite" onclick="dispatchSetMyStatus('onsite')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
+            🏠 On Site
+          </button>
+          <button id="nav-sb-break" onclick="dispatchSetMyStatus('break')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
+            ☕ Break
+          </button>
+          <button id="nav-sb-done" onclick="dispatchSetMyStatus('done')"
+            style="grid-column:1/-1;font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
+            ✓ Done for the Day
+          </button>
+        </div>
+        <div id="geo-gps-info" style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);">Initializing GPS…</div>
+      </div>
+
       <!-- Current location card -->
       <div class="card">
         <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">📍 Current Location</div>
@@ -14624,20 +14660,24 @@ function dispatchSetMapType(type) {
 }
 
 // ── GPS & status ──────────────────────────────────────────────────
+function _gpsInfoEls() {
+  return [G('dispatch-gps-info'), G('geo-gps-info')].filter(Boolean);
+}
+
 function dispatchStartGPS() {
-  var infoEl = G('dispatch-gps-info');
-  var badge  = G('dispatch-gps-badge');
+  var infoEls = _gpsInfoEls();
+  var badge   = G('dispatch-gps-badge');
   if (!navigator.geolocation) {
-    if (infoEl) infoEl.textContent = '📵 GPS not supported — using manual status';
+    infoEls.forEach(function(el){ el.textContent = '📵 GPS not supported — set status manually'; });
     return;
   }
-  if (infoEl) infoEl.textContent = 'Requesting GPS…';
+  infoEls.forEach(function(el){ el.textContent = 'Requesting GPS…'; });
   navigator.geolocation.getCurrentPosition(
     function(pos) {
       DISPATCH.gpsGranted = true;
       DISPATCH.myLat = pos.coords.latitude;
       DISPATCH.myLng = pos.coords.longitude;
-      if (infoEl) infoEl.textContent = '📍 GPS active — sharing location every 60s';
+      infoEls.forEach(function(el){ el.textContent = '📍 GPS active — sharing location every 60s'; });
       if (badge) badge.style.display = 'block';
       dispatchPingMyLocation();
 
@@ -14656,7 +14696,7 @@ function dispatchStartGPS() {
     },
     function() {
       DISPATCH.gpsGranted = false;
-      if (infoEl) infoEl.textContent = '📵 GPS blocked — set status manually above';
+      infoEls.forEach(function(el){ el.textContent = '📵 GPS blocked — set status manually'; });
     },
     { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
   );
@@ -14684,18 +14724,21 @@ function dispatchPingMyLocation() {
 function dispatchSetMyStatus(status) {
   DISPATCH.myStatus = status;
   var statuses = ['available','enroute','onsite','break','done'];
-  statuses.forEach(function(s) {
-    var btn = G('dsb-' + s);
-    if (!btn) return;
-    if (s === status) {
-      btn.style.background = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
-      btn.style.color = '#fff';
-      btn.style.borderColor = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--text)';
-      btn.style.borderColor = 'var(--border)';
-    }
+  // Update buttons in both Dispatch panel (dsb-) and Navigation page (nav-sb-)
+  ['dsb-', 'nav-sb-'].forEach(function(prefix) {
+    statuses.forEach(function(s) {
+      var btn = G(prefix + s);
+      if (!btn) return;
+      if (s === status) {
+        btn.style.background  = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
+        btn.style.color       = '#fff';
+        btn.style.borderColor = DISPATCH_CREW_STATUS_COLOR[s] || 'var(--accent)';
+      } else {
+        btn.style.background  = 'transparent';
+        btn.style.color       = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      }
+    });
   });
   dispatchPingMyLocation();
 }
