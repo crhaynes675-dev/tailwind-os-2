@@ -6999,22 +6999,17 @@ function authShowApp(user) {
     // Store crew flag for use in data-filtering functions
     window.MM_IS_CREW = true;
     window.MM_CREW_NAME = user.username || user.email || '';
-
-    // Show My Status card on Navigation page and hide it on Dispatch
-    var navCard  = document.getElementById('geo-my-status-card');
-    var dispBar  = document.getElementById('dispatch-my-status-bar');
-    if (navCard)  navCard.style.display  = '';
-    if (dispBar)  dispBar.style.display  = 'none';
   } else {
     window.MM_IS_CREW = false;
     window.MM_CREW_NAME = '';
-
-    // Ensure My Status card is hidden for non-crew users
-    var navCard  = document.getElementById('geo-my-status-card');
-    var dispBar  = document.getElementById('dispatch-my-status-bar');
-    if (navCard)  navCard.style.display  = 'none';
-    if (dispBar)  dispBar.style.display  = 'none';
   }
+
+  // My Status card lives on the Navigation page for all users;
+  // the Dispatch screen version stays hidden (dispatchers manage crew from there)
+  var navCard = document.getElementById('geo-my-status-card');
+  var dispBar = document.getElementById('dispatch-my-status-bar');
+  if (navCard) navCard.style.display = '';
+  if (dispBar) dispBar.style.display = 'none';
 
   // Restore last visited page, but redirect crew to their default (Schedule) if
   // their last page is one they can no longer access
@@ -13608,8 +13603,8 @@ if ('serviceWorker' in navigator) {
     <!-- ── Right: Info panel ─────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- My Status card — crew members only -->
-      <div id="geo-my-status-card" class="card" style="display:none;">
+      <!-- My Status card — all users; hidden until authShowApp runs -->
+      <div id="geo-my-status-card" class="card" style="display:none;flex-direction:column;">
         <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">👤 My Status</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
           <button id="nav-sb-available" onclick="dispatchSetMyStatus('available')"
