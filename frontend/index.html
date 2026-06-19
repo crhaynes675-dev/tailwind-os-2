@@ -7004,11 +7004,8 @@ function authShowApp(user) {
     window.MM_CREW_NAME = '';
   }
 
-  // My Status card lives on the Navigation page for all users;
-  // the Dispatch screen version stays hidden (dispatchers manage crew from there)
-  var navCard = document.getElementById('geo-my-status-card');
+  // Keep the Dispatch screen My Status bar hidden (dispatchers manage crew status from work orders)
   var dispBar = document.getElementById('dispatch-my-status-bar');
-  if (navCard) navCard.style.display = '';
   if (dispBar) dispBar.style.display = 'none';
 
   // Restore last visited page, but redirect crew to their default (Schedule) if
@@ -13603,8 +13600,8 @@ if ('serviceWorker' in navigator) {
     <!-- ── Right: Info panel ─────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- My Status card — all users; hidden until authShowApp runs -->
-      <div id="geo-my-status-card" class="card" style="display:none;flex-direction:column;">
+      <!-- My Status card -->
+      <div id="geo-my-status-card" class="card">
         <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">👤 My Status</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
           <button id="nav-sb-available" onclick="dispatchSetMyStatus('available')"
