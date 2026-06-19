@@ -8321,28 +8321,38 @@ function syncLoadFromStorage() {
   if (mmGetToken()) {
     mmApi('GET', '/jobs').then(function(jobs) {
       if (jobs && jobs.length) {
-        CAL_APPTS = jobs.map(function(j) {
-          return Object.assign(calNewJobObject({
-            job:      j.jobName,
-            addr:     j.address      || '',
-            date:     j.scheduledDate|| '',
-            time:     j.scheduledTime|| '',
-            crew:     j.assignedTo   || '',
-            quoteRef: j.quoteNum     || ''
-          }), {
-            _id:             'api_' + j.jobId,
-            _apiId:          j.jobId,
-            parentJobId:     j.parentJobId     || '',
-            workOrderNumber: j.workOrderNumber || '',
-            status:          j.status || 'Scheduled',
-            internalNotes:   j.notes          || '',
-            customerName:    j.customerName   || '',
-            customerPhone:   j.customerPhone  || ''
+        // Ensure tombstone is loaded before filtering (safe to call multiple times)
+        if (typeof dashLoadDeletedIds === 'function') dashLoadDeletedIds();
+        CAL_APPTS = jobs
+          .filter(function(j) {
+            // Never re-import jobs the user has deleted
+            return typeof DASH_DELETED_IDS === 'undefined' ||
+                   DASH_DELETED_IDS.indexOf(j.jobId) === -1;
+          })
+          .map(function(j) {
+            return Object.assign(calNewJobObject({
+              job:      j.jobName,
+              addr:     j.address      || '',
+              date:     j.scheduledDate|| '',
+              time:     j.scheduledTime|| '',
+              crew:     j.assignedTo   || '',
+              quoteRef: j.quoteNum     || ''
+            }), {
+              _id:             'api_' + j.jobId,
+              _apiId:          j.jobId,
+              parentJobId:     j.parentJobId     || '',
+              workOrderNumber: j.workOrderNumber || '',
+              status:          j.status || 'Scheduled',
+              internalNotes:   j.notes          || '',
+              customerName:    j.customerName   || '',
+              customerPhone:   j.customerPhone  || ''
+            });
           });
-        });
       }
       syncUpdateBadge();
       try { calRender(); } catch(e) {}
+      // Re-render dashboard so DASH_JOBS syncs with the fresh (tombstone-filtered) CAL_APPTS
+      try { if (typeof dashRender === 'function') dashRender(); } catch(e) {}
     }).catch(loadLocalJobs);
   } else {
     loadLocalJobs();
@@ -11397,6 +11407,8 @@ function dashNotifyCalendarChange(calApptId) {
   var job = DASH_JOBS.find(function(j){ return j.calApptId === calApptId; });
 
   if (!job) {
+    // Skip re-creating a job the user has deleted
+    if (appt._apiId && typeof DASH_DELETED_IDS !== 'undefined' && DASH_DELETED_IDS.indexOf(appt._apiId) !== -1) return;
     // New calendar appointment not yet in dashboard — create a DASH_JOB for it
     job = dashMakeJob({
       jobName:      appt.job   || 'Calendar Job',
