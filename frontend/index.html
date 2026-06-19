@@ -12001,7 +12001,7 @@ function dashOpenJobModal(dashId) {
     fi2('Contact Name',    '<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="First & last name" oninput="dashModalChange(\'customerName\',this.value)">') +
     fi2('Phone',           '<input id="dm-phone" value="'+esc(job.customerPhone)+'" oninput="dashModalChange(\'customerPhone\',this.value)">') +
     fi2('Job Address',     '<input id="dm-addr"  value="'+esc(job.jobAddress)+'"   oninput="dashModalChange(\'jobAddress\',this.value)">') +
-    fi2('Status',          '<select id="dm-status" onchange="dashModalChange(\'status\',this.value)">'+statusOpts+'</select>') +
+    fi2('Status',          '<select id="dm-status" onchange="dashModalStatusChange(this.value)">'+statusOpts+'</select>') +
     fi2('Priority',        '<select id="dm-priority" onchange="dashModalChange(\'priority\',this.value)"><option'+(job.priority==='High'?' selected':'')+'>High</option><option'+(job.priority==='Normal'?' selected':'')+'>Normal</option><option'+(job.priority==='Low'?' selected':'')+'>Low</option></select>') +
     fi2('Scheduled Date',  '<input type="date" id="dm-date" value="'+esc(job.scheduledDate)+'" oninput="dashModalChange(\'scheduledDate\',this.value)">') +
     fi2('Start Time',      '<input type="time" id="dm-time" value="'+esc(timeVal)+'" onchange="dashModalChange(\'timeWindow\',this.value)">') +
@@ -12016,6 +12016,28 @@ function dashOpenJobModal(dashId) {
     '</div>';
 
   G('dash-job-modal').style.display='flex';
+  dashModalApplyScheduleFields(job.status);
+}
+
+function dashModalApplyScheduleFields(status) {
+  var locked = (status === 'Unscheduled');
+  var GREY = 'opacity:.4;pointer-events:none;';
+  var ON   = '';
+  ['dm-date','dm-time','dm-crew'].forEach(function(id) {
+    var el = G(id); if (!el) return;
+    el.disabled = locked;
+    el.style.opacity = locked ? '.4' : '';
+    el.style.pointerEvents = locked ? 'none' : '';
+    el.style.cursor = locked ? 'not-allowed' : '';
+    // also grey the wrapper label
+    var wrap = el.closest ? el.closest('div') : el.parentNode;
+    if (wrap) wrap.style.opacity = locked ? '.5' : '';
+  });
+}
+
+function dashModalStatusChange(val) {
+  dashModalChange('status', val);
+  dashModalApplyScheduleFields(val);
 }
 
 function fi2(lbl, content) {
