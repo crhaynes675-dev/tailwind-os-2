@@ -11227,7 +11227,7 @@ function dashRenderKPI() {
   var today = new Date().toISOString().slice(0,10);
   var kpis = [
     { label:'Unscheduled',          val: DASH_JOBS.filter(function(j){return j.status==='Unscheduled';}).length,                                   color:'#5a7090' },
-    { label:'Scheduled Today',      val: DASH_JOBS.filter(function(j){return j.status==='Scheduled'&&j.scheduledDate===today;}).length,             color:'#5b9bd5' },
+    { label:'Scheduled',             val: DASH_JOBS.filter(function(j){return j.status==='Scheduled';}).length,                                     color:'#5b9bd5' },
     { label:'In Progress',          val: DASH_JOBS.filter(function(j){return j.status==='In Progress';}).length,                                    color:'#22b2de' },
     { label:'Site Review',          val: DASH_JOBS.filter(function(j){return j.status==='Ready for Site Review';}).length,                         color:'#9c6bce' },
     { label:'Final Walkthrough',    val: DASH_JOBS.filter(function(j){return j.status==='Final Walkthrough Ready';}).length,                        color:'#26c6da' },
