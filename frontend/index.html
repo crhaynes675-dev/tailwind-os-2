@@ -10725,6 +10725,7 @@ function dashMakeJob(opts) {
     dashId:          'dj_' + DASH_UID,
     jobName:         opts.jobName         || 'Untitled Job',
     customerName:    opts.customerName    || '',
+    customerCompany: opts.customerCompany || '',
     customerPhone:   opts.customerPhone   || '',
     jobAddress:      opts.jobAddress      || '',
     jobType:         opts.jobType         || 'Install',
@@ -11971,11 +11972,9 @@ function dashOpenJobModal(dashId) {
     custList.map(function(c) {
       var personName = ((c.fname||'') + ' ' + (c.lname||'')).trim();
       var company    = (c.company||'').trim();
-      var label;
-      if (personName && company)      label = personName + ' — ' + company;
-      else if (personName)            label = personName;
-      else if (company)               label = company;
-      else                            label = 'Unknown';
+      // Show: "Company — Contact Name" or whichever fields exist
+      var label = company && personName ? company + ' — ' + personName
+                : company || personName || 'Unknown';
       return '<option value="'+c.id+'"'+(String(c.id)===matchedCustId?' selected':'')+'>'+label+'</option>';
     }).join('') +
     '<option value="__other__"'+(!matchedCustId && job.customerName ? ' selected' : '')+'>✏ Not in Database</option>';
@@ -11998,7 +11997,8 @@ function dashOpenJobModal(dashId) {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
     fi2('Job Name',        '<input id="dm-jobname" value="'+esc(job.jobName)+'" oninput="dashModalChange(\'jobName\',this.value)">') +
     fi2('Customer',        '<select id="dm-cust-select" onchange="dashModalSelectCust(this.value)">'+custOpts+'</select>') +
-    fi2('Customer Name',   '<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="Auto-fills on selection, or type manually" oninput="dashModalChange(\'customerName\',this.value)">') +
+    fi2('Company',         '<input id="dm-company" value="'+esc(job.customerCompany)+'" placeholder="Company name (if applicable)" oninput="dashModalChange(\'customerCompany\',this.value)">') +
+    fi2('Contact Name',    '<input id="dm-custname" value="'+esc(job.customerName)+'" placeholder="First & last name" oninput="dashModalChange(\'customerName\',this.value)">') +
     fi2('Phone',           '<input id="dm-phone" value="'+esc(job.customerPhone)+'" oninput="dashModalChange(\'customerPhone\',this.value)">') +
     fi2('Job Address',     '<input id="dm-addr"  value="'+esc(job.jobAddress)+'"   oninput="dashModalChange(\'jobAddress\',this.value)">') +
     fi2('Status',          '<select id="dm-status" onchange="dashModalChange(\'status\',this.value)">'+statusOpts+'</select>') +
@@ -12043,19 +12043,19 @@ function dashModalChange(field, val) {
 }
 
 function dashModalSelectCust(id) {
-  if (!id || id === '__other__') return; // user will type name manually
+  if (!id || id === '__other__') return; // user will type fields manually
   var cust = (typeof CDB !== 'undefined' ? CDB : []).find(function(c){ return String(c.id) === String(id); });
   if (!cust) return;
   var personName = ((cust.fname||'') + ' ' + (cust.lname||'')).trim();
   var company    = (cust.company||'').trim();
-  var name = personName && company ? personName + ' — ' + company
-           : personName || company || '';
-  var addr  = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
-  var phone = cust.phone || '';
-  dashModalChange('customerName',  name);
-  dashModalChange('customerPhone', phone);
-  dashModalChange('jobAddress',    addr);
-  var ni = G('dm-custname'); if (ni) ni.value = name;
+  var addr       = [cust.addr, cust.city, cust.state, cust.zip].filter(Boolean).join(', ');
+  var phone      = cust.phone || '';
+  dashModalChange('customerName',    personName);
+  dashModalChange('customerCompany', company);
+  dashModalChange('customerPhone',   phone);
+  dashModalChange('jobAddress',      addr);
+  var ni = G('dm-custname'); if (ni) ni.value = personName;
+  var ci = G('dm-company');  if (ci) ci.value = company;
   var pi = G('dm-phone');    if (pi) pi.value = phone;
   var ai = G('dm-addr');     if (ai) ai.value = addr;
 }
@@ -12069,8 +12069,9 @@ function _dashJobApiPayload(job) {
     status:        job.status        || 'Needs Review',
     notes:         job.notes         || '',
     quoteNum:      job.quoteNum      || '',
-    customerName:  job.customerName  || '',
-    customerPhone: job.customerPhone || '',
+    customerName:    job.customerName    || '',
+    customerCompany: job.customerCompany || '',
+    customerPhone:   job.customerPhone   || '',
   };
 }
 
