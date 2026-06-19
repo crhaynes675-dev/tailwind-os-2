@@ -11220,6 +11220,9 @@ function dashSelectJobAndGo(dashId) {
 
 // ── KPI card render ───────────────────────────────────────────────────────────
 function dashRenderKPI() {
+  // Retry WO# assignment for any saved jobs that don't have one yet
+  DASH_JOBS.forEach(function(j) { dashAssignWorkOrderNumber(j); });
+
   var row = G('dash-kpi-row'); if (!row) return;
   var today = new Date().toISOString().slice(0,10);
   var kpis = [
@@ -12125,9 +12128,14 @@ function dashSaveModal() {
             if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
           }
         }
-        dashPersistState(); // persist after WO# is set, not before
+        dashPersistState();
         dashRender();
-      }).catch(function(){ delete job._woPending; dashPersistState(); });
+      }).catch(function(err) {
+        console.error('[WO#] POST /jobs failed:', err && err.message ? err.message : err);
+        delete job._woPending;
+        dashPersistState();
+        dashRender(); // triggers dashRenderKPI → dashAssignWorkOrderNumber retry
+      });
     }
   }
   dashRender();
@@ -12157,9 +12165,14 @@ function dashSaveModalAndSchedule() {
             if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
           }
         }
-        dashPersistState(); // persist after WO# is set, not before
+        dashPersistState();
         dashRender();
-      }).catch(function(){ delete job._woPending; dashPersistState(); });
+      }).catch(function(err) {
+        console.error('[WO#] POST /jobs failed:', err && err.message ? err.message : err);
+        delete job._woPending;
+        dashPersistState();
+        dashRender();
+      });
     }
   }
   // Parse the scheduled date and time for calendar placement
@@ -12252,7 +12265,14 @@ function dashAssignWorkOrderNumber(job) {
       dashPersistState();
       dashRender();
     }
-  }).catch(function() { delete job._woPending; });
+  }).catch(function(err) {
+    console.error('[WO#] dashAssignWorkOrderNumber failed:', err && err.message ? err.message : err);
+    delete job._woPending;
+    // Remove from attempted set so the next user action that triggers a render
+    // will retry — but don't call dashRender() here to avoid an infinite loop
+    // if the error persists across every render cycle.
+    _woAssignAttempted.delete(job.dashId);
+  });
 }
 
 // ── New manual job ────────────────────────────────────────────────────────────
