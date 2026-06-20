@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { MODULES } from '../domain/modules';
 import { useAuth } from '../auth/AuthContext';
+import JobDrawer from './JobDrawer';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
@@ -60,6 +61,8 @@ export default function Layout() {
       <main className="px-6 py-7">
         <Outlet />
       </main>
+
+      <JobDrawer />
     </div>
   );
 }

@@ -111,6 +111,41 @@ export function normalizeStatus(raw: string | null | undefined): JobStatus {
   return LEGACY_MAP[raw.trim().toLowerCase()] ?? 'Unscheduled';
 }
 
+// ── Stage gates ─────────────────────────────────────────────────────
+// Each transition can require inputs/confirmations (the "gate"). Keys
+// starting with "_" are confirmation-only (not persisted); other keys
+// are written to the job (e.g. assignedTo, scheduledDate).
+export type GateFieldType = 'text' | 'date' | 'confirm';
+export interface GateField {
+  key: string;
+  label: string;
+  type: GateFieldType;
+  required?: boolean;
+  placeholder?: string;
+}
+
+export const STATUS_GATE: Record<JobStatus, GateField[]> = {
+  Unscheduled: [],
+  Scheduled: [
+    { key: 'assignedTo', label: 'Assign crew', type: 'text', required: true, placeholder: 'e.g. Alpha' },
+    { key: 'scheduledDate', label: 'Scheduled date', type: 'date', required: true },
+  ],
+  'In Progress': [{ key: '_onsite', label: 'Crew confirmed on-site', type: 'confirm', required: true }],
+  'Ready for Post-Install Walk': [{ key: '_installComplete', label: 'Installation complete', type: 'confirm', required: true }],
+  'Final Walkthrough Ready': [{ key: '_postApproved', label: 'Post-install inspection approved', type: 'confirm', required: true }],
+  Completed: [{ key: '_customerApproved', label: 'Customer approval received', type: 'confirm', required: true }],
+};
+
+export type TransitionKind = 'same' | 'forward' | 'skip' | 'back';
+
+export function transitionKind(from: JobStatus, to: JobStatus): TransitionKind {
+  const d = statusIndex(to) - statusIndex(from);
+  if (d === 0) return 'same';
+  if (d === 1) return 'forward';
+  if (d > 1) return 'skip';
+  return 'back';
+}
+
 // What to PERSIST for each canonical state. Uses legacy-recognized strings
 // so the existing (still-live) app stays consistent, while normalizeStatus()
 // maps them back onto the same canonical OS3 state.
