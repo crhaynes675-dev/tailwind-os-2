@@ -1457,6 +1457,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="tb" data-idx="21" onclick="ST(21)" title="Dispatch Command Center">📡 Dispatch</button>
   <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
   <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
+  <button class="tb" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew" id="tab-crew">👷 Crew</button>
 </div>
 
 <!-- SUB-TABS: CUSTOMER DATABASE -->
@@ -1466,7 +1467,6 @@ input,select,textarea,button { touch-action:manipulation; }
   <div class="tb-sep tb-admin" id="admin-sep"></div>
   <button class="tb tb-admin" data-idx="7"  onclick="ST(7)"  title="Users" id="tab-users">👥 Users</button>
   <button class="tb tb-admin" data-idx="12" onclick="ST(12)" title="Automations" id="tab-auto">⚡ Automations</button>
-  <button class="tb tb-admin" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew Roster" id="tab-crew">👷 Crew</button>
 </div>
 
 <!-- SUB-TABS: REPORTS -->
@@ -6986,7 +6986,7 @@ function authShowApp(user) {
   if (crewTab) crewTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
 
   // ── Crew / field-worker role restrictions ────────────────────────
-  var isCrewMember = (user.role === 'installer' || user.role === 'technician' || user.role === 'field_worker');
+  var isCrewMember = (user.role === 'service_technician');
   if (isCrewMember) {
     // Hide entire nav groups that crew never need
     ['sales', 'reports'].forEach(function(g) {
