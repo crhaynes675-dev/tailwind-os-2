@@ -19,6 +19,9 @@ export class Os3ApiStack extends cdk.Stack {
     const EXISTING_USER_POOL_ID = 'us-east-1_jJrlhI979';
     const EXISTING_TABLE_NAME = 'mm-install-pro';
     const existingTableArn = `arn:aws:dynamodb:${this.region}:${this.account}:table/${EXISTING_TABLE_NAME}`;
+    // The existing table is encrypted with this customer-managed KMS key;
+    // the Lambda role needs decrypt/generate access to read & write it.
+    const EXISTING_TABLE_KMS_KEY_ARN = `arn:aws:kms:${this.region}:${this.account}:key/0a3b1eca-356d-423f-9b4d-c63c0ce203e4`;
 
     const userPool = cognito.UserPool.fromUserPoolId(this, 'ImportedUserPool', EXISTING_USER_POOL_ID);
 
@@ -45,6 +48,10 @@ export class Os3ApiStack extends cdk.Stack {
     lambdaRole.addToPolicy(new iam.PolicyStatement({
       actions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:BatchWriteItem'],
       resources: [existingTableArn, `${existingTableArn}/index/*`],
+    }));
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['kms:Decrypt', 'kms:GenerateDataKey', 'kms:DescribeKey'],
+      resources: [EXISTING_TABLE_KMS_KEY_ARN],
     }));
 
     const asset = lambda.Code.fromAsset(path.join(__dirname, '../../backend/dist'));
