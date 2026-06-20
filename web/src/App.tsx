@@ -2,9 +2,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import ModuleStub from './pages/ModuleStub';
+import Login from './pages/Login';
 import { MODULES } from './domain/modules';
+import { useAuth } from './auth/AuthContext';
 
 export default function App() {
+  const { user } = useAuth();
+
+  if (!user) return <Login />;
+
   return (
     <BrowserRouter>
       <Routes>

@@ -1,7 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { MODULES } from '../domain/modules';
+import { useAuth } from '../auth/AuthContext';
 
 export default function Layout() {
+  const { user, signOut } = useAuth();
   return (
     <div className="min-h-full">
       {/* Top bar */}
@@ -15,7 +17,18 @@ export default function Layout() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Field Operations</div>
           </div>
         </div>
-        <div className="ml-auto text-xs text-muted">Morrison Millwork</div>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="text-right leading-tight">
+            <div className="text-xs font-medium text-text">{user?.username}</div>
+            <div className="text-[10px] uppercase tracking-wide text-faint">{user?.role?.replace(/_/g, ' ')}</div>
+          </div>
+          <button
+            onClick={signOut}
+            className="rounded-lg border border-glass bg-white/5 px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-accent hover:text-accent"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       {/* Module nav */}
