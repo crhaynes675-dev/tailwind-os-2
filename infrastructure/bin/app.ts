@@ -5,6 +5,7 @@ import { AuthStack } from '../lib/auth-stack';
 import { DatabaseStack } from '../lib/database-stack';
 import { StorageStack } from '../lib/storage-stack';
 import { ApiStack } from '../lib/api-stack';
+import { Os3ApiStack } from '../lib/os3-api-stack';
 import { FrontendStack } from '../lib/frontend-stack';
 import { DnsStack } from '../lib/dns-stack';
 import { CertStack } from '../lib/cert-stack';
@@ -36,6 +37,10 @@ new FrontendStack(app, 'MmFrontendStack', {
   env,
   api: api.api,
 });
+
+// Tailwind OS3 — clean standalone backend (reuses Cognito + jobs data,
+// new dedicated table for OS3 entities). Independent of MmApiStack.
+new Os3ApiStack(app, 'Os3ApiStack', { env });
 
 // Phase 2 — deploy after nameservers are updated at registrar
 // npx cdk deploy MmCertStack --require-approval never

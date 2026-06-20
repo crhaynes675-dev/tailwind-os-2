@@ -1,21 +1,22 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { apiGet, apiSend } from './api';
 
-// Lightweight localStorage-backed checklist, keyed by namespace + item id.
-// Used by field modules (Installation, Post-Install, Delivery) to track
-// per-job step progress that isn't part of the core job record.
+// Per-job field checklists, persisted to the OS3 backend (shared across
+// users). Keyed by namespace (module) + item id (job). Same hook surface
+// as before — load is async, toggles persist via PUT.
 
 type ChecklistState = Record<string, string[]>;
 
-function load(ns: string): ChecklistState {
-  try {
-    return JSON.parse(localStorage.getItem(`os3_checklist_${ns}`) || '{}');
-  } catch {
-    return {};
-  }
-}
-
 export function useChecklist(ns: string) {
-  const [state, setState] = useState<ChecklistState>(() => load(ns));
+  const [state, setState] = useState<ChecklistState>({});
+
+  useEffect(() => {
+    let alive = true;
+    apiGet<ChecklistState>(`/checklists/${encodeURIComponent(ns)}`)
+      .then((m) => { if (alive) setState(m && typeof m === 'object' ? m : {}); })
+      .catch(() => { /* keep empty on failure */ });
+    return () => { alive = false; };
+  }, [ns]);
 
   const toggle = useCallback(
     (itemId: string, step: string) => {
@@ -23,12 +24,9 @@ export function useChecklist(ns: string) {
         const cur = new Set(s[itemId] || []);
         if (cur.has(step)) cur.delete(step);
         else cur.add(step);
-        const next = { ...s, [itemId]: [...cur] };
-        try {
-          localStorage.setItem(`os3_checklist_${ns}`, JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
+        const steps = [...cur];
+        const next = { ...s, [itemId]: steps };
+        apiSend('PUT', `/checklists/${encodeURIComponent(ns)}/${encodeURIComponent(itemId)}`, { steps }).catch(() => {});
         return next;
       });
     },

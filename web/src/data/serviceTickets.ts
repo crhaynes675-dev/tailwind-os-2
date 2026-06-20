@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { apiGet, apiSend } from '../lib/api';
 
-// Net-new Service module data. Local-first (localStorage) so the module
-// is fully usable now; a backend table can replace this store later
-// without changing the UI. Source: Workflows 08 (Service) & 09 (Leak).
+// Service tickets (Workflows 08/09) — persisted to the OS3 backend
+// (/service), shared across users. Source: dedicated tailwind-os3 table.
 
 export const SERVICE_STAGES = ['Logged', 'Triaged', 'Scheduled', 'Dispatched', 'Visited'] as const;
 export type ServiceStage = (typeof SERVICE_STAGES)[number];
@@ -26,72 +26,60 @@ export interface ServiceTicket {
   createdAt: string;
 }
 
-const KEY = 'os3_service_tickets';
-
-function load(): ServiceTicket[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
-function save(t: ServiceTicket[]) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(t));
-  } catch {
-    /* ignore */
-  }
-}
-
 export function useServiceTickets() {
-  const [tickets, setTickets] = useState<ServiceTicket[]>(() => load());
+  const [tickets, setTickets] = useState<ServiceTicket[]>([]);
 
-  const persist = useCallback((next: ServiceTicket[]) => {
-    save(next);
-    setTickets(next);
+  const load = useCallback(() => {
+    apiGet<ServiceTicket[]>('/service')
+      .then((r) => setTickets(Array.isArray(r) ? r : []))
+      .catch(() => {});
   }, []);
 
-  const create = useCallback(
-    (partial: Pick<ServiceTicket, 'customer' | 'description' | 'type'>) => {
-      const t: ServiceTicket = {
-        id: 'svc_' + Date.now().toString(36),
-        stage: 'Logged',
-        createdAt: new Date().toISOString(),
-        leakSteps: [],
-        ...partial,
-      };
-      persist([t, ...load()]);
-    },
-    [persist],
-  );
+  useEffect(() => { load(); }, [load]);
 
-  const update = useCallback((id: string, patch: Partial<ServiceTicket>) => {
-    persist(load().map((t) => (t.id === id ? { ...t, ...patch } : t)));
-  }, [persist]);
+  const create = useCallback((partial: Pick<ServiceTicket, 'customer' | 'description' | 'type'>) => {
+    apiSend<ServiceTicket>('POST', '/service', partial)
+      .then((t) => setTickets((cur) => [t, ...cur]))
+      .catch(() => {});
+  }, []);
+
+  const patch = useCallback((id: string, body: Partial<ServiceTicket>) => {
+    setTickets((cur) => cur.map((t) => (t.id === id ? { ...t, ...body } : t)));
+    apiSend('PUT', `/service/${id}`, body).catch(() => load());
+  }, [load]);
+
+  const update = useCallback((id: string, body: Partial<ServiceTicket>) => patch(id, body), [patch]);
 
   const advance = useCallback((id: string) => {
-    persist(
-      load().map((t) => {
+    setTickets((cur) =>
+      cur.map((t) => {
         if (t.id !== id) return t;
         const i = SERVICE_STAGES.indexOf(t.stage);
-        return i < SERVICE_STAGES.length - 1 ? { ...t, stage: SERVICE_STAGES[i + 1] } : t;
+        if (i >= SERVICE_STAGES.length - 1) return t;
+        const stage = SERVICE_STAGES[i + 1];
+        apiSend('PUT', `/service/${id}`, { stage }).catch(() => load());
+        return { ...t, stage };
       }),
     );
-  }, [persist]);
+  }, [load]);
 
-  const remove = useCallback((id: string) => persist(load().filter((t) => t.id !== id)), [persist]);
+  const remove = useCallback((id: string) => {
+    setTickets((cur) => cur.filter((t) => t.id !== id));
+    apiSend('DELETE', `/service/${id}`).catch(() => load());
+  }, [load]);
 
   const toggleLeak = useCallback((id: string, step: string) => {
-    persist(
-      load().map((t) => {
+    setTickets((cur) =>
+      cur.map((t) => {
         if (t.id !== id) return t;
-        const cur = new Set(t.leakSteps || []);
-        cur.has(step) ? cur.delete(step) : cur.add(step);
-        return { ...t, leakSteps: [...cur] };
+        const set = new Set(t.leakSteps || []);
+        set.has(step) ? set.delete(step) : set.add(step);
+        const leakSteps = [...set];
+        apiSend('PUT', `/service/${id}`, { leakSteps }).catch(() => load());
+        return { ...t, leakSteps };
       }),
     );
-  }, [persist]);
+  }, [load]);
 
   return { tickets, create, update, advance, remove, toggleLeak };
 }
