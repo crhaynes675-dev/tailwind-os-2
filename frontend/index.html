@@ -139,8 +139,7 @@ body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-
   align-self:center;
 }
 
-/* Admin-only sub-tabs */
-.tb-admin{display:none;}
+/* Admin-only sub-tabs: hidden by default via inline style, shown via JS for admins */
 
 /* PAGES */
 .pg{padding:26px 32px;display:none;}
@@ -1438,50 +1437,50 @@ input,select,textarea,button { touch-action:manipulation; }
 
 <!-- SUB-TABS: SALES -->
 <div class="sub-tabs on" id="st-sales" role="tablist">
-  <button class="tb" data-idx="10" onclick="ST(10)" title="New Customer Intake">🧾 Intake</button>
-  <button class="tb on" data-idx="0"  onclick="ST(0)"  title="PDF Import">📄 PDF Import</button>
-  <button class="tb" data-idx="4"  onclick="ST(4)"  title="Job Summary &amp; Export">📋 Job Summary</button>
-  <button class="tb" data-idx="5"  onclick="ST(5)"  title="Data Export">📊 Data Export</button>
+  <button class="tb" data-idx="10" onclick="ST(10)" title="New Customer Intake">Intake</button>
+  <button class="tb on" data-idx="0"  onclick="ST(0)"  title="PDF Import">PDF Import</button>
+  <button class="tb" data-idx="4"  onclick="ST(4)"  title="Job Summary &amp; Export">Job Summary</button>
+  <button class="tb" data-idx="5"  onclick="ST(5)"  title="Data Export">Data Export</button>
 </div>
 
 <!-- SUB-TABS: INSTALLATION & SERVICE -->
 <div class="sub-tabs" id="st-install" role="tablist">
-  <button class="tb" data-idx="1"  onclick="ST(1)"  title="Install Estimator">🔧 Estimator</button>
-  <button class="tb" data-idx="8"  onclick="ST(8)"  title="Site Report" id="tab-piwr">🔍 Site Report</button>
+  <button class="tb" data-idx="1"  onclick="ST(1)"  title="Install Estimator">Estimator</button>
+  <button class="tb" data-idx="8"  onclick="ST(8)"  title="Site Report" id="tab-piwr">Site Report</button>
 </div>
 
 <!-- SUB-TABS: OPERATIONS -->
 <div class="sub-tabs" id="st-ops" role="tablist">
-  <button class="tb" data-idx="14" onclick="ST(14)" title="Operations Dashboard">⚡ Dashboard</button>
-  <button class="tb" data-idx="9"  onclick="ST(9)"  title="Schedule">📅 Schedule</button>
-  <button class="tb" data-idx="21" onclick="ST(21)" title="Dispatch Command Center">📡 Dispatch</button>
-  <button class="tb" data-idx="13" onclick="ST(13)" title="Geolocation &amp; Navigation">📍 Navigation</button>
-  <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">📁 Completed Jobs</button>
-  <button class="tb" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew" id="tab-crew">👷 Crew</button>
+  <button class="tb" data-idx="14" onclick="ST(14)" title="Dashboard">Dashboard</button>
+  <button class="tb" data-idx="9"  onclick="ST(9)"  title="Dispatch">Dispatch</button>
+  <button class="tb" data-idx="21" onclick="ST(21)" title="Map">Map</button>
+  <button class="tb" data-idx="13" onclick="ST(13)" title="Mobile App">Mobile App</button>
+  <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">Completed Jobs</button>
+  <button class="tb" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew" id="tab-crew">Crew</button>
 </div>
 
 <!-- SUB-TABS: CUSTOMER DATABASE -->
 <div class="sub-tabs" id="st-customer" role="tablist">
-  <button class="tb" data-idx="11" onclick="ST(11)" title="Customer Database">🗂️ Database</button>
-  <button class="tb" data-idx="17" onclick="ST(17)" title="Projects by Customer">📂 Projects</button>
-  <div class="tb-sep tb-admin" id="admin-sep"></div>
-  <button class="tb tb-admin" data-idx="7"  onclick="ST(7)"  title="Users" id="tab-users">👥 Users</button>
-  <button class="tb tb-admin" data-idx="12" onclick="ST(12)" title="Automations" id="tab-auto">⚡ Automations</button>
+  <button class="tb" data-idx="11" onclick="ST(11)" title="Customer Database">Database</button>
+  <button class="tb" data-idx="17" onclick="ST(17)" title="Projects by Customer">Projects</button>
+  <div class="tb-sep tb-admin" id="admin-sep" style="display:none"></div>
+  <button class="tb tb-admin" data-idx="7"  onclick="ST(7)"  title="Users" id="tab-users" style="display:none">Users</button>
+  <button class="tb tb-admin" data-idx="12" onclick="ST(12)" title="Automations" id="tab-auto" style="display:none">Automations</button>
 </div>
 
 <!-- SUB-TABS: REPORTS -->
 <div class="sub-tabs" id="st-reports" role="tablist">
-  <button class="tb" data-idx="15" onclick="ST(15)" title="Reports">📊 Reports</button>
+  <button class="tb" data-idx="15" onclick="ST(15)" title="Reports">Reports</button>
 </div>
 
 <!-- SUB-TABS: BILLING -->
 <div class="sub-tabs" id="st-billing" role="tablist">
-  <button class="tb" data-idx="18" id="tab-billing" onclick="ST(18);billingShow();" title="Billing">💳 Billing &amp; Plan</button>
+  <button class="tb" data-idx="18" id="tab-billing" onclick="ST(18);billingShow();" title="Billing">Billing &amp; Plan</button>
 </div>
 
 <!-- SUB-TABS: SUPER-ADMIN -->
 <div class="sub-tabs" id="st-sa" role="tablist">
-  <button class="tb" data-idx="19" id="tab-sa-tenants" onclick="ST(19);saTenantsShow();" title="All Tenants">🏢 All Tenants</button>
+  <button class="tb" data-idx="19" id="tab-sa-tenants" onclick="ST(19);saTenantsShow();" title="All Tenants">All Tenants</button>
 </div>
 
 <!-- ═══════════ PAGE 0 · PDF IMPORT ═══════════ -->
@@ -2098,7 +2097,7 @@ input,select,textarea,button { touch-action:manipulation; }
     <h2 class="um-title">Crew Management</h2>
     <span class="um-badge">Admin / Work Coordinator</span>
   </div>
-  <p class="um-sub">Create named crews and manage your individual field crew roster.</p>
+  <p class="um-sub">Create and manage named crews. Assign service technicians and a crew lead to each crew.</p>
 
   <!-- ── Named Crews ──────────────────────────────────────────────────────────── -->
   <div class="um-section">
@@ -2106,8 +2105,9 @@ input,select,textarea,button { touch-action:manipulation; }
       <span>Named Crews</span>
       <button class="um-create-btn" onclick="
         var f=document.getElementById('cg-create-form');
+        var e=document.getElementById('cg-edit-form');
+        if(e)e.style.display='none';
         f.style.display=f.style.display==='none'?'block':'none';
-        if(f.style.display==='block'){crewGroupRenderPage();}
       " style="font-size:.62rem;padding:4px 10px;">+ New Crew</button>
     </div>
     <div id="cg-list" style="border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:10px;">
@@ -2124,7 +2124,7 @@ input,select,textarea,button { touch-action:manipulation; }
         </div>
       </div>
       <div style="margin-bottom:10px;">
-        <label class="um-form-label">Assign Service Technicians *</label>
+        <label class="um-form-label">Assign Members (Service Techs &amp; Project Managers) *</label>
         <div id="cg-member-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;min-height:40px;margin-top:4px;">
           <div style="font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);">Loading roster…</div>
         </div>
@@ -2140,56 +2140,31 @@ input,select,textarea,button { touch-action:manipulation; }
         <button class="btn bo" onclick="document.getElementById('cg-create-form').style.display='none'" style="font-size:.7rem;">Cancel</button>
       </div>
     </div>
-  </div>
 
-  <!-- ── Crew Roster (individuals) ──────────────────────────────────────────── -->
-  <div class="um-section">
-    <div class="um-section-title">Crew Roster</div>
-    <div style="overflow-x:auto">
-      <table class="um-table">
-        <thead>
-          <tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th><th style="width:120px"></th></tr>
-        </thead>
-        <tbody id="crew-mgmt-list">
-          <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Add crew member -->
-  <div class="um-section">
-    <div class="um-section-title">Add Crew Member</div>
-    <div class="um-form-row" style="flex-wrap:wrap">
-      <div class="um-form-field">
-        <label class="um-form-label" for="cm-new-name">Name *</label>
-        <input class="um-form-input" id="cm-new-name" type="text" placeholder="e.g. Marcus Rivera" autocomplete="off"
-               onkeydown="if(event.key==='Enter')crewMgmtCreate()">
+    <!-- Edit crew form (hidden by default) -->
+    <div id="cg-edit-form" style="display:none;background:rgba(91,155,213,.05);border:1px solid rgba(91,155,213,.25);border-radius:4px;padding:14px;margin-top:8px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Edit Crew: <span id="cg-edit-label" style="text-transform:none;letter-spacing:0;color:var(--text);"></span></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+        <div class="um-form-field" style="flex:1;min-width:180px;">
+          <label class="um-form-label" for="cg-edit-name">Crew Name *</label>
+          <input class="um-form-input" id="cg-edit-name" type="text" autocomplete="off">
+        </div>
       </div>
-      <div class="um-form-field" style="max-width:160px">
-        <label class="um-form-label" for="cm-new-role">Role</label>
-        <select class="um-form-select" id="cm-new-role">
-          <option value="service_technician">Service Technician</option>
-          <option value="project_manager">Project Manager</option>
-          <option value="work_coordinator">Work Coordinator</option>
-          <option value="sales">Sales</option>
-          <option value="admin">Admin</option>
+      <div style="margin-bottom:10px;">
+        <label class="um-form-label">Assign Members (Service Techs &amp; Project Managers) *</label>
+        <div id="cg-edit-member-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;min-height:40px;margin-top:4px;"></div>
+      </div>
+      <div class="um-form-field" style="max-width:260px;margin-bottom:14px;">
+        <label class="um-form-label" for="cg-edit-lead">Crew Lead</label>
+        <select class="um-form-select" id="cg-edit-lead">
+          <option value="">— select members first —</option>
         </select>
       </div>
-      <div class="um-form-field">
-        <label class="um-form-label" for="cm-new-phone">Phone</label>
-        <input class="um-form-input" id="cm-new-phone" type="tel" placeholder="555-000-0000" autocomplete="off">
-      </div>
-      <div class="um-form-field">
-        <label class="um-form-label" for="cm-new-email">Email</label>
-        <input class="um-form-input" id="cm-new-email" type="email" placeholder="crew@company.com" autocomplete="off">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
-        <label class="um-form-label">&nbsp;</label>
-        <button class="um-create-btn" id="cm-create-btn" onclick="crewMgmtCreate()">+ Add Member</button>
+      <div style="display:flex;gap:8px;">
+        <button class="um-create-btn" onclick="crewGroupSaveEdit()">✓ Save Changes</button>
+        <button class="btn bo" onclick="crewGroupCancelEdit()" style="font-size:.7rem;">Cancel</button>
       </div>
     </div>
-    <div class="um-msg" id="cm-msg"></div>
   </div>
 
 </div>
@@ -2264,7 +2239,7 @@ input,select,textarea,button { touch-action:manipulation; }
 
   <!-- ── Top toolbar ────────────────────────────────────────────────────── -->
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-    <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);flex-shrink:0;">📅 Schedule</div>
+    <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);flex-shrink:0;">Dispatch</div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
       <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
         <button id="cal-view-day"   onclick="calSetView('day')"   style="padding:5px 13px;font-family:'Outfit',sans-serif;font-size:.62rem;letter-spacing:.8px;background:none;border:none;cursor:pointer;color:var(--muted);transition:background .15s,color .15s;">Day</button>
@@ -2434,8 +2409,8 @@ function ST(idx) {
   if (idx === 11) cdbRender();
   if (idx === 12) autoRender();
   if (idx === 13) geoInit();
-  if (idx === 21) dispatchInit();
-  if (idx === 14) dashRender();
+  if (idx === 14) { dashRender(); }
+  if (idx === 21) { dispatchInit(); }
   if (idx === 15) reportsRender();
   if (idx === 16) cjRender();
   if (idx === 17) projRender();
@@ -4616,7 +4591,7 @@ function calNewJobObject(def) {
     _id:calUID(), _created:calNow(), _modified:calNow(), _schema_v:2,
     job:def.job||'', addr:def.addr||'',
     date:def.date||calDateStr(calAnchor), time:def.time||'08:00',
-    duration:def.duration||120, type:def.type||'Install',
+    duration:def.duration||120, type:def.type||'Job',
     endDate:  def.endDate  || '',
     status:'Scheduled', priority:def.priority||'Normal', crew:def.crew||'',
     tags:'', customerId:null, quoteRef:def.quoteRef||'',
@@ -4850,12 +4825,19 @@ function calBuildJobBlock(job){
     holdBanner + '</div>';
 }
 
-function calRenderDay(d){ var el=G('cal-body'); if(!el)return; el.innerHTML=calBuildTimeGrid([d]); }
+function calRenderDay(d){
+  var el=G('cal-body'); if(!el)return;
+  var prev=el.scrollTop;
+  el.innerHTML=calBuildTimeGrid([d]);
+  el.scrollTop = prev || 2*CAL_SLOT_PX; // restore scroll; default to 8 AM on first load
+}
 
 function calRenderWeek(ws){
   var el=G('cal-body'); if(!el)return;
   var days=[]; for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(d.getDate()+i);days.push(d);}
+  var prev=el.scrollTop;
   el.innerHTML=calBuildTimeGrid(days);
+  el.scrollTop = prev || 2*CAL_SLOT_PX; // restore scroll; default to 8 AM on first load
 }
 
 function calRenderMonth(year, month) {
@@ -7041,9 +7023,13 @@ function authShowApp(user) {
   if (hbgAdminSec)    hbgAdminSec.style.display    = (isAdmin || isSuperAdmin) ? 'block' : 'none';
   if (hbgNonadminSec) hbgNonadminSec.style.display  = (isAdmin || isSuperAdmin) ? 'none'  : 'block';
 
-  // Customer group: show admin sub-tabs (Users, Automations) for admins
+  // tb-admin: show billing nav group etc, but keep Users/Automations out of the sub-nav
   document.querySelectorAll('.tb-admin').forEach(function(el){
     el.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
+  });
+  // Always hide Users/Automations from the Customer sub-tab bar
+  ['admin-sep','tab-users','tab-auto'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
 
   // Billing nav group + tab — visible to admins
@@ -7064,7 +7050,6 @@ function authShowApp(user) {
   if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
   if (autoBtn)  autoBtn.style.display  = isAdmin ? '' : 'none';
 
-  document.getElementById('tab-users').style.display = 'none'; // not a visible sub-tab
   var crewTab = document.getElementById('tab-crew');
   var canSeeCrew = isAdmin || isSuperAdmin || (user && user.role === 'work_coordinator');
   if (crewTab) crewTab.style.display = canSeeCrew ? '' : 'none';
@@ -7337,10 +7322,11 @@ function umRoleLabel(role) {
 }
 
 function umRenderPage() {
-  var isAdmin = AUTH_CURRENT_USER && AUTH_CURRENT_USER.role === 'admin';
-  document.getElementById('um-denied').style.display  = isAdmin ? 'none'  : 'block';
-  document.getElementById('um-content').style.display = isAdmin ? 'block' : 'none';
-  if (isAdmin) umRenderList();
+  var role = AUTH_CURRENT_USER && AUTH_CURRENT_USER.role;
+  var canManage = role === 'admin' || role === 'super_admin';
+  document.getElementById('um-denied').style.display  = canManage ? 'none'  : 'block';
+  document.getElementById('um-content').style.display = canManage ? 'block' : 'none';
+  if (canManage) umRenderList();
 }
 
 var _umUserCache = [];
@@ -7535,119 +7521,17 @@ function umShowMsg(text, type) {
 var _CREW_ROLE_LABELS = { service_technician:'Service Technician', project_manager:'Project Manager', work_coordinator:'Work Coordinator', sales:'Sales', admin:'Admin' };
 
 function crewMgmtLoad() {
-  if (typeof crewGroupRenderPage === 'function') crewGroupRenderPage();
-  var tbody = document.getElementById('crew-mgmt-list');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Loading…</td></tr>';
-  mmApi('GET', '/crew').then(function(members) {
-    if (!members || !members.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">No crew members yet. Add one below.</td></tr>';
-      return;
+  crewGroupRenderPage();
+  if (!mmGetToken()) return;
+  mmApi('GET', '/users').then(function(res) {
+    if (res && Array.isArray(res) && res.length) {
+      CREW_ROSTER = res.map(function(u) {
+        var name = ((u.givenName || '') + ' ' + (u.familyName || '')).trim() || u.username;
+        return { id: u.username, name: name, email: u.email || '', role: u.role || 'installer', phone: '', available: true };
+      });
     }
-    tbody.innerHTML = members.map(function(m) {
-      var rl = _CREW_ROLE_LABELS[m.role] || m.role || '—';
-      var rc = m.role || 'installer';
-      var sid = m.id.replace(/'/g,"\\'");
-      var sname = (m.name || 'this member').replace(/'/g,"\\'");
-      return '<tr>' +
-        '<td style="font-weight:600;color:var(--text)">' + (m.name || '—') + '</td>' +
-        '<td><span class="um-role-badge ' + rc + '">' + rl + '</span></td>' +
-        '<td style="color:var(--muted);font-size:.8rem">' + (m.phone || '—') + '</td>' +
-        '<td style="color:var(--muted);font-size:.8rem">' + (m.email || '—') + '</td>' +
-        '<td style="display:flex;gap:6px;align-items:center;">' +
-          '<button onclick="crewMgmtEdit(\'' + sid + '\')" ' +
-            'style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.72rem;padding:3px 8px;border-radius:3px;font-family:\'Outfit\',sans-serif;white-space:nowrap;"' +
-          '>Edit</button>' +
-          '<button onclick="crewMgmtDelete(\'' + sid + '\',\'' + sname + '\')" ' +
-            'style="background:none;border:none;color:var(--danger,#e05c5c);cursor:pointer;font-size:.75rem;padding:2px 6px;"' +
-          '>Delete</button>' +
-        '</td>' +
-      '</tr>';
-    }).join('');
-  }).catch(function(err) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger,#e05c5c);text-align:center;padding:14px">Failed to load crew: ' + (err.message || err) + '</td></tr>';
-  });
-}
-
-function crewMgmtCreate() {
-  var name  = (document.getElementById('cm-new-name').value  || '').trim();
-  var role  = document.getElementById('cm-new-role').value;
-  var phone = (document.getElementById('cm-new-phone').value || '').trim();
-  var email = (document.getElementById('cm-new-email').value || '').trim();
-  if (!name) { crewMgmtMsg('Name is required.', 'error'); return; }
-  var btn = document.getElementById('cm-create-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-  mmApi('POST', '/crew', { name: name, role: role, phone: phone, email: email })
-    .then(function() {
-      document.getElementById('cm-new-name').value  = '';
-      document.getElementById('cm-new-phone').value = '';
-      document.getElementById('cm-new-email').value = '';
-      document.getElementById('cm-new-role').value  = 'installer';
-      crewMgmtMsg('"' + name + '" added to crew.', 'success');
-      crewMgmtLoad();
-      crewRefreshRoster();
-    })
-    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to add member.', 'error'); })
-    .then(function() { if (btn) { btn.disabled = false; btn.textContent = '+ Add Member'; } });
-}
-
-function crewMgmtDelete(id, name) {
-  if (!confirm('Remove "' + name + '" from the crew roster? This cannot be undone.')) return;
-  mmApi('DELETE', '/crew/' + encodeURIComponent(id))
-    .then(function() {
-      crewMgmtMsg('"' + name + '" removed.', 'success');
-      crewMgmtLoad();
-      crewRefreshRoster();
-    })
-    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to delete.', 'error'); });
-}
-
-function crewMgmtEdit(id) {
-  mmApi('GET', '/crew').then(function(members) {
-    var m = (members || []).find(function(x) { return x.id === id; });
-    if (!m) return;
-    var idx = members.indexOf(m);
-    var tbody = document.getElementById('crew-mgmt-list');
-    if (!tbody) return;
-    var rows = tbody.querySelectorAll('tr');
-    if (!rows[idx]) return;
-    var roleOpts = ['service_technician','project_manager','work_coordinator','sales','admin'].map(function(r) {
-      return '<option value="'+r+'"'+(m.role===r?' selected':'')+'>'+(_CREW_ROLE_LABELS[r])+'</option>';
-    }).join('');
-    rows[idx].innerHTML =
-      '<td><input class="um-form-input" id="cm-edit-name" value="' + (m.name||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
-      '<td><select class="um-form-select" id="cm-edit-role" style="padding:5px 8px;font-size:.78rem">' + roleOpts + '</select></td>' +
-      '<td><input class="um-form-input" id="cm-edit-phone" value="' + (m.phone||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
-      '<td><input class="um-form-input" id="cm-edit-email" value="' + (m.email||'').replace(/"/g,'&quot;') + '" style="padding:5px 8px;font-size:.78rem"></td>' +
-      '<td style="display:flex;gap:6px;align-items:center;">' +
-        '<button onclick="crewMgmtSave(\'' + id.replace(/'/g,"\\'") + '\')" class="um-create-btn" style="font-size:.72rem;padding:5px 10px;">Save</button>' +
-        '<button onclick="crewMgmtLoad()" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.72rem;padding:3px 8px;border-radius:3px;font-family:\'Outfit\',sans-serif">Cancel</button>' +
-      '</td>';
+    crewGroupRenderPage();
   }).catch(function(){});
-}
-
-function crewMgmtSave(id) {
-  var name  = (document.getElementById('cm-edit-name').value  || '').trim();
-  var role  = document.getElementById('cm-edit-role').value;
-  var phone = (document.getElementById('cm-edit-phone').value || '').trim();
-  var email = (document.getElementById('cm-edit-email').value || '').trim();
-  if (!name) { crewMgmtMsg('Name is required.', 'error'); return; }
-  mmApi('PUT', '/crew/' + encodeURIComponent(id), { name: name, role: role, phone: phone, email: email })
-    .then(function() {
-      crewMgmtMsg('Crew member updated.', 'success');
-      crewMgmtLoad();
-      crewRefreshRoster();
-    })
-    .catch(function(err) { crewMgmtMsg(err.message || 'Failed to save.', 'error'); });
-}
-
-function crewMgmtMsg(text, type) {
-  var el = document.getElementById('cm-msg');
-  if (!el) return;
-  el.textContent = text;
-  el.className = 'um-msg show ' + type;
-  el.style.display = 'block';
-  if (type === 'success') setTimeout(function() { el.className = 'um-msg'; el.style.display = 'none'; }, 3500);
 }
 
 // ══════════════════════════════════════════════
@@ -8477,6 +8361,31 @@ function syncLoadFromStorage() {
     try { calRender(); } catch(e) {}
   }
 
+  // Snapshot pre-GET state keyed by _id and _apiId so we can restore local-only
+  // fields after GET /jobs rebuilds CAL_APPTS. Also covers jobs whose dates were
+  // lost in DynamoDB due to the old drag-handler bug (sent 'date:' instead of
+  // 'scheduledDate:' — silently ignored by the backend).
+  var _localSnap = {};
+  // First: read from STORAGE_KEY_JOBS (the dedicated cal-appts key)
+  try {
+    var _rawLocal = localStorage.getItem(STORAGE_KEY_JOBS);
+    if (_rawLocal) {
+      JSON.parse(_rawLocal).forEach(function(j) {
+        _localSnap[j._id] = j;
+        if (j._apiId) _localSnap['apiid_' + j._apiId] = j;
+      });
+    }
+  } catch(e) {}
+  // Also index the current in-memory CAL_APPTS (loaded from mm_app_state by
+  // dashRestoreState) — these may have correct dates even when STORAGE_KEY_JOBS
+  // is stale or uses old local IDs.
+  try {
+    (CAL_APPTS || []).forEach(function(a) {
+      if (!_localSnap[a._id]) _localSnap[a._id] = a;
+      if (a._apiId && !_localSnap['apiid_' + a._apiId]) _localSnap['apiid_' + a._apiId] = a;
+    });
+  } catch(e) {}
+
   if (mmGetToken()) {
     mmApi('GET', '/jobs').then(function(jobs) {
       if (jobs && jobs.length) {
@@ -8489,11 +8398,13 @@ function syncLoadFromStorage() {
                    DASH_DELETED_IDS.indexOf(j.jobId) === -1;
           })
           .map(function(j) {
+            var _realDate      = (j.scheduledDate && j.scheduledDate !== '0001-01-01') ? j.scheduledDate : '';
+            var _isUnscheduled = !_realDate; // all no-date API jobs are draggable from the cal sidebar
             return Object.assign(calNewJobObject({
               job:      j.jobName,
-              addr:     j.address      || '',
-              date:     j.scheduledDate|| '',
-              time:     j.scheduledTime|| '',
+              addr:     j.address   || '',
+              date:     _realDate,
+              time:     j.scheduledTime || '',
               crew:     j.assignedTo   || '',
               quoteRef: j.quoteNum     || ''
             }), {
@@ -8502,16 +8413,145 @@ function syncLoadFromStorage() {
               parentJobId:     j.parentJobId     || '',
               workOrderNumber: j.workOrderNumber || '',
               status:          j.status || 'Scheduled',
-              internalNotes:   j.notes          || '',
-              customerName:    j.customerName   || '',
-              customerPhone:   j.customerPhone  || ''
+              _unscheduled:    _isUnscheduled,
+              date:            _realDate,
+              // Explicitly carry the raw API value (even '') so the merge below
+              // can tell the difference between "API has a time" and "API has none".
+              time:            j.scheduledTime || '',
+              internalNotes:   j.notes         || '',
+              customerName:    j.customerName  || '',
+              customerPhone:   j.customerPhone || ''
             });
           });
       }
+      // Merge local snapshot: restore fields the API returned empty/wrong.
+      // Also recovers dates lost due to the old drag-handler bug where 'date:'
+      // was sent instead of 'scheduledDate:' and silently dropped by DynamoDB.
+      CAL_APPTS.forEach(function(appt) {
+        var local = _localSnap[appt._id] || _localSnap['apiid_' + appt._apiId];
+        if (!local) return;
+        if (!appt.time          && local.time)          appt.time          = local.time;
+        if (!appt.customerName  && local.customerName)  appt.customerName  = local.customerName;
+        if (!appt.customerPhone && local.customerPhone) appt.customerPhone = local.customerPhone;
+        // Restore date when DynamoDB has 0001-01-01 but the job is Scheduled —
+        // covers jobs dragged before the scheduledDate field name was fixed.
+        // Also re-queues a PUT so DynamoDB is healed for future refreshes.
+        if (!appt.date && local.date && appt.status === 'Scheduled') {
+          appt.date         = local.date;
+          appt._unscheduled = false;
+          if (appt._apiId && typeof syncEnqueue === 'function') {
+            syncEnqueue('JOB_UPDATE', appt._apiId, {
+              scheduledDate: local.date,
+              scheduledTime: appt.time || local.time || '',
+              status:        'Scheduled'
+            });
+          }
+        }
+      });
+      // DASH_JOBS fallback: DASH_JOBS retain scheduledDate across GET /jobs rebuilds
+      // because dashSyncCalendarUpdates only copies appt.date→j.scheduledDate when
+      // appt.date is truthy — so a dragged job's scheduledDate is never cleared to ''.
+      // When the CAL_APPT local snapshot also has empty dates (because mm_app_state
+      // was saved after a prior GET /jobs already cleared them), DASH_JOBS is the
+      // only remaining source of the real schedule date.
+      try {
+        var _djMap = {};
+        (typeof DASH_JOBS !== 'undefined' ? DASH_JOBS : []).forEach(function(dj) {
+          if (dj._apiId && dj.scheduledDate && dj.scheduledDate !== '0001-01-01') {
+            _djMap[dj._apiId] = dj;
+          }
+        });
+        var _noDateStatuses = ['Unscheduled', 'Ready to Schedule', 'Needs Review', 'Imported'];
+        CAL_APPTS.forEach(function(appt) {
+          if (appt.date || !appt._apiId) return;
+          var dj = _djMap[appt._apiId];
+          if (!dj) return;
+          // Skip if the DASH_JOB itself is in an explicitly unscheduled state
+          if (_noDateStatuses.indexOf(dj.status) !== -1) return;
+          appt.date         = dj.scheduledDate;
+          appt._unscheduled = false;
+          if (typeof syncEnqueue === 'function') {
+            syncEnqueue('JOB_UPDATE', appt._apiId, {
+              scheduledDate: dj.scheduledDate,
+              scheduledTime: appt.time || dj.timeWindow || '',
+              status:        dj.status
+            });
+          }
+        });
+      } catch(e) {}
+      // Apply any pending sync-queue updates on top — queue always wins over both
+      // the API snapshot and the local snapshot (it represents the latest intent).
+      SYNC_QUEUE.forEach(function(entry) {
+        if (entry.op !== 'JOB_UPDATE') return;
+        var appt = CAL_APPTS.find(function(a) {
+          return a._apiId === entry.jobId || a._id === 'api_' + entry.jobId;
+        });
+        if (!appt) return;
+        var p = entry.payload;
+        var newDate = p.scheduledDate || p.date; // accept both field names
+        if (newDate)                       appt.date = newDate;
+        if (p.scheduledTime !== undefined) appt.time = p.scheduledTime;
+        if (p.status        !== undefined) appt.status = p.status;
+        if (p.assignedTo    !== undefined) appt.crew = p.assignedTo;
+        if (p.customerName  !== undefined) appt.customerName  = p.customerName;
+        if (p.customerPhone !== undefined) appt.customerPhone = p.customerPhone;
+        // keep _unscheduled flag consistent with the saved date
+        if (appt.date) appt._unscheduled = false;
+      });
       syncUpdateBadge();
-      try { calRender(); } catch(e) {}
-      // Re-render dashboard so DASH_JOBS syncs with the fresh (tombstone-filtered) CAL_APPTS
+
+      // Direct WO# backfill: patch DASH_JOBS immediately from the API response so
+      // the dashboard never shows "Saving..." for a WO# that DynamoDB already has.
+      // This bypasses the CAL_APPT sync chain and handles stale calApptId links.
+      try {
+        if (typeof DASH_JOBS !== 'undefined') {
+          jobs.forEach(function(apiJob) {
+            if (!apiJob.workOrderNumber) return;
+            var dj = DASH_JOBS.find(function(j) {
+              return j._apiId === apiJob.jobId ||
+                     j.calApptId === 'api_' + apiJob.jobId;
+            });
+            if (dj) {
+              dj.workOrderNumber = apiJob.workOrderNumber;
+              // Clear any stale in-flight flags so the WO# column renders correctly
+              delete dj._woPending;
+              delete dj._woFailed;
+            }
+          });
+        }
+      } catch(e) {}
+      // Allow dashAssignWorkOrderNumber to fire PUTs for jobs that GET /jobs
+      // confirmed genuinely have no WO# in DynamoDB (not just missing in memory).
+      _apiJobsLoaded = true;
+
+      // dashRender → dashSyncCalendarUpdates FIRST so it can push DASH_JOB dates
+      // back into CAL_APPTS before calRender draws the grid.
       try { if (typeof dashRender === 'function') dashRender(); } catch(e) {}
+      try { calRender(); } catch(e) {}
+
+      // Auto-navigate the calendar to the nearest scheduled job if the current
+      // week/day view is empty. Jobs may be on a different week than today.
+      try {
+        var _sched = (CAL_APPTS || []).filter(function(a) { return !a._unscheduled && a.date; });
+        if (_sched.length && (calView === 'week' || calView === 'day')) {
+          var _hasCurrent = false;
+          if (calView === 'day') {
+            _hasCurrent = calJobsOnDate(calDateStr(calAnchor)).length > 0;
+          } else {
+            var _ws2 = calWeekStart(calAnchor), _ck = new Date(_ws2);
+            for (var _ki = 0; _ki < 7; _ki++) {
+              if (calJobsOnDate(calDateStr(_ck)).length) { _hasCurrent = true; break; }
+              _ck.setDate(_ck.getDate() + 1);
+            }
+          }
+          if (!_hasCurrent) {
+            var _todayS = calDateStr(new Date());
+            var _near = (_sched.filter(function(a){return a.date>=_todayS;}).sort(function(a,b){return a.date<b.date?-1:1;})[0]) ||
+                        (_sched.filter(function(a){return a.date<_todayS;}).sort(function(a,b){return a.date>b.date?-1:1;})[0]);
+            if (_near) { calAnchor = calParseDate(_near.date); calRender(); }
+          }
+        }
+      } catch(e) {}
     }).catch(loadLocalJobs);
   } else {
     loadLocalJobs();
@@ -8562,8 +8602,13 @@ function syncFlush() {
       if (dj) {
         dj._apiId         = res.jobId;
         dj.workOrderNumber= res.workOrderNumber || '';
-        if (typeof dashRender === 'function') dashRender();
       }
+      // Always refresh dashboard so calendar-created jobs appear immediately
+      // (whether a DASH_JOB existed already or will be created by dashSyncCalendarUpdates)
+      syncPersistJobs && syncPersistJobs();
+      if (typeof dashRender === 'function') dashRender();
+      // Persist DASH_JOBS so the new entry survives a refresh
+      if (typeof dashPersistState === 'function') dashPersistState();
     }
     SYNC_QUEUE.shift();
     syncPersistQueue();
@@ -9333,7 +9378,7 @@ function calGridDrop(e) {
 
   // Mark as scheduled
   job._unscheduled = false;
-  job.status = job.status === 'Scheduled' ? 'Scheduled' : job.status;
+  job.status = 'Scheduled';
   job._modified = calNow();
 
   // Update summary link label if this is the linked job
@@ -9346,8 +9391,9 @@ function calGridDrop(e) {
   _calSidebarDragId = null;
   _calDragId = null;
 
-  auditAppend && auditAppend('JOB_UPDATE', job._id, { action:'scheduled', date:job.date, time:job.time });
-  syncEnqueue && syncEnqueue('JOB_UPDATE', job._id, { date:job.date, time:job.time, status:job.status });
+  var _syncId = job._apiId || job._id.replace(/^api_/, '');
+  auditAppend && auditAppend('JOB_UPDATE', _syncId, { action:'scheduled', date:job.date, time:job.time });
+  syncEnqueue && syncEnqueue('JOB_UPDATE', _syncId, { scheduledDate:job.date, scheduledTime:job.time, status:'Scheduled', assignedTo:job.crew||'' });
   syncPersistJobs && syncPersistJobs();
 
   calRender();
@@ -9423,8 +9469,8 @@ function calHandleDrop(e, dateStr) {
   job.date         = dateStr;
   job.time         = time;
   job._unscheduled = false;
+  job.status       = 'Scheduled';
   job._modified    = calNow();
-  if (job.status === 'Scheduled' || !job.status) job.status = 'Scheduled';
 
   // Restore sidebar card opacity
   var card = document.getElementById('csb-' + jobId);
@@ -9436,9 +9482,10 @@ function calHandleDrop(e, dateStr) {
   _calSidebarDragId = null;
   window._calDragging = false;
 
-  // Persist + render
-  auditAppend  && auditAppend('JOB_UPDATE', job._id, { action:'scheduled', date:job.date, time:job.time });
-  syncEnqueue  && syncEnqueue('JOB_UPDATE', job._id, { date:job.date, time:job.time });
+  // Persist + render — use raw UUID for API, not the local 'api_' prefixed _id
+  var _syncId = job._apiId || job._id.replace(/^api_/, '');
+  auditAppend  && auditAppend('JOB_UPDATE', _syncId, { action:'scheduled', date:job.date, time:job.time });
+  syncEnqueue  && syncEnqueue('JOB_UPDATE', _syncId, { scheduledDate:job.date, scheduledTime:job.time, status:'Scheduled', assignedTo:job.crew||'' });
   syncPersistJobs && syncPersistJobs();
   if (typeof summaryUpdateLink === 'function') summaryUpdateLink();
   // ── Notify Dashboard of calendar change ──────────────────────────────────
@@ -9856,7 +9903,7 @@ function crewGroupCreate() {
   var leadId = leadEl ? leadEl.value : memberIds[0];
   var group = { id: crewGroupUID(), name: name, memberIds: memberIds, leadId: leadId };
   CREW_GROUPS.push(group);
-  dashPersistState();
+  dashPersistState(); crewGroupsPersist();
   crewGroupRenderPage();
   nameEl.value = '';
 }
@@ -9865,13 +9912,13 @@ function crewGroupDelete(id) {
   var g = CREW_GROUPS.find(function(g){ return g.id === id; });
   if (!g || !confirm('Delete crew "' + g.name + '"?')) return;
   CREW_GROUPS = CREW_GROUPS.filter(function(g){ return g.id !== id; });
-  dashPersistState();
+  dashPersistState(); crewGroupsPersist();
   crewGroupRenderPage();
 }
 
 function crewGroupRenderPage() {
   var listEl = G('cg-list'); if (!listEl) return;
-  var techs = (CREW_ROSTER || []).filter(function(m){ return m.role === 'service_technician'; });
+  var techs = (CREW_ROSTER || []).filter(function(m){ return m.role === 'service_technician' || m.role === 'project_manager'; });
   if (!CREW_GROUPS.length) {
     listEl.innerHTML = '<div style="padding:14px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);text-align:center;">No crews yet — create one below.</div>';
   } else {
@@ -9882,14 +9929,17 @@ function crewGroupRenderPage() {
         return m ? m.name : id;
       });
       return '<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
-        '<div>' +
+        '<div style="flex:1;min-width:0;">' +
           '<div style="font-family:\'Outfit\',sans-serif;font-size:.85rem;font-weight:600;color:var(--text);">👷 ' + g.name + '</div>' +
           '<div style="font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--muted);margin-top:3px;">' +
             (lead ? '<span style="color:var(--accent);">★ Lead: ' + lead.name + '</span> · ' : '') +
             members.join(', ') +
           '</div>' +
         '</div>' +
-        '<button onclick="crewGroupDelete(\'' + g.id + '\')" class="btn bo" style="font-size:.58rem;padding:3px 8px;color:var(--red);border-color:var(--red);flex-shrink:0;">Delete</button>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button onclick="crewGroupEdit(\'' + g.id + '\')" class="btn bo" style="font-size:.58rem;padding:3px 8px;">Edit</button>' +
+          '<button onclick="crewGroupDelete(\'' + g.id + '\')" class="btn bo" style="font-size:.58rem;padding:3px 8px;color:var(--red);border-color:var(--red);">Delete</button>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
@@ -9897,7 +9947,7 @@ function crewGroupRenderPage() {
   // Render the member checkbox list for the create form
   var memberListEl = G('cg-member-list'); if (!memberListEl) return;
   if (!techs.length) {
-    memberListEl.innerHTML = '<div style="font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No Service Technicians in the roster yet.</div>';
+    memberListEl.innerHTML = '<div style="font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No Service Technicians or Project Managers found. Add users in User Management first.</div>';
   } else {
     memberListEl.innerHTML = techs.map(function(m) {
       return '<label style="display:flex;align-items:center;gap:6px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--text);cursor:pointer;padding:4px 0;">' +
@@ -9923,6 +9973,72 @@ function crewGroupUpdateLeadOptions() {
         return '<option value="' + id + '"' + (id === prev ? ' selected' : '') + '>' + label + '</option>';
       }).join('')
     : '<option value="">— select members first —</option>';
+}
+
+var _crewGroupEditId = '';
+
+function crewGroupEdit(id) {
+  var g = (CREW_GROUPS || []).find(function(x){ return x.id === id; });
+  if (!g) return;
+  _crewGroupEditId = id;
+  var createForm = G('cg-create-form');
+  if (createForm) createForm.style.display = 'none';
+  var labelEl = G('cg-edit-label');
+  if (labelEl) labelEl.textContent = g.name;
+  var nameEl = G('cg-edit-name');
+  if (nameEl) nameEl.value = g.name;
+  var memberListEl = G('cg-edit-member-list');
+  if (memberListEl) {
+    var techs = (CREW_ROSTER || []).filter(function(m){ return m.role === 'service_technician' || m.role === 'project_manager'; });
+    if (!techs.length) {
+      memberListEl.innerHTML = '<div style="font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No Service Technicians or Project Managers found. Add users in User Management first.</div>';
+    } else {
+      memberListEl.innerHTML = techs.map(function(m) {
+        var checked = (g.memberIds || []).indexOf(m.id) !== -1;
+        return '<label style="display:flex;align-items:center;gap:6px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--text);cursor:pointer;padding:4px 0;">' +
+          '<input type="checkbox" class="cg-edit-member-check" value="' + m.id + '"' + (checked ? ' checked' : '') + ' onchange="crewGroupUpdateEditLeadOptions()" style="accent-color:var(--accent);">' +
+          m.name +
+        '</label>';
+      }).join('');
+    }
+  }
+  crewGroupUpdateEditLeadOptions(g.leadId);
+  var editForm = G('cg-edit-form');
+  if (editForm) { editForm.style.display = 'block'; editForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+}
+
+function crewGroupUpdateEditLeadOptions(preselect) {
+  var leadEl = G('cg-edit-lead'); if (!leadEl) return;
+  var checked = [];
+  document.querySelectorAll('.cg-edit-member-check:checked').forEach(function(cb){ checked.push(cb.value); });
+  var prev = preselect !== undefined ? preselect : leadEl.value;
+  leadEl.innerHTML = checked.length
+    ? checked.map(function(id) {
+        var m = CREW_ROSTER.find(function(c){ return c.id === id; });
+        return '<option value="' + id + '"' + (id === prev ? ' selected' : '') + '>' + (m ? m.name : id) + '</option>';
+      }).join('')
+    : '<option value="">— select members first —</option>';
+}
+
+function crewGroupCancelEdit() {
+  _crewGroupEditId = '';
+  var editForm = G('cg-edit-form');
+  if (editForm) editForm.style.display = 'none';
+}
+
+function crewGroupSaveEdit() {
+  if (!_crewGroupEditId) return;
+  var name = ((G('cg-edit-name') || {}).value || '').trim();
+  if (!name) { alert('Crew name is required.'); return; }
+  var memberIds = [];
+  document.querySelectorAll('.cg-edit-member-check:checked').forEach(function(cb){ memberIds.push(cb.value); });
+  var leadId = (G('cg-edit-lead') || {}).value || '';
+  var idx = (CREW_GROUPS || []).findIndex(function(g){ return g.id === _crewGroupEditId; });
+  if (idx === -1) return;
+  CREW_GROUPS[idx] = { id: _crewGroupEditId, name: name, memberIds: memberIds, leadId: leadId };
+  dashPersistState(); crewGroupsPersist();
+  crewGroupCancelEdit();
+  crewGroupRenderPage();
 }
 
 // Get crew objects for a job
@@ -11060,6 +11176,7 @@ var SMS_TEMPLATES = {
 // Job statuses with colors
 var DASH_STATUSES = {
   'Unscheduled':                   '#5a7090',
+  'Ready to Schedule':             '#e8a427',
   'Scheduled':                     '#5b9bd5',
   'In Progress':                   '#22b2de',
   'Ready for Site Review':         '#9c6bce',
@@ -11167,11 +11284,13 @@ function dashSyncFromSources() {
       scheduledDate:appt.date  || '',
       timeWindow:   appt.time  || '',
       source:       'Calendar',
-      status:       appt.status === 'Completed' ? 'Completed' : appt.status === 'Canceled' ? 'Issue / Hold' : 'Scheduled',
+      status:       appt.status === 'Completed' ? 'Completed' : appt.status === 'Canceled' ? 'Issue / Hold' : (appt.status || 'Scheduled'),
       calApptId:       appt._id,
       _apiId:          appt._apiId          || '',
       parentJobId:     appt.parentJobId     || '',
-      workOrderNumber: appt.workOrderNumber || ''
+      workOrderNumber: appt.workOrderNumber || '',
+      customerName:    appt.customerName    || '',
+      customerPhone:   appt.customerPhone   || ''
     });
     DASH_JOBS.push(job);
     dashAssignWorkOrderNumber(job); // no-op if _apiId already set
@@ -11198,13 +11317,14 @@ function dashScheduleJob(dashId, date, time, crew) {
   if (job.calApptId) {
     var existing = CAL_APPTS.find(function(a){ return a._id === job.calApptId; });
     if (existing) {
-      existing.job    = job.jobName;
-      existing.addr   = job.jobAddress;
-      existing.date   = date;
-      existing.time   = time;
-      existing.crew   = crew;
-      existing.status = 'Scheduled';
-      existing._modified = calNow ? calNow() : new Date().toISOString();
+      existing.job          = job.jobName;
+      existing.addr         = job.jobAddress;
+      existing.date         = date;
+      existing.time         = time;
+      existing.crew         = crew;
+      existing.status       = 'Scheduled';
+      existing._unscheduled = false;
+      existing._modified    = calNow ? calNow() : new Date().toISOString();
     }
   } else {
     // Create new CAL_APPTS entry
@@ -11577,7 +11697,8 @@ function dashRenderKPI() {
   var today = new Date().toISOString().slice(0,10);
   var kpis = [
     { label:'Unscheduled',          val: DASH_JOBS.filter(function(j){return j.status==='Unscheduled';}).length,                                   color:'#5a7090' },
-    { label:'Scheduled',             val: DASH_JOBS.filter(function(j){return j.status==='Scheduled';}).length,                                     color:'#5b9bd5' },
+    { label:'Ready to Schedule',    val: DASH_JOBS.filter(function(j){return j.status==='Ready to Schedule';}).length,                             color:'#e8a427' },
+    { label:'Scheduled',            val: DASH_JOBS.filter(function(j){return j.status==='Scheduled';}).length,                                     color:'#5b9bd5' },
     { label:'In Progress',          val: DASH_JOBS.filter(function(j){return j.status==='In Progress';}).length,                                    color:'#22b2de' },
     { label:'Site Review',          val: DASH_JOBS.filter(function(j){return j.status==='Ready for Site Review';}).length,                         color:'#9c6bce' },
     { label:'Final Walkthrough',    val: DASH_JOBS.filter(function(j){return j.status==='Final Walkthrough Ready';}).length,                        color:'#26c6da' },
@@ -11592,33 +11713,57 @@ function dashRenderKPI() {
   }).join('');
 }
 
+// ── Inline status change from the Unscheduled queue ─────────────────────────
+function dashSetJobStatus(dashId, newStatus) {
+  var job = DASH_JOBS.find(function(j){ return j.dashId === dashId; });
+  if (!job) return;
+  job.status = newStatus;
+  job.lastUpdated = new Date().toISOString();
+  // Sync CAL_APPT _unscheduled flag:
+  //   'Ready to Schedule' → appears in calendar sidebar (draggable)
+  //   'Unscheduled'       → hidden from calendar sidebar until promoted
+  var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId || a._apiId === job._apiId; });
+  if (appt) {
+    appt._unscheduled = (newStatus === 'Ready to Schedule');
+    appt.status = newStatus;
+  }
+  if (job._apiId) syncEnqueue('JOB_UPDATE', job._apiId, _dashJobApiPayload(job));
+  dashPersistState();
+  dashRender();
+  try { calSidebarRender(); } catch(e) {}
+}
+
 // ── Unscheduled queue render ──────────────────────────────────────────────────
 function dashRenderUnscheduled() {
   var tbody = G('dash-unsched-tbody'); if (!tbody) return;
   var search = (G('dash-search') ? G('dash-search').value : '').toLowerCase();
   var jobs = DASH_JOBS.filter(function(j) {
-    if (j.status !== 'Unscheduled') return false;
+    if (j.status !== 'Unscheduled' && j.status !== 'Ready to Schedule') return false;
     if (search && ![j.jobName,j.customerName,j.jobAddress].join(' ').toLowerCase().includes(search)) return false;
     return true;
   });
   var countEl = G('dash-unsched-count');
   if (countEl) countEl.textContent = jobs.length ? jobs.length + ' job' + (jobs.length>1?'s':'') : '';
   if (!jobs.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px 12px;font-family:\'Outfit\',sans-serif;font-size:.68rem;color:var(--muted);">No unscheduled jobs. Use + New Job or import from PDF / Intake.</td></tr>';
     return;
   }
   var pc_fn = function(p){ return p==='High'?'var(--red)':p==='Low'?'var(--muted)':'var(--text)'; };
   tbody.innerHTML = jobs.map(function(j) {
+    var statusColor = j.status === 'Ready to Schedule' ? '#e8a427' : '#5a7090';
+    var statusBadge = '<span style="font-family:\'Outfit\',sans-serif;font-size:.6rem;font-weight:600;'+
+      'color:'+statusColor+';background:'+statusColor+'18;border:1px solid '+statusColor+'44;'+
+      'border-radius:10px;padding:2px 8px;white-space:nowrap;">'+j.status+'</span>';
     return '<tr style="cursor:pointer;transition:background .1s;" onclick="dashSelectJob(\''+j.dashId+'\')" onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'" onmouseleave="this.style.background=\'\'">'+
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">'+(j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : '—')+'</td>'+
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">'+(j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : j._woFailed ? '<span style="color:var(--red);font-size:.58rem;cursor:pointer;" onclick="dashRetryWO(\'' + j.dashId + '\')">⚠ Retry</span>' : '—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+j.jobName+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerCompany||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">'+(j.customerName||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.62rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(j.jobAddress||'—')+'</td>'+
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:'+pc_fn(j.priority)+';">'+j.priority+'</td>'+
+      '<td style="padding:9px 10px;">'+statusBadge+'</td>'+
       '<td style="padding:9px 12px;white-space:nowrap;">'+
         '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;margin-right:4px;">Edit</button>'+
-        '<button onclick="event.stopPropagation();dashOpenJobModal(\''+j.dashId+'\')" class="btn bp" style="font-size:.56rem;padding:3px 8px;margin-right:4px;">📅 Schedule</button>'+
         '<button onclick="event.stopPropagation();dashDeleteJob(\''+j.dashId+'\')" class="btn bo" style="font-size:.56rem;padding:3px 7px;color:var(--red);border-color:var(--red);">🗑</button>'+
       '</td>'+
     '</tr>';
@@ -11639,15 +11784,16 @@ function dashRender() {
   var search         = (G('dash-search')           ? G('dash-search').value          : '').toLowerCase();
 
   var jobs = DASH_JOBS.filter(function(j) {
-    if (j.status === 'Unscheduled') return false; // handled in unscheduled panel above
-    if (j.status === 'Completed')   return false; // shown only in Completed Jobs tab
+    if (j.status === 'Unscheduled')        return false; // handled in unscheduled panel above
+    if (j.status === 'Ready to Schedule') return false; // handled in unscheduled panel above
+    if (j.status === 'Completed')         return false; // shown only in Completed Jobs tab
     if (filterStatus   && j.status.toLowerCase()   !== filterStatus)   return false;
     if (filterPriority && j.priority.toLowerCase()  !== filterPriority) return false;
     if (search && ![j.jobName,j.customerName,j.jobAddress,j.crew].join(' ').toLowerCase().includes(search)) return false;
     return true;
   });
 
-  var activeCount = DASH_JOBS.filter(function(j){return j.status!=='Unscheduled' && j.status!=='Completed';}).length;
+  var activeCount = DASH_JOBS.filter(function(j){return j.status!=='Unscheduled' && j.status!=='Ready to Schedule' && j.status!=='Completed';}).length;
   if (!jobs.length) {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">' +
       (activeCount ? 'No active jobs match filters.' : 'No active jobs — schedule a job from the Unscheduled queue above.') + '</td></tr>';
@@ -11664,7 +11810,7 @@ function dashRender() {
       ' onclick="dashSelectJob(\'' + j.dashId + '\')"' +
       ' onmouseenter="this.style.background=\'rgba(232,164,39,.04)\'"' +
       ' onmouseleave="this.style.background=\'\'">' +
-      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : '—') + '</td>' +
+      '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--accent);white-space:nowrap;font-weight:600;">' + (j.workOrderNumber ? j.workOrderNumber : j._woPending ? '<span style="color:var(--muted);font-style:italic;">Saving…</span>' : j._woFailed ? '<span style="color:var(--red);font-size:.58rem;cursor:pointer;" onclick="dashRetryWO(\'' + j.dashId + '\')">⚠ Retry</span>' : '—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.jobName + (locked?'<span style="font-size:.5rem;margin-left:5px;">🔒</span>':'') + subBadge + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerCompany||'—') + '</td>' +
       '<td style="padding:9px 12px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--muted);">' + (j.customerName||'—') + '</td>' +
@@ -11782,10 +11928,15 @@ function dashNotifyCalendarChange(calApptId) {
     }
   } else if (!appt._unscheduled && appt.date) {
     // Has a date but no explicit status → at minimum 'Scheduled'
-    if (job.status === 'Unscheduled') {
+    if (job.status === 'Unscheduled' || job.status === 'Ready to Schedule') {
       job.status = 'Scheduled';
     }
   }
+
+  // ── Persist updated DASH_JOBS state ─────────────────────────────────────
+  // Without this, a refresh before the debounce fires would revert the
+  // job's status (e.g., back to 'Ready to Schedule' after a calendar drag).
+  if (typeof dashPersistState === 'function') dashPersistState();
 
   // ── Re-render dashboard if visible ───────────────────────────────────────
   if (G('p14') && G('p14').classList.contains('on')) {
@@ -11807,8 +11958,35 @@ function dashSyncCalendarUpdates() {
     }
     if (!appt) return;
 
-    // Sync fields cal → dashboard
-    if (appt.date)          j.scheduledDate = appt.date;
+    // Push customer info from DASH_JOBS → CAL_APPTS first so the calendar
+    // drawer shows it even when the API response had empty customer fields.
+    if (!appt.customerName  && j.customerName)  appt.customerName  = j.customerName;
+    if (!appt.customerPhone && j.customerPhone) appt.customerPhone = j.customerPhone;
+
+    // Date sync: DASH_JOB (user intent) wins over DynamoDB (may be stale creation date).
+    // Old drag handler sent {date:} instead of {scheduledDate:}, leaving DynamoDB with the
+    // creation date while DASH_JOBS already had the correct dragged date.
+    var _djDate  = (j.scheduledDate && j.scheduledDate !== '0001-01-01') ? j.scheduledDate : '';
+    var _calDate = appt.date || '';
+    if (_djDate) {
+      if (_calDate !== _djDate) {
+        // DASH_JOB date differs from DynamoDB — prefer DASH_JOB and heal DynamoDB
+        appt.date         = _djDate;
+        appt._unscheduled = false;
+        if (appt._apiId && typeof syncEnqueue === 'function') {
+          syncEnqueue('JOB_UPDATE', appt._apiId, {
+            scheduledDate: _djDate,
+            scheduledTime: appt.time || j.timeWindow || '',
+            status:        j.status || 'Scheduled'
+          });
+        }
+      } else {
+        appt._unscheduled = false; // dates match — ensure properly marked
+      }
+    } else if (_calDate) {
+      // DynamoDB has a date but DASH_JOB doesn't — sync to DASH_JOB
+      j.scheduledDate = _calDate;
+    }
     if (appt.time)          j.timeWindow    = appt.time;
     if (appt.crew)          j.crew          = appt.crew;
     if (appt.addr)          j.jobAddress    = appt.addr;
@@ -11828,7 +12006,12 @@ function dashSyncCalendarUpdates() {
 
     // Status sync with no-regress guard
     if (appt._unscheduled) {
-      if (!DASH_NO_REGRESS[j.status]) j.status = 'Ready to Schedule';
+      // Auto-advance pre-schedule statuses to Ready to Schedule so they appear
+      // in the calendar sidebar. 'Ready to Schedule' itself stays unchanged.
+      // Advanced statuses (In Progress, Completed, etc.) are protected by DASH_NO_REGRESS.
+      if (j.status === 'Unscheduled' || j.status === 'Imported' || j.status === 'Needs Review') {
+        j.status = 'Ready to Schedule';
+      }
     } else if (appt.status && CAL_TO_DASH_STATUS[appt.status]) {
       var ts = CAL_TO_DASH_STATUS[appt.status];
       if (!DASH_NO_REGRESS[j.status]) j.status = ts;
@@ -11855,11 +12038,13 @@ function dashSyncCalendarUpdates() {
         scheduledDate:appt.date  || '',
         timeWindow:   appt.time  || '',
         source:       'Calendar',
-        status:       'Scheduled',
+        status:       appt.status || 'Scheduled',
         calApptId:       appt._id,
         _apiId:          appt._apiId || '',
         priority:        appt.priority || 'Normal',
-        workOrderNumber: appt.workOrderNumber || ''
+        workOrderNumber: appt.workOrderNumber || '',
+        customerName:    appt.customerName    || '',
+        customerPhone:   appt.customerPhone   || ''
       });
       DASH_JOBS.push(job);
     }
@@ -12168,8 +12353,9 @@ function jobAutoAdvanceStatus(job) {
   if (!job) return;
   // Never demote active or terminal statuses
   if (DASH_NO_REGRESS[job.status] || job.status === 'Canceled') return;
-  // Unscheduled → Scheduled when a date is assigned
-  if (job.status === 'Unscheduled' && job.scheduledDate && job.scheduledDate.length >= 10) {
+  // Unscheduled / Ready to Schedule → Scheduled when a real date is assigned
+  if ((job.status === 'Unscheduled' || job.status === 'Ready to Schedule') &&
+      job.scheduledDate && job.scheduledDate.length >= 10 && job.scheduledDate !== '0001-01-01') {
     job.status = 'Scheduled';
     job.lastUpdated = new Date().toISOString();
   }
@@ -12368,7 +12554,7 @@ function dashOpenJobModal(dashId) {
     fi2('Priority',        '<select id="dm-priority" onchange="dashModalChange(\'priority\',this.value)"><option'+(job.priority==='High'?' selected':'')+'>High</option><option'+(job.priority==='Normal'?' selected':'')+'>Normal</option><option'+(job.priority==='Low'?' selected':'')+'>Low</option></select>') +
     fi2('Scheduled Date',  '<input type="date" id="dm-date" value="'+esc(job.scheduledDate)+'" oninput="dashModalChange(\'scheduledDate\',this.value)">') +
     fi2('Start Time',      '<input type="time" id="dm-time" value="'+esc(timeVal)+'" onchange="dashModalChange(\'timeWindow\',this.value)">') +
-    fi2('Crew',            '<select id="dm-crew" onchange="dashModalChange(\'crew\',this.value)">'+crewOpts+'</select>') +
+    fi2('Service Technician / Crew', '<select id="dm-crew" onchange="dashModalChange(\'crew\',this.value)">'+crewOpts+'</select>') +
     '</div>' +
     '<div style="margin-top:14px;"><label style="font-family:\'Outfit\',sans-serif;font-size:.6rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Notes</label>' +
     '<textarea rows="3" id="dm-notes" oninput="dashModalChange(\'notes\',this.value)" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.75rem;padding:8px 10px;outline:none;resize:vertical;">'+esc(job.notes)+'</textarea></div>' +
@@ -12455,11 +12641,11 @@ function dashModalSelectCust(id) {
 
 function _dashJobApiPayload(job) {
   return {
-    jobName:       job.jobName       || 'Untitled',
-    address:       job.jobAddress    || '',
-    scheduledDate: job.scheduledDate || new Date().toISOString().slice(0,10),
-    assignedTo:    job.crew          || '',
-    status:        job.status        || 'Needs Review',
+    jobName:       job.jobName    || 'Untitled',
+    address:       job.jobAddress || '',
+    scheduledDate: (job.scheduledDate && job.scheduledDate !== '0001-01-01') ? job.scheduledDate : '0001-01-01',
+    assignedTo:    job.crew       || '',
+    status:        job.status     || 'Unscheduled',
     notes:         job.notes         || '',
     quoteNum:      job.quoteNum      || '',
     customerName:    job.customerName    || '',
@@ -12479,7 +12665,63 @@ function _dashSyncNotesToCal(job) {
            (job._apiId    && a._apiId === job._apiId) ||
            (calIdFallback && a._apiId === calIdFallback);
   });
-  if (appt) appt.internalNotes = job.notes || '';
+  if (appt) {
+    appt.internalNotes = job.notes         || '';
+    appt.customerName  = job.customerName  || appt.customerName  || '';
+    appt.customerPhone = job.customerPhone || appt.customerPhone || '';
+  }
+}
+
+// After a POST /jobs succeeds, wire the job to a CAL_APPTS entry so it
+// appears on the calendar immediately (without a page reload).
+function _dashLinkCalAppt(job, apiId, workOrderNumber) {
+  job._apiId          = apiId;
+  job.workOrderNumber = workOrderNumber || '';
+  // Auto-advance: once saved to the DB, an Unscheduled job becomes Ready to Schedule.
+  // This lets it appear in the calendar sidebar without any user action.
+  if (job.status === 'Unscheduled') {
+    job.status = 'Ready to Schedule';
+    job.lastUpdated = new Date().toISOString();
+  }
+  var hasDate       = !!(job.scheduledDate && job.scheduledDate !== '0001-01-01');
+  var isUnscheduled = !hasDate; // all no-date jobs show in cal sidebar as draggable cards
+  // Heal an existing entry if one is already there (rare but possible)
+  var existing = (CAL_APPTS || []).find(function(a) {
+    return a._id === job.calApptId || a._apiId === apiId;
+  });
+  if (existing) {
+    existing._apiId          = apiId;
+    existing.workOrderNumber = workOrderNumber || '';
+    existing._unscheduled    = isUnscheduled;
+    existing.status          = job.status;
+    existing.customerName    = job.customerName  || '';
+    existing.customerPhone   = job.customerPhone || '';
+    if (!hasDate) existing.date = ''; // don't let today's date bleed in
+    job.calApptId            = existing._id;
+  } else {
+    var newAppt = Object.assign(calNewJobObject({
+      job:  job.jobName    || 'Untitled',
+      addr: job.jobAddress || '',
+      date: job.scheduledDate || '',
+      time: job.timeWindow    || '',
+      crew: job.crew          || ''
+    }), {
+      _id:             'api_' + apiId,
+      _apiId:          apiId,
+      workOrderNumber: workOrderNumber || '',
+      status:          job.status || 'Unscheduled',
+      _unscheduled:    isUnscheduled,
+      // Explicitly override calNewJobObject's date fallback (it defaults to today).
+      // An unscheduled job must have an empty date so the sync never copies today's
+      // date onto scheduledDate and auto-promotes the job to Scheduled.
+      date:            hasDate ? job.scheduledDate : '',
+      internalNotes:   job.notes         || '',
+      customerName:    job.customerName  || '',
+      customerPhone:   job.customerPhone || ''
+    });
+    CAL_APPTS.push(newAppt);
+    job.calApptId = newAppt._id;
+  }
 }
 
 function dashSaveModal() {
@@ -12487,6 +12729,7 @@ function dashSaveModal() {
   if (job && mmGetToken()) {
     delete job._draft; // user is intentionally saving — lift draft protection
     _dashSyncNotesToCal(job);
+    jobAutoAdvanceStatus(job); // advance before payload so API gets correct status
     var payload = _dashJobApiPayload(job);
     if (job._apiId) {
       syncEnqueue('JOB_UPDATE', job._apiId, payload);
@@ -12496,22 +12739,17 @@ function dashSaveModal() {
       mmApi('POST', '/jobs', payload).then(function(res) {
         delete job._woPending;
         if (res && res.jobId) {
-          job._apiId = res.jobId;
-          job.workOrderNumber = res.workOrderNumber || '';
-          if (job.calApptId) {
-            var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId; });
-            if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
-          }
+          _dashLinkCalAppt(job, res.jobId, res.workOrderNumber);
         }
         dashPersistState();
         dashRender();
       }).catch(function(err) {
-        console.error('[WO#] POST /jobs failed:', err && err.message ? err.message : err);
         delete job._woPending;
+        job._woFailed = true;
         dashPersistState();
-        // Do NOT call dashRender() here — it would trigger dashRenderKPI which
-        // immediately re-sets _woPending via dashAssignWorkOrderNumber, creating
-        // a "Saving…" loop. The next user action will trigger a render and retry.
+        dashRender();
+        var msg = err && err.message ? err.message : 'Network error';
+        alert('⚠ Job saved locally but could not register in the database.\nError: ' + msg + '\n\nClick "↻ Sync Jobs" to retry, or refresh the page.');
       });
     }
   }
@@ -12536,18 +12774,13 @@ function dashSaveModalAndSchedule() {
       mmApi('POST', '/jobs', payload).then(function(res) {
         delete job._woPending;
         if (res && res.jobId) {
-          job._apiId = res.jobId;
-          job.workOrderNumber = res.workOrderNumber || '';
-          if (job.calApptId) {
-            var appt = (CAL_APPTS || []).find(function(a){ return a._id === job.calApptId; });
-            if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
-          }
+          _dashLinkCalAppt(job, res.jobId, res.workOrderNumber);
         }
         dashPersistState();
         dashRender();
       }).catch(function(err) {
-        console.error('[WO#] POST /jobs failed (schedule):', err && err.message ? err.message : err);
         delete job._woPending;
+        job._woFailed = true;
         dashPersistState();
       });
     }
@@ -12626,34 +12859,59 @@ function dashDeleteJob(dashId) {
 // Session-only Set so we don't re-POST jobs that already got a WO# attempt this session
 // (not serialized to localStorage, so a page refresh resets it cleanly)
 var _woAssignAttempted = new Set();
+// Set to true after GET /jobs completes — prevents PUTs for existing API jobs
+// before we've confirmed they actually lack a WO# in DynamoDB.
+var _apiJobsLoaded = false;
 
 // ── Assign WO# immediately after a DASH_JOB is created (before the user saves) ─
 function dashAssignWorkOrderNumber(job) {
   if (!mmGetToken()) return;
   if (job._draft) return; // never auto-create unsaved draft jobs
-  if (job._apiId || job.workOrderNumber || job._woPending) return;
+  if (job.workOrderNumber || job._woPending) return;
   if (_woAssignAttempted.has(job.dashId)) return;
   _woAssignAttempted.add(job.dashId);
   job._woPending = true;
+
+  // Existing job in DynamoDB but no WO# yet — request one via PUT.
+  // Only runs after GET /jobs has loaded so we know DynamoDB genuinely has no WO#
+  // (avoids wasteful counter increments for jobs that already have one in the DB).
+  if (job._apiId) {
+    if (!_apiJobsLoaded) { delete job._woPending; _woAssignAttempted.delete(job.dashId); return; }
+    mmApi('PUT', '/jobs/' + job._apiId, { requestWo: true }).then(function(res) {
+      delete job._woPending;
+      if (res && res.workOrderNumber) {
+        job.workOrderNumber = res.workOrderNumber;
+        var appt = (CAL_APPTS || []).find(function(a) {
+          return a._id === job.calApptId || a._apiId === job._apiId;
+        });
+        if (appt) appt.workOrderNumber = res.workOrderNumber;
+        dashPersistState();
+        dashRender();
+      }
+    }).catch(function() {
+      delete job._woPending;
+      job._woFailed = true;
+      _woAssignAttempted.delete(job.dashId);
+      dashPersistState();
+    });
+    return;
+  }
+
+  // New job not yet in DynamoDB — POST to create it and get a WO#
   mmApi('POST', '/jobs', {
-    jobName:       job.jobName       || 'Untitled',
-    address:       job.jobAddress    || '',
-    scheduledDate: job.scheduledDate || new Date().toISOString().slice(0,10),
-    assignedTo:    job.crew          || '',
-    status:        job.status        || 'Unscheduled',
-    notes:         job.notes         || '',
-    quoteNum:      job.quoteNum      || '',
+    jobName:       job.jobName    || 'Untitled',
+    address:       job.jobAddress || '',
+    scheduledDate: (job.scheduledDate && job.scheduledDate !== '0001-01-01') ? job.scheduledDate : '0001-01-01',
+    assignedTo:    job.crew       || '',
+    status:        job.status     || 'Unscheduled',
+    notes:         job.notes      || '',
+    quoteNum:      job.quoteNum   || '',
     customerName:  job.customerName  || '',
     customerPhone: job.customerPhone || ''
   }).then(function(res) {
     delete job._woPending;
     if (res && res.jobId) {
-      job._apiId          = res.jobId;
-      job.workOrderNumber = res.workOrderNumber || '';
-      if (job.calApptId) {
-        var appt = (CAL_APPTS||[]).find(function(a){ return a._id === job.calApptId; });
-        if (appt) { appt._apiId = res.jobId; appt.workOrderNumber = res.workOrderNumber || ''; }
-      }
+      _dashLinkCalAppt(job, res.jobId, res.workOrderNumber);
       // If user saved the modal while the POST was in flight, send their edits now
       if (job._pendingSave) {
         delete job._pendingSave;
@@ -12663,12 +12921,21 @@ function dashAssignWorkOrderNumber(job) {
       dashRender();
     }
   }).catch(function(err) {
-    console.error('[WO#] dashAssignWorkOrderNumber failed:', err && err.message ? err.message : err);
     delete job._woPending;
-    // Leave job.dashId in _woAssignAttempted so dashRenderKPI does NOT
-    // immediately retry on the next render — prevents "Saving…" oscillation.
-    // A page refresh resets the Set and allows one clean retry per session.
+    job._woFailed = true;
+    // Remove from attempted set so user can retry via Sync Jobs
+    _woAssignAttempted.delete(job.dashId);
+    dashPersistState();
   });
+}
+
+function dashRetryWO(dashId) {
+  var job = DASH_JOBS.find(function(j){ return j.dashId === dashId; });
+  if (!job) return;
+  delete job._woFailed;
+  _woAssignAttempted.delete(dashId);
+  dashAssignWorkOrderNumber(job);
+  dashRender();
 }
 
 // ── New manual job ────────────────────────────────────────────────────────────
@@ -12782,8 +13049,16 @@ function dashPersistState() {
   clearTimeout(_persistTimer);
   _persistTimer = setTimeout(function() {
     try {
+      // Strip transient in-flight flags so a reload never gets stuck
+      var cleanJobs = DASH_JOBS.map(function(j) {
+        if (!j._woPending && !j._woFailed) return j;
+        var c = Object.assign({}, j);
+        delete c._woPending;
+        delete c._woFailed;
+        return c;
+      });
       var state = {
-        DASH_JOBS:   DASH_JOBS,
+        DASH_JOBS:   cleanJobs,
         CAL_APPTS:   CAL_APPTS,
         NCI_RECORDS: NCI_RECORDS,
         CDB:         CDB,
@@ -12810,7 +13085,7 @@ function dashRestoreState() {
     var state = JSON.parse(raw);
     if (!state.savedAt) return false;
     var age = Date.now() - new Date(state.savedAt).getTime();
-    if (age > 86400000) { localStorage.removeItem('mm_app_state'); return false; } // 24h expiry
+    // No expiry — jobs and WO#s are permanent; API is source of truth on reload
     if (state.DASH_JOBS   && state.DASH_JOBS.length) {
       DASH_JOBS = state.DASH_JOBS.filter(function(j) {
         if (j._draft && !j._apiId && !j.workOrderNumber) return false; // unsaved draft
@@ -12827,19 +13102,33 @@ function dashRestoreState() {
     if (state.SMS_QUEUE   && state.SMS_QUEUE.length)   SMS_QUEUE   = state.SMS_QUEUE;
     if (state.AUTO_RULES  && state.AUTO_RULES.length)  AUTO_RULES  = state.AUTO_RULES;
     if (state.CREW_ROSTER && state.CREW_ROSTER.length) CREW_ROSTER = state.CREW_ROSTER;
-    if (state.CREW_GROUPS && state.CREW_GROUPS.length) CREW_GROUPS = state.CREW_GROUPS;
     if (state.PIWR_ROWS   && state.PIWR_ROWS.length)   PIWR_ROWS   = state.PIWR_ROWS;
     if (state.AUDIT_LOG   && state.AUDIT_LOG.length)   AUDIT_LOG   = state.AUDIT_LOG;
     if (state.DASH_UID)    DASH_UID    = state.DASH_UID;
     if (state.NCI_NEXT_ID) NCI_NEXT_ID = state.NCI_NEXT_ID;
+    // CREW_GROUPS loaded separately (no expiry) — see below
     return true;
   } catch(e) { return false; }
+}
+
+function crewGroupsPersist() {
+  try { localStorage.setItem('mm_crew_groups', JSON.stringify(CREW_GROUPS)); } catch(e) {}
+}
+function crewGroupsRestore() {
+  try {
+    var raw = localStorage.getItem('mm_crew_groups');
+    if (raw) {
+      var saved = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.length) CREW_GROUPS = saved;
+    }
+  } catch(e) {}
 }
 
 // ── Boot — MUST be last ───────────────────────────────────────────────────────
 (function authBoot() {
   // Restore persisted state first (before auth, so data is ready)
   dashRestoreState();
+  crewGroupsRestore(); // load named crews (no expiry, separate key)
 
   try {
     var saved = localStorage.getItem('mm_auth_user');
@@ -13106,7 +13395,7 @@ if ('serviceWorker' in navigator) {
   <!-- Top action bar -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">🧾 New Customer Intake</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">New Customer Intake</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Capture all customer and job details before the install</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -13374,7 +13663,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">🗂️ Customer Database</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Customer Database</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Import customers via CSV / Excel or add manually — link to job intakes on PDF import</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -13557,7 +13846,7 @@ if ('serviceWorker' in navigator) {
 <div class="pg" id="p12">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">⚡ Automations</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Automations</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">When (trigger) → If (condition) → Then (action) · Admin only</div>
     </div>
     <button class="btn bp" onclick="autoOpenNew()" style="font-size:.65rem;">+ New Automation</button>
@@ -13645,30 +13934,35 @@ if ('serviceWorker' in navigator) {
   </div>
 </div><!-- /p12 -->
 
-<!-- ═══════════ PAGE 14 · OPERATIONS DASHBOARD ═══════════ -->
+<!-- ═══════════ PAGE 14 · DISPATCH ═══════════ -->
 <div class="pg" id="p14">
 
-  <!-- ── Dashboard header ──────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+  <!-- ── Dispatch header ──────────────────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;letter-spacing:3px;color:var(--accent);">⚡ Operations Dashboard</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Command center · Dispatch · Routing · Field management</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;letter-spacing:3px;color:var(--accent);">Operational Dashboard</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Job management · Dispatch control</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      <select id="dash-filter-status" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;">
-        <option value="">All Statuses</option>
-        <option>Scheduled</option><option>In Progress</option>
-        <option>Ready for Site Review</option><option>Final Walkthrough Ready</option>
-        <option>Canceled</option>
-      </select>
-      <select id="dash-filter-priority" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;">
-        <option value="">All Priorities</option>
-        <option>High</option><option>Normal</option><option>Low</option>
-      </select>
-      <input type="text" id="dash-search" placeholder="Search jobs…" oninput="dashRender()"
-        style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;width:170px;">
-      <button class="btn bo" onclick="dashSyncFromSources()" style="font-size:.65rem;" title="Sync jobs from PDF imports, Intake, and Calendar">↻ Sync Jobs</button>
-    </div>
+  </div>
+
+  <!-- ══ BOARD VIEW ════════════════════════════════════════════════════════ -->
+  <div>
+
+  <!-- Board sub-header: filters + actions -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+    <select id="dash-filter-status" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;">
+      <option value="">All Statuses</option>
+      <option>Scheduled</option><option>In Progress</option>
+      <option>Ready for Site Review</option><option>Final Walkthrough Ready</option>
+      <option>Canceled</option>
+    </select>
+    <select id="dash-filter-priority" onchange="dashRender()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;">
+      <option value="">All Priorities</option>
+      <option>High</option><option>Normal</option><option>Low</option>
+    </select>
+    <input type="text" id="dash-search" placeholder="Search jobs…" oninput="dashRender()"
+      style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 10px;outline:none;width:170px;">
+    <button class="btn bo" onclick="dashSyncFromSources()" style="font-size:.65rem;" title="Sync jobs from PDF imports, Intake, and Calendar">↻ Sync Jobs</button>
   </div>
 
   <!-- ── Overview cards ────────────────────────────────────────────────────── -->
@@ -13698,6 +13992,7 @@ if ('serviceWorker' in navigator) {
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Customer</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Address</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Priority</th>
+              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Status</th>
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
             <tbody id="dash-unsched-tbody">
@@ -13722,7 +14017,7 @@ if ('serviceWorker' in navigator) {
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Address</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Status</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Priority</th>
-              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Crew</th>
+              <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Service Technician / Crew</th>
               <th style="padding:9px 12px;font-size:.58rem;text-align:left;">Scheduled</th>
               <th style="padding:9px 12px;font-size:.58rem;"></th>
             </tr></thead>
@@ -13748,7 +14043,7 @@ if ('serviceWorker' in navigator) {
           <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);margin-bottom:10px;" id="dash-dsp-addr">—</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
             <div><div style="font-family:'Outfit',sans-serif;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Status</div><div id="dash-dsp-status" style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--accent);">—</div></div>
-            <div><div style="font-family:'Outfit',sans-serif;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Crew</div><div id="dash-dsp-crew" style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text);">—</div></div>
+            <div><div style="font-family:'Outfit',sans-serif;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Tech / Crew</div><div id="dash-dsp-crew" style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text);">—</div></div>
             <div><div style="font-family:'Outfit',sans-serif;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Date</div><div id="dash-dsp-date" style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text);">—</div></div>
             <div><div style="font-family:'Outfit',sans-serif;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Time</div><div id="dash-dsp-time" style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--text);">—</div></div>
           </div>
@@ -13761,61 +14056,6 @@ if ('serviceWorker' in navigator) {
             <button class="btn bo" onclick="dashViewOnCalendar()" style="font-size:.65rem;">📅 View Calendar</button>
             <button class="btn bd" onclick="dashProgressStatus(DASH_SELECTED_ID,'Canceled')" style="font-size:.65rem;">✗ Cancel Job</button>
           </div>
-        </div>
-      </div>
-
-      <!-- SMS notification panel -->
-      <div class="card">
-        <div class="ct">📱 Notifications</div>
-        <div id="dash-sms-unconfigured" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;">
-          ⚠ SMS provider not configured · <span style="color:var(--accent);">Demo mode</span> — messages logged locally
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Template</label>
-          <select id="dash-sms-template" onchange="dashFillTemplate()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
-            <option value="">— Select template —</option>
-            <option value="crew_dispatch">Crew Dispatch</option>
-            <option value="customer_confirm">Customer Confirmation</option>
-            <option value="crew_enroute">Crew En Route</option>
-            <option value="customer_enroute">Customer En Route</option>
-            <option value="delay">Delay Notification</option>
-          </select>
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Recipient</label>
-          <select id="dash-sms-recipient" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
-            <option value="crew">Crew</option>
-            <option value="customer">Customer</option>
-          </select>
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Message</label>
-          <textarea id="dash-sms-body" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:7px 9px;outline:none;resize:vertical;"></textarea>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-          <div>
-            <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Send</label>
-            <select id="dash-sms-when" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
-              <option value="now">Now</option>
-              <option value="24h">24h before</option>
-              <option value="2h">2h before</option>
-              <option value="30m">30min before</option>
-              <option value="on_dispatch">On dispatch</option>
-              <option value="on_enroute">On en route</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Phone</label>
-            <input type="tel" id="dash-sms-phone" placeholder="+1 704 555 0000"
-              style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
-          </div>
-        </div>
-        <button class="btn bp" onclick="dashSendSMS()" style="width:100%;font-size:.68rem;">📤 Queue Message</button>
-
-        <!-- SMS log -->
-        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
-          <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message Log</div>
-          <div id="dash-sms-log" style="max-height:140px;overflow-y:auto;font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);">No messages queued.</div>
         </div>
       </div>
 
@@ -13873,6 +14113,8 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  </div><!-- /board-view -->
+
 </div><!-- /p14 -->
 
 <!-- ═══════════ PAGE 13 · GEOLOCATION & NAVIGATION ═══════════ -->
@@ -13892,7 +14134,7 @@ if ('serviceWorker' in navigator) {
   <!-- ── Page header ─────────────────────────────────────────────────────────── -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">📍 Geolocation &amp; Navigation</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Mobile App</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Real-time job routing · Route optimization · Field navigation</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -13924,6 +14166,34 @@ if ('serviceWorker' in navigator) {
           </div>
           <button class="btn bp" onclick="geoRequestPermission()" style="font-size:.7rem;">🔓 Try Location Again</button>
         </div>
+      </div>
+
+      <!-- My Status bar — horizontal row above the map -->
+      <div id="geo-my-status-card" class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px;">👤 My Status</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
+          <button id="nav-sb-available" onclick="dispatchSetMyStatus('available')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;">
+            ✓ Available
+          </button>
+          <button id="nav-sb-enroute" onclick="dispatchSetMyStatus('enroute')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;">
+            🚗 En Route
+          </button>
+          <button id="nav-sb-onsite" onclick="dispatchSetMyStatus('onsite')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;">
+            🏠 On Site
+          </button>
+          <button id="nav-sb-break" onclick="dispatchSetMyStatus('break')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;">
+            ☕ Break
+          </button>
+          <button id="nav-sb-done" onclick="dispatchSetMyStatus('done')"
+            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;">
+            ✓ Done for the Day
+          </button>
+        </div>
+        <div id="geo-gps-info" style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);white-space:nowrap;margin-left:auto;">Initializing GPS…</div>
       </div>
 
       <!-- Map container — always visible, never a dead screen -->
@@ -14040,34 +14310,6 @@ if ('serviceWorker' in navigator) {
     <!-- ── Right: Info panel ─────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <!-- My Status card -->
-      <div id="geo-my-status-card" class="card">
-        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">👤 My Status</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-          <button id="nav-sb-available" onclick="dispatchSetMyStatus('available')"
-            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
-            ✓ Available
-          </button>
-          <button id="nav-sb-enroute" onclick="dispatchSetMyStatus('enroute')"
-            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
-            🚗 En Route
-          </button>
-          <button id="nav-sb-onsite" onclick="dispatchSetMyStatus('onsite')"
-            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
-            🏠 On Site
-          </button>
-          <button id="nav-sb-break" onclick="dispatchSetMyStatus('break')"
-            style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
-            ☕ Break
-          </button>
-          <button id="nav-sb-done" onclick="dispatchSetMyStatus('done')"
-            style="grid-column:1/-1;font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:600;padding:8px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .15s;">
-            ✓ Done for the Day
-          </button>
-        </div>
-        <div id="geo-gps-info" style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);">Initializing GPS…</div>
-      </div>
-
       <!-- Current location card -->
       <div class="card">
         <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">📍 Current Location</div>
@@ -14142,7 +14384,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">📊 Reports</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Reports</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">AI-powered data analysis · Custom reports · Export to PDF &amp; Excel</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -14261,7 +14503,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">📁 Completed Jobs</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Completed Jobs</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Finalized job archive · Full history · Documents · Inspection results</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -14283,7 +14525,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">📂 Projects</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Projects</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Customer project folders · All jobs by customer · Status · Documents · History</div>
     </div>
     <input type="text" id="proj-search" placeholder="🔍 Search customers or jobs…"
@@ -14321,7 +14563,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">💳 Billing &amp; Plan</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Billing &amp; Plan</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Manage your subscription and billing details</div>
     </div>
   </div>
@@ -14372,7 +14614,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">🏢 All Tenants</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">All Tenants</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Super admin · All organizations · Status · Plan · Users</div>
     </div>
     <button class="btn-primary" onclick="saTenantsShow()" style="font-size:.65rem;padding:6px 14px;">↺ Refresh</button>
@@ -14400,23 +14642,25 @@ if ('serviceWorker' in navigator) {
 </div>
 
 
-<!-- ═══════════ PAGE 21 · DISPATCH COMMAND CENTER ═══════════ -->
+<!-- ═══════════ PAGE 21 · MAP ═══════════ -->
 <div class="pg" id="p21">
 
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+  <!-- Map page header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);">📡 Dispatch Command Center</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live crew tracking · Job assignment · Real-time routing</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input type="date" id="dispatch-date" onchange="dispatchLoadJobs()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 10px;outline:none;">
-      <div id="dispatch-gps-badge" style="display:none;background:rgba(34,178,94,.12);border:1px solid rgba(34,178,94,.3);color:var(--green);font-family:'Outfit',sans-serif;font-size:.65rem;padding:4px 10px;border-radius:20px;">📍 GPS Active</div>
-      <button onclick="dispatchRefresh()" class="btn" style="font-size:.72rem;padding:5px 14px;">↺ Refresh</button>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;letter-spacing:3px;color:var(--accent);">Map</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live map · Field tracking · Crew locations</div>
     </div>
   </div>
 
-  <!-- My Status Bar — crew members only; hidden for dispatchers/admins -->
+  <!-- Map header: date + GPS badge + Refresh -->
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+    <input type="date" id="dispatch-date" onchange="dispatchLoadJobs()" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 10px;outline:none;">
+    <div id="dispatch-gps-badge" style="display:none;background:rgba(34,178,94,.12);border:1px solid rgba(34,178,94,.3);color:var(--green);font-family:'Outfit',sans-serif;font-size:.65rem;padding:4px 10px;border-radius:20px;">📍 GPS Active</div>
+    <button onclick="dispatchRefresh()" class="btn" style="font-size:.72rem;padding:5px 14px;">↺ Refresh</button>
+  </div>
+
+  <!-- My Status Bar (crew members only) -->
   <div id="dispatch-my-status-bar" class="card" style="display:none;padding:10px 14px;margin-bottom:14px;align-items:center;gap:14px;flex-wrap:wrap;">
     <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">My Status</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -14429,26 +14673,43 @@ if ('serviceWorker' in navigator) {
     <div id="dispatch-gps-info" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);margin-left:auto;">Checking GPS…</div>
   </div>
 
-  <!-- Main Split Layout -->
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px;height:calc(100vh - 300px);min-height:460px;">
+  <!-- 3-column: Crew | Map | Notifications -->
+  <div style="display:grid;grid-template-columns:220px 1fr 280px;gap:14px;height:calc(100vh - 260px);min-height:460px;">
 
-    <!-- LEFT: Map -->
+    <!-- LEFT: Service Technician + Crews -->
+    <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;">
+
+      <div class="card" style="flex:0 0 auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">👤 Service Technician</div>
+          <div id="dispatch-crew-online" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--green);"></div>
+        </div>
+        <div id="dispatch-crew-list" style="display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card" style="flex:0 0 auto;">
+        <div style="margin-bottom:10px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">👷 Crews</div>
+        </div>
+        <div id="dispatch-crews-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+    </div>
+
+    <!-- CENTER: Map -->
     <div class="card" style="padding:0;overflow:visible;position:relative;border-radius:6px;">
       <div id="dispatch-map" style="width:100%;height:100%;min-height:460px;background:#0f1628;border-radius:6px;overflow:hidden;"></div>
 
-      <!-- Map not loaded placeholder -->
       <div id="dispatch-map-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f1628;border-radius:6px;gap:10px;z-index:5;">
         <div style="font-size:2rem;">🗺</div>
         <div style="font-family:'Outfit',sans-serif;font-size:.8rem;color:var(--muted);">Loading map…</div>
       </div>
 
-      <!-- Map type buttons -->
       <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;z-index:10;">
-        <button onclick="dispatchSetMapType('roadmap')"  id="dmt-road" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;">🗺 Map</button>
-        <button onclick="dispatchSetMapType('satellite')" id="dmt-sat" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;">🛰 Satellite</button>
+        <button onclick="dispatchSetMapType('roadmap')"   id="dmt-road" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;">🗺 Map</button>
+        <button onclick="dispatchSetMapType('satellite')" id="dmt-sat"  style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;">🛰 Satellite</button>
       </div>
 
-      <!-- Legend -->
       <div style="position:absolute;bottom:10px;left:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;z-index:10;">
         <div style="font-family:'Outfit',sans-serif;font-size:.58rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Legend</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--text);">
@@ -14461,48 +14722,72 @@ if ('serviceWorker' in navigator) {
         </div>
       </div>
 
-      <!-- Pulse while loading jobs -->
       <div id="dispatch-map-loading" style="display:none;position:absolute;top:10px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);z-index:10;">⏳ Geocoding jobs…</div>
     </div>
 
-    <!-- RIGHT: Sidebar -->
-    <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;">
-
-      <!-- Crew Section -->
-      <div class="card" style="flex:0 0 auto;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">👥 Crew</div>
-          <div id="dispatch-crew-online" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--green);"></div>
-        </div>
-        <div id="dispatch-crew-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;"></div>
+    <!-- RIGHT: Notifications -->
+    <div class="card" style="overflow-y:auto;">
+      <div class="ct">📱 Notifications</div>
+      <div id="dash-sms-unconfigured" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;">
+        ⚠ SMS provider not configured · <span style="color:var(--accent);">Demo mode</span> — messages logged locally
       </div>
-
-      <!-- Jobs Section -->
-      <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">📋 Jobs</div>
-          <div id="dispatch-job-count" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);"></div>
-        </div>
-        <!-- Filter pills -->
-        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
-          <button onclick="dispatchFilterJobs('all')"        id="djf-all"        style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;">All</button>
-          <button onclick="dispatchFilterJobs('unassigned')" id="djf-unassigned" style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🔴 Unassigned</button>
-          <button onclick="dispatchFilterJobs('active')"     id="djf-active"     style="font-family:'Outfit',sans-serif;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">🟢 Active</button>
-        </div>
-        <div id="dispatch-job-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Template</label>
+        <select id="dash-sms-template" onchange="dashFillTemplate()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
+          <option value="">— Select template —</option>
+          <option value="crew_dispatch">Crew Dispatch</option>
+          <option value="customer_confirm">Customer Confirmation</option>
+          <option value="crew_enroute">Crew En Route</option>
+          <option value="customer_enroute">Customer En Route</option>
+          <option value="delay">Delay Notification</option>
+        </select>
       </div>
-
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Recipient</label>
+        <select id="dash-sms-recipient" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
+          <option value="crew">Crew</option>
+          <option value="customer">Customer</option>
+        </select>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Message</label>
+        <textarea id="dash-sms-body" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:7px 9px;outline:none;resize:vertical;"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div>
+          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Send</label>
+          <select id="dash-sms-when" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
+            <option value="now">Now</option>
+            <option value="24h">24h before</option>
+            <option value="2h">2h before</option>
+            <option value="30m">30min before</option>
+            <option value="on_dispatch">On dispatch</option>
+            <option value="on_enroute">On en route</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Phone</label>
+          <input type="tel" id="dash-sms-phone" placeholder="+1 704 555 0000"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
+        </div>
+      </div>
+      <button class="btn bp" onclick="dashSendSMS()" style="width:100%;font-size:.68rem;">📤 Queue Message</button>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message Log</div>
+        <div id="dash-sms-log" style="max-height:140px;overflow-y:auto;font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);">No messages queued.</div>
+      </div>
     </div>
+
   </div>
 
-  <!-- Job assign popover (shown below job card) -->
+  <!-- Job assign popover -->
   <div id="dispatch-assign-pop" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
     <div style="font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:700;color:var(--text);margin-bottom:8px;">Assign to crew:</div>
     <div id="dispatch-assign-crew-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;"></div>
     <button onclick="G('dispatch-assign-pop').style.display='none'" style="margin-top:8px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);background:none;border:none;cursor:pointer;">✕ Cancel</button>
   </div>
 
-</div>
+</div><!-- /p21 -->
 
 <script>
 // ═══════════════════════════════════════════════
@@ -14561,6 +14846,26 @@ var DISPATCH_CREW_STATUS_LABEL = {
   'break':     '☕ Break',
   'done':      '✓ Done'
 };
+
+function dispTabSwitch(tab) {
+  var board  = G('disp-board-view');
+  var mapV   = G('disp-map-view');
+  var tBoard = G('disp-tab-board');
+  var tMap   = G('disp-tab-map');
+  if (!board || !mapV) return;
+  if (tab === 'map') {
+    board.style.display = 'none';
+    mapV.style.display  = 'block';
+    if (tBoard) { tBoard.style.background = 'transparent'; tBoard.style.color = 'var(--muted)'; }
+    if (tMap)   { tMap.style.background   = 'var(--accent)'; tMap.style.color = '#fff'; }
+    dispatchInit();
+  } else {
+    mapV.style.display  = 'none';
+    board.style.display = 'block';
+    if (tMap)   { tMap.style.background   = 'transparent'; tMap.style.color = 'var(--muted)'; }
+    if (tBoard) { tBoard.style.background = 'var(--accent)'; tBoard.style.color = '#fff'; }
+  }
+}
 
 function dispatchInit() {
   if (!mmGetToken()) return;
@@ -14638,6 +14943,7 @@ function dispatchRefresh() {
 }
 
 function dispatchLoadCrew() {
+  dispatchRenderCrewsSidebar();
   mmApi('GET', '/crew').then(function(members) {
     DISPATCH.crew = members || [];
     dispatchRenderCrewSidebar();
@@ -14656,8 +14962,16 @@ function dispatchLoadJobs() {
   var toStr   = to.toISOString().slice(0, 10);
 
   mmApi('GET', '/jobs?from=' + fromStr + '&to=' + toStr).then(function(items) {
+    // Ensure tombstone is loaded before filtering (safe to call multiple times)
+    if (typeof dashLoadDeletedIds === 'function') dashLoadDeletedIds();
     var jobs = (items || [])
       .filter(function(j) { return !DONE_STATUSES[j.status]; })
+      // Never show jobs the user has deleted — the backend DELETE may still be
+      // pending in the sync queue, so match the dashboard/calendar tombstone filter.
+      .filter(function(j) {
+        return typeof DASH_DELETED_IDS === 'undefined' ||
+               DASH_DELETED_IDS.indexOf(j.jobId) === -1;
+      })
       .map(function(j) {
         return {
           _apiId:          j.jobId,
@@ -14931,6 +15245,26 @@ function dispatchRenderCrewSidebar() {
         '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:' + color + ';">' + label + (hasLoc ? (c.gpsActive ? ' · 📍 GPS' : ' · 📵 Manual') : '') + '</div>' +
       '</div>' +
       (lastSeen ? '<div style="font-family:Outfit,sans-serif;font-size:.58rem;color:var(--muted);flex-shrink:0;">' + lastSeen + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function dispatchRenderCrewsSidebar() {
+  var el = G('dispatch-crews-list');
+  if (!el) return;
+  if (!CREW_GROUPS || !CREW_GROUPS.length) {
+    el.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);padding:8px 0;">No named crews yet. Create crews in Crew Management.</div>';
+    return;
+  }
+  el.innerHTML = CREW_GROUPS.map(function(g) {
+    var lead = (CREW_ROSTER || []).find(function(m){ return m.id === g.leadId; });
+    var memberCount = (g.memberIds || []).length;
+    return '<div style="padding:6px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border);">' +
+      '<div style="font-family:Outfit,sans-serif;font-size:.72rem;font-weight:600;color:var(--text);">👷 ' + g.name + '</div>' +
+      '<div style="font-family:Outfit,sans-serif;font-size:.6rem;color:var(--muted);margin-top:2px;">' +
+        (lead ? '<span style="color:var(--accent);">★ ' + lead.name + '</span> · ' : '') +
+        memberCount + ' member' + (memberCount !== 1 ? 's' : '') +
+      '</div>' +
     '</div>';
   }).join('');
 }
