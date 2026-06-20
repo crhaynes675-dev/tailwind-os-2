@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Schedule from './pages/Schedule';
+import Dispatch from './pages/Dispatch';
+import Reporting from './pages/Reporting';
 import ModuleStub from './pages/ModuleStub';
 import Login from './pages/Login';
 import { MODULES } from './domain/modules';
@@ -10,6 +12,8 @@ import { JobsProvider } from './data/JobsContext';
 
 const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   schedule: Schedule,
+  dispatch: Dispatch,
+  reporting: Reporting,
 };
 
 export default function App() {
