@@ -119,7 +119,9 @@ export function JobsProvider({ children }: { children: ReactNode }) {
       notes?: string;
       scheduledDate?: string;
     }) => {
-      const res = await apiSend<{ jobId?: string }>('POST', '/jobs', data);
+      // New jobs enter the pipeline Unscheduled (the API otherwise defaults
+      // to "scheduled"); they flow to Readiness / Needs Scheduling next.
+      const res = await apiSend<{ jobId?: string }>('POST', '/jobs', { ...data, status: 'Unscheduled' });
       await load();
       return res?.jobId;
     },
