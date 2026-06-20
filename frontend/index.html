@@ -11493,7 +11493,7 @@ function dashSyncCalendarUpdates() {
     }
     if (!appt) return;
 
-    // Sync fields
+    // Sync fields cal → dashboard
     if (appt.date)          j.scheduledDate = appt.date;
     if (appt.time)          j.timeWindow    = appt.time;
     if (appt.crew)          j.crew          = appt.crew;
@@ -11504,6 +11504,10 @@ function dashSyncCalendarUpdates() {
     if (appt.holdReason !== undefined) j.holdReason = appt.holdReason;
     if (appt.piwrComplete)  j.piwrComplete  = appt.piwrComplete;
     if (appt.workOrderNumber) j.workOrderNumber = appt.workOrderNumber;
+    // Sync notes dashboard → calendar so the drawer Notes tab always shows them.
+    // Use dashboard notes when set; fall back to whatever the cal entry already has.
+    if (j.notes) appt.internalNotes = j.notes;
+    else if (appt.internalNotes) j.notes = appt.internalNotes;
 
     // Auto-advance status after sync (e.g. job gets address/crew from calendar)
     jobAutoAdvanceStatus(j);
@@ -12153,9 +12157,13 @@ function _dashJobApiPayload(job) {
 function _dashSyncNotesToCal(job) {
   // Push job.notes (dashboard string) into the matching CAL_APPTS entry's
   // internalNotes so the calendar drawer Notes tab sees them immediately.
+  // calApptId may be a local ID, 'api_'+jobId, or the job may only have _apiId.
+  var calIdFallback = job.calApptId && job.calApptId.indexOf('api_') === 0
+    ? job.calApptId.slice(4) : '';
   var appt = (CAL_APPTS || []).find(function(a) {
     return (job.calApptId && a._id === job.calApptId) ||
-           (job._apiId    && a._apiId === job._apiId);
+           (job._apiId    && a._apiId === job._apiId) ||
+           (calIdFallback && a._apiId === calIdFallback);
   });
   if (appt) appt.internalNotes = job.notes || '';
 }
