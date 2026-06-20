@@ -10,11 +10,10 @@ export default function Layout() {
       {/* Top bar */}
       <header className="glass sticky top-0 z-40 flex items-center gap-4 px-6 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] text-sm font-bold text-[#04121a]">
-            T
+          <div className="flex items-center rounded-lg bg-white px-2 py-1 shadow-sm">
+            <img src="/logo.png" alt="Tailwind OS" className="h-7 w-auto" />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight">Tailwind OS3</div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Field Operations</div>
           </div>
         </div>
