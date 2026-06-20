@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
-import { uploadAttachment } from '../lib/api';
+import { uploadAttachment, apiSend } from '../lib/api';
 
 // Sales → Operations Handoff (Workflow 01) as a step-by-step wizard.
 // Each stage is a form; you progress stage to stage until Job Setup,
@@ -15,7 +15,7 @@ const STAGES = [
 ] as const;
 
 interface Form {
-  customerName: string; customerCompany: string; customerPhone: string;
+  customerName: string; customerCompany: string; customerPhone: string; email: string; whyLead: string;
   jobName: string; scope: string; quoteNum: string;
   contractRef: string; awardDate: string; address: string;
   hContract: boolean; hDocs: boolean; hScope: boolean;
@@ -23,7 +23,7 @@ interface Form {
 }
 
 const EMPTY: Form = {
-  customerName: '', customerCompany: '', customerPhone: '',
+  customerName: '', customerCompany: '', customerPhone: '', email: '', whyLead: '',
   jobName: '', scope: '', quoteNum: '',
   contractRef: '', awardDate: '', address: '',
   hContract: false, hDocs: false, hScope: false,
@@ -105,6 +105,7 @@ export default function Import() {
   async function create() {
     setBusy(true); setMsg(null);
     const notes = [
+      f.whyLead.trim() && `Lead reason: ${f.whyLead.trim()}`,
       f.scope.trim() && `Scope: ${f.scope.trim()}`,
       f.contractRef.trim() && `Contract/Award ref: ${f.contractRef.trim()}`,
       f.awardDate && `Awarded: ${f.awardDate}`,
@@ -112,6 +113,20 @@ export default function Import() {
       f.openItems.trim() && `Ops review — open items: ${f.openItems.trim()}`,
     ].filter(Boolean).join('\n');
     try {
+      // Add the lead to the customer database.
+      await apiSend('POST', '/customers', {
+        name: f.customerName.trim(),
+        customerName: f.customerName.trim(),
+        company: f.customerCompany.trim() || undefined,
+        customerCompany: f.customerCompany.trim() || undefined,
+        phone: f.customerPhone.trim() || undefined,
+        customerPhone: f.customerPhone.trim() || undefined,
+        email: f.email.trim() || undefined,
+        address: f.address.trim() || undefined,
+        notes: f.whyLead.trim() || undefined,
+        source: 'Intake / Lead',
+      }).catch(() => { /* don't block the handoff if CDB write fails */ });
+
       const jobId = await createJob({
         jobName: f.jobName.trim(),
         customerName: f.customerName.trim() || undefined,
@@ -129,8 +144,8 @@ export default function Import() {
           try { await uploadAttachment(jobId, file); uploaded++; } catch { /* keep going */ }
         }
       }
-      const attachNote = files.length ? ` (${uploaded}/${files.length} attachment${files.length === 1 ? '' : 's'} uploaded)` : '';
-      setMsg({ kind: 'ok', text: `Handoff complete — “${f.jobName.trim()}” created and routed to Unscheduled${attachNote}. Next: Readiness.` });
+      const attachNote = files.length ? `, ${uploaded}/${files.length} attachment${files.length === 1 ? '' : 's'} uploaded` : '';
+      setMsg({ kind: 'ok', text: `Handoff complete — “${f.jobName.trim()}” created, ${f.customerName.trim() || 'lead'} added to the customer database${attachNote}. Routed to Unscheduled → Readiness.` });
       setF(EMPTY); setStep(0);
       setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
     } catch (e) {
@@ -181,9 +196,14 @@ export default function Import() {
               <>
                 <Field label="Customer name" value={f.customerName} onChange={set('customerName')} required placeholder="Who is the lead?" />
                 <div className="grid grid-cols-2 gap-3.5">
-                  <Field label="Company / GC" value={f.customerCompany} onChange={set('customerCompany')} />
-                  <Field label="Phone" value={f.customerPhone} onChange={set('customerPhone')} />
+                  <Field label="Email" type="email" value={f.email} onChange={set('email')} placeholder="name@company.com" />
+                  <Field label="Phone" type="tel" value={f.customerPhone} onChange={set('customerPhone')} placeholder="(704) 555-0000" />
                 </div>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <Field label="Company / GC" value={f.customerCompany} onChange={set('customerCompany')} />
+                  <Field label="Address" value={f.address} onChange={set('address')} />
+                </div>
+                <Area label="Why are they a lead?" value={f.whyLead} onChange={set('whyLead')} placeholder="Source, interest, project type, referral…" />
               </>
             )}
             {stage.key === 'quote' && (
@@ -200,7 +220,7 @@ export default function Import() {
                   <Field label="Contract / Award ref" value={f.contractRef} onChange={set('contractRef')} placeholder="executed contract #" />
                   <Field label="Award date" type="date" value={f.awardDate} onChange={set('awardDate')} />
                 </div>
-                <Field label="Job site address" value={f.address} onChange={set('address')} />
+                <Field label="Job site address" value={f.address} onChange={set('address')} placeholder="defaults to lead address" />
               </>
             )}
             {stage.key === 'handoff' && (
@@ -233,9 +253,11 @@ export default function Import() {
                 <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 text-muted">
                   <dt className="text-faint">Job</dt><dd className="text-text">{f.jobName || '—'}</dd>
                   <dt className="text-faint">Customer</dt><dd>{[f.customerName, f.customerCompany].filter(Boolean).join(' · ') || '—'}</dd>
+                  <dt className="text-faint">Contact</dt><dd>{[f.email, f.customerPhone].filter(Boolean).join(' · ') || '—'}</dd>
+                  <dt className="text-faint">Address</dt><dd>{f.address || '—'}</dd>
+                  <dt className="text-faint">Why a lead</dt><dd>{f.whyLead || '—'}</dd>
                   <dt className="text-faint">Quote #</dt><dd>{f.quoteNum || '—'}</dd>
                   <dt className="text-faint">Award</dt><dd>{[f.contractRef, f.awardDate].filter(Boolean).join(' · ') || '—'}</dd>
-                  <dt className="text-faint">Address</dt><dd>{f.address || '—'}</dd>
                   <dt className="text-faint">Open items</dt><dd>{f.openItems || 'none'}</dd>
                 </dl>
               </div>
