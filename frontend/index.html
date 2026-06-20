@@ -2016,10 +2016,11 @@ input,select,textarea,button { touch-action:manipulation; }
         <div class="um-form-field" style="max-width:140px">
           <label class="um-form-label" for="um-new-role">Role</label>
           <select class="um-form-select" id="um-new-role">
-            <option value="installer">Installer</option>
-            <option value="lead_installer">Lead Installer</option>
-            <option value="foreman">Foreman</option>
             <option value="admin">Admin</option>
+            <option value="sales">Sales</option>
+            <option value="work_coordinator">Work Coordinator</option>
+            <option value="service_technician">Service Technician</option>
+            <option value="project_manager">Project Manager</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
@@ -2090,10 +2091,11 @@ input,select,textarea,button { touch-action:manipulation; }
       <div class="um-form-field" style="max-width:160px">
         <label class="um-form-label" for="cm-new-role">Role</label>
         <select class="um-form-select" id="cm-new-role">
-          <option value="installer">Installer</option>
-          <option value="lead_installer">Lead Installer</option>
-          <option value="foreman">Foreman</option>
-          <option value="apprentice">Apprentice</option>
+          <option value="service_technician">Service Technician</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="work_coordinator">Work Coordinator</option>
+          <option value="sales">Sales</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
       <div class="um-form-field">
@@ -7246,7 +7248,7 @@ function authClearError() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function umRoleLabel(role) {
-  var labels = { admin: 'Admin', user: 'User', installer: 'Installer', lead_installer: 'Lead Installer', foreman: 'Foreman' };
+  var labels = { admin: 'Admin', sales: 'Sales', work_coordinator: 'Work Coordinator', service_technician: 'Service Technician', project_manager: 'Project Manager' };
   return labels[role] || role;
 }
 
@@ -7385,7 +7387,7 @@ function umShowMsg(text, type) {
 //  CREW MANAGEMENT PAGE (p20)
 // ══════════════════════════════════════════════════════════════════════════════
 
-var _CREW_ROLE_LABELS = { installer:'Installer', lead_installer:'Lead Installer', foreman:'Foreman', apprentice:'Apprentice' };
+var _CREW_ROLE_LABELS = { service_technician:'Service Technician', project_manager:'Project Manager', work_coordinator:'Work Coordinator', sales:'Sales', admin:'Admin' };
 
 function crewMgmtLoad() {
   var tbody = document.getElementById('crew-mgmt-list');
@@ -7463,7 +7465,7 @@ function crewMgmtEdit(id) {
     if (!tbody) return;
     var rows = tbody.querySelectorAll('tr');
     if (!rows[idx]) return;
-    var roleOpts = ['installer','lead_installer','foreman','apprentice'].map(function(r) {
+    var roleOpts = ['service_technician','project_manager','work_coordinator','sales','admin'].map(function(r) {
       return '<option value="'+r+'"'+(m.role===r?' selected':'')+'>'+(_CREW_ROLE_LABELS[r])+'</option>';
     }).join('');
     rows[idx].innerHTML =
