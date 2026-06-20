@@ -58,6 +58,10 @@ export class Os3ApiStack extends cdk.Stack {
       actions: ['s3:PutObject', 's3:GetObject'],
       resources: [`arn:aws:s3:::${ATTACHMENTS_BUCKET}/*`],
     }));
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['cognito-idp:ListUsers'],
+      resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${EXISTING_USER_POOL_ID}`],
+    }));
 
     const asset = lambda.Code.fromAsset(path.join(__dirname, '../../backend/dist'));
 
@@ -83,6 +87,7 @@ export class Os3ApiStack extends cdk.Stack {
     const auditFn = makeFn('Os3AuditFn', 'handlers/audit.handler', EXISTING_TABLE_NAME);
     const customersFn = makeFn('Os3CustomersFn', 'handlers/customers.handler', EXISTING_TABLE_NAME);
     const attachmentsFn = makeFn('Os3AttachmentsFn', 'handlers/attachments.handler', EXISTING_TABLE_NAME, { ATTACHMENTS_BUCKET });
+    const usersFn = makeFn('Os3UsersFn', 'handlers/users.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID });
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName);
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
@@ -134,6 +139,9 @@ export class Os3ApiStack extends cdk.Stack {
     const customer = customers.addResource('{customerId}');
     customer.addMethod('PUT', integ(customersFn), auth);
     customer.addMethod('DELETE', integ(customersFn), auth);
+
+    // /users (read-only roster for assignment)
+    api.root.addResource('users').addMethod('GET', integ(usersFn), auth);
 
     // /service
     const service = api.root.addResource('service');
