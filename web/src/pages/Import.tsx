@@ -43,7 +43,7 @@ export default function Import() {
     <>
       <div className="mb-6">
         <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Workflow 01 · Intake &amp; Handoff</div>
-        <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">PDF Import</h1>
+        <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Intake</h1>
         <p className="mt-1.5 text-sm text-muted">Sales → Operations handoff. Bring awarded jobs into the pipeline (intake creates the job record). Automated PDF parsing is a later port.</p>
       </div>
 
