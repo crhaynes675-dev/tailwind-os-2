@@ -2059,14 +2059,56 @@ input,select,textarea,button { touch-action:manipulation; }
 <div class="pg" id="p20">
 
   <div class="um-header">
-    <h2 class="um-title">Crew Roster</h2>
-    <span class="um-badge">Admin Only</span>
+    <h2 class="um-title">Crew Management</h2>
+    <span class="um-badge">Admin / Work Coordinator</span>
   </div>
-  <p class="um-sub">Manage your field crew. These members appear in the Tailwind mobile app roster.</p>
+  <p class="um-sub">Create named crews and manage your individual field crew roster.</p>
 
-  <!-- Current crew list -->
+  <!-- ── Named Crews ──────────────────────────────────────────────────────────── -->
   <div class="um-section">
-    <div class="um-section-title">Current Crew</div>
+    <div class="um-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Named Crews</span>
+      <button class="um-create-btn" onclick="
+        var f=document.getElementById('cg-create-form');
+        f.style.display=f.style.display==='none'?'block':'none';
+        if(f.style.display==='block'){crewGroupRenderPage();}
+      " style="font-size:.62rem;padding:4px 10px;">+ New Crew</button>
+    </div>
+    <div id="cg-list" style="border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:10px;">
+      <div style="padding:14px;font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);text-align:center;">No crews yet — click "+ New Crew" to create one.</div>
+    </div>
+
+    <!-- Create crew form (hidden by default) -->
+    <div id="cg-create-form" style="display:none;background:rgba(91,155,213,.05);border:1px solid rgba(91,155,213,.25);border-radius:4px;padding:14px;margin-top:8px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Create New Crew</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+        <div class="um-form-field" style="flex:1;min-width:180px;">
+          <label class="um-form-label" for="cg-new-name">Crew Name *</label>
+          <input class="um-form-input" id="cg-new-name" type="text" placeholder="e.g. Alpha Team" autocomplete="off">
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="um-form-label">Assign Service Technicians *</label>
+        <div id="cg-member-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;min-height:40px;margin-top:4px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.7rem;color:var(--muted);">Loading roster…</div>
+        </div>
+      </div>
+      <div class="um-form-field" style="max-width:260px;margin-bottom:14px;">
+        <label class="um-form-label" for="cg-new-lead">Crew Lead</label>
+        <select class="um-form-select" id="cg-new-lead">
+          <option value="">— select members first —</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="um-create-btn" onclick="crewGroupCreate()">✓ Save Crew</button>
+        <button class="btn bo" onclick="document.getElementById('cg-create-form').style.display='none'" style="font-size:.7rem;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Crew Roster (individuals) ──────────────────────────────────────────── -->
+  <div class="um-section">
+    <div class="um-section-title">Crew Roster</div>
     <div style="overflow-x:auto">
       <table class="um-table">
         <thead>
@@ -5762,10 +5804,15 @@ function calDrawerSave(){
   j.type=gv3('cd-type');
   // Read crew from structured picker — only overwrite if user actually changed it
   if (j._crewModified) {
-    j.crew = (j._crewIds||[]).map(function(id){
-      var m = CREW_ROSTER.find(function(c){return c.id===id;});
-      return m ? m.name : id;
-    }).join(', ');
+    if (j._crewGroupId) {
+      var _cg = (CREW_GROUPS||[]).find(function(g){ return g.id === j._crewGroupId; });
+      j.crew = _cg ? _cg.name : (j._crewIds||[]).map(function(id){ var m=CREW_ROSTER.find(function(c){return c.id===id;}); return m?m.name:id; }).join(', ');
+    } else {
+      j.crew = (j._crewIds||[]).map(function(id){
+        var m = CREW_ROSTER.find(function(c){return c.id===id;});
+        return m ? m.name : id;
+      }).join(', ');
+    }
   }
   j.priority=gv3('cd-priority');j.quoteRef=gv3('cd-quoteref');j.tags=gv3('cd-tags');
   j.internalNotes=gv3('cd-inotes');j.customerNotes=gv3('cd-cnotes');
@@ -6983,7 +7030,8 @@ function authShowApp(user) {
 
   document.getElementById('tab-users').style.display = 'none'; // not a visible sub-tab
   var crewTab = document.getElementById('tab-crew');
-  if (crewTab) crewTab.style.display = (isAdmin || isSuperAdmin) ? '' : 'none';
+  var canSeeCrew = isAdmin || isSuperAdmin || (user && user.role === 'work_coordinator');
+  if (crewTab) crewTab.style.display = canSeeCrew ? '' : 'none';
 
   // ── Crew / field-worker role restrictions ────────────────────────
   var isCrewMember = (user.role === 'service_technician');
@@ -7390,6 +7438,7 @@ function umShowMsg(text, type) {
 var _CREW_ROLE_LABELS = { service_technician:'Service Technician', project_manager:'Project Manager', work_coordinator:'Work Coordinator', sales:'Sales', admin:'Admin' };
 
 function crewMgmtLoad() {
+  if (typeof crewGroupRenderPage === 'function') crewGroupRenderPage();
   var tbody = document.getElementById('crew-mgmt-list');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Loading…</td></tr>';
@@ -8628,13 +8677,18 @@ calDrawerSave = function() {
   j.duration     = parseInt(gv3('cd-dur'))  || 60;
   j.type         = gv3('cd-type');
   // Crew uses a structured picker — only overwrite if user actually changed it
-  // (_crewModified is set by crewToggle/crewRemove; prevents blanking crew when CREW_ROSTER
-  // wasn't loaded during picker init, which would cause the API to clear assignedTo)
+  // (_crewModified is set by crewToggle/crewRemove/crewGroupSelect; prevents blanking crew when
+  // CREW_ROSTER wasn't loaded during picker init)
   if (j._crewModified) {
-    j.crew = (j._crewIds||[]).map(function(id){
-      var m = (CREW_ROSTER||[]).find(function(c){return c.id===id;});
-      return m ? m.name : id;
-    }).join(', ');
+    if (j._crewGroupId) {
+      var _cg2 = (CREW_GROUPS||[]).find(function(g){ return g.id === j._crewGroupId; });
+      j.crew = _cg2 ? _cg2.name : (j._crewIds||[]).map(function(id){ var m=(CREW_ROSTER||[]).find(function(c){return c.id===id;}); return m?m.name:id; }).join(', ');
+    } else {
+      j.crew = (j._crewIds||[]).map(function(id){
+        var m = (CREW_ROSTER||[]).find(function(c){return c.id===id;});
+        return m ? m.name : id;
+      }).join(', ');
+    }
   }
   // Customer fields
   var cn = gv3('cd-custname');  if (cn)  j.customerName  = cn;
@@ -9493,8 +9547,11 @@ setTimeout(function(){
 // ══════════════════════════════════════════════════════════════════════════════
 
 var CREW_ROSTER = [];   // [{id, name, email, role, phone, available}]
+var CREW_GROUPS = [];   // [{id, name, memberIds:[], leadId:''}]
 var _crewUID = 0;
 function crewUID() { return 'cr_' + (++_crewUID); }
+var _crewGroupUID = 0;
+function crewGroupUID() { return 'cg_' + Date.now() + '_' + (++_crewGroupUID); }
 
 function crewRefreshRoster() {
   if (!mmGetToken()) return;
@@ -9520,16 +9577,47 @@ function crewInitials(name) {
 
 function crewPickerHTML(job) {
   if (!job._crewIds) job._crewIds = [];
-  job._crewModified = false; // reset on each open — only set true if user touches the picker
+  if (!job._crewGroupId) job._crewGroupId = '';
+  job._crewModified = false;
   // Reconstruct _crewIds from crew name string when loading from API (ids are not stored in backend)
-  if (!job._crewIds.length && job.crew) {
-    var crewNames = job.crew.split(',').map(function(n){ return n.trim().toLowerCase(); });
-    job._crewIds = (CREW_ROSTER||[])
-      .filter(function(c){ return crewNames.indexOf(c.name.toLowerCase()) !== -1; })
-      .map(function(c){ return c.id; });
+  if (!job._crewIds.length && !job._crewGroupId && job.crew) {
+    // Check if the crew string matches a named crew group first
+    var matchedGroup = (CREW_GROUPS||[]).find(function(g){ return g.name.toLowerCase() === (job.crew||'').toLowerCase(); });
+    if (matchedGroup) {
+      job._crewGroupId = matchedGroup.id;
+      job._crewIds = matchedGroup.memberIds.slice();
+    } else {
+      var crewNames = job.crew.split(',').map(function(n){ return n.trim().toLowerCase(); });
+      job._crewIds = (CREW_ROSTER||[])
+        .filter(function(c){ return crewNames.indexOf(c.name.toLowerCase()) !== -1; })
+        .map(function(c){ return c.id; });
+    }
   }
-  var chips = job._crewIds.map(function(id) {
-    var m = CREW_ROSTER.find(function(c){ return c.id===id; });
+  var chips = _crewPickerChipsHTML(job);
+  return '<div class="crew-chips" id="crew-chips">' + chips + '</div>' +
+    '<div style="position:relative;">' +
+      '<input type="text" id="crew-search" placeholder="Search crews or individuals…" autocomplete="off" ' +
+        'style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.78rem;padding:7px 10px;outline:none;" ' +
+        'oninput="crewSearch(this.value)" onfocus="crewSearch(this.value)" onblur="setTimeout(crewCloseDD,200)">' +
+      '<div class="crew-dd" id="crew-dd"></div>' +
+    '</div>';
+}
+
+function _crewPickerChipsHTML(job) {
+  if (job._crewGroupId) {
+    var g = (CREW_GROUPS||[]).find(function(g){ return g.id === job._crewGroupId; });
+    if (g) {
+      var lead = g.leadId ? (CREW_ROSTER||[]).find(function(m){ return m.id === g.leadId; }) : null;
+      return '<span class="crew-chip" style="background:rgba(91,155,213,.15);border-color:rgba(91,155,213,.4);">' +
+        '<span class="crew-chip-av" style="background:rgba(91,155,213,.7);">👷</span>' +
+        g.name +
+        (lead ? ' · <span style="color:var(--accent);font-size:.65rem;">Lead: ' + lead.name + '</span>' : '') +
+        '<button class="crew-chip-x" onclick="crewGroupClear()" title="Remove crew">✕</button>' +
+      '</span>';
+    }
+  }
+  return (job._crewIds||[]).map(function(id) {
+    var m = (CREW_ROSTER||[]).find(function(c){ return c.id===id; });
     if (!m) return '';
     return '<span class="crew-chip">' +
       '<span class="crew-chip-av">'+crewInitials(m.name)+'</span>' +
@@ -9537,38 +9625,59 @@ function crewPickerHTML(job) {
       '<button class="crew-chip-x" onclick="crewRemove(\''+id+'\')" title="Remove">✕</button>' +
     '</span>';
   }).join('');
-
-  return '<div class="crew-chips" id="crew-chips">' + chips + '</div>' +
-    '<div style="position:relative;">' +
-      '<input type="text" id="crew-search" placeholder="Search and add crew…" autocomplete="off" ' +
-        'style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:\'Outfit\',sans-serif;font-size:.78rem;padding:7px 10px;outline:none;" ' +
-        'oninput="crewSearch(this.value)" onfocus="crewSearch(this.value)" onblur="setTimeout(crewCloseDD,200)">' +
-      '<div class="crew-dd" id="crew-dd"></div>' +
-    '</div>';
 }
 
 function crewSearch(q) {
   var dd = G('crew-dd'); if (!dd || !calDrawerJob) return;
-  var ids = calDrawerJob._crewIds || [];
   var q2 = q.toLowerCase();
-  var matches = CREW_ROSTER.filter(function(c) {
-    return !q2 || c.name.toLowerCase().indexOf(q2) !== -1 ||
-           (c.role||'').toLowerCase().indexOf(q2) !== -1 ||
-           (c.email||'').toLowerCase().indexOf(q2) !== -1;
+  var html = '';
+
+  // Named crews section
+  var groupMatches = (CREW_GROUPS||[]).filter(function(g){
+    return !q2 || g.name.toLowerCase().indexOf(q2) !== -1;
   });
-  if (!matches.length) {
-    dd.innerHTML = '<div style="padding:10px 14px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No crew found</div>';
-  } else {
-    dd.innerHTML = matches.map(function(c) {
+  if (groupMatches.length) {
+    html += '<div style="padding:5px 12px 3px;font-family:\'Outfit\',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--card);">Named Crews</div>';
+    html += groupMatches.map(function(g) {
+      var sel = calDrawerJob._crewGroupId === g.id;
+      var lead = g.leadId ? (CREW_ROSTER||[]).find(function(m){ return m.id === g.leadId; }) : null;
+      var memberCount = g.memberIds.length;
+      return '<div class="crew-opt'+(sel?' sel':'')+'" onmousedown="crewGroupSelect(\''+g.id+'\')">'+
+        '<div class="crew-opt-av" style="background:rgba(91,155,213,.6);">👷</div>'+
+        '<div style="flex:1;">'+
+          '<div class="crew-opt-name">'+g.name+'</div>'+
+          '<div class="crew-opt-role">'+memberCount+' member'+(memberCount!==1?'s':'')+(lead?' · Lead: '+lead.name:'')+'</div>'+
+        '</div>'+
+        (sel?'<span style="color:var(--green);font-size:.9rem;">✓</span>':'')+
+      '</div>';
+    }).join('');
+  }
+
+  // Individual techs section
+  var ids = calDrawerJob._crewIds || [];
+  var indvMatches = (CREW_ROSTER||[]).filter(function(c) {
+    return (!q2 || c.name.toLowerCase().indexOf(q2) !== -1 ||
+            (c.role||'').toLowerCase().indexOf(q2) !== -1 ||
+            (c.email||'').toLowerCase().indexOf(q2) !== -1);
+  });
+  if (indvMatches.length && !calDrawerJob._crewGroupId) {
+    if (groupMatches.length) {
+      html += '<div style="padding:5px 12px 3px;font-family:\'Outfit\',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--card);border-top:1px solid var(--border);">Individuals</div>';
+    }
+    html += indvMatches.map(function(c) {
       var sel = ids.indexOf(c.id) !== -1;
       return '<div class="crew-opt'+(sel?' sel':'')+'" onmousedown="crewToggle(\''+c.id+'\')">'+
         '<div class="crew-opt-av">'+crewInitials(c.name)+'</div>'+
         '<div style="flex:1;"><div class="crew-opt-name">'+c.name+'</div>'+
         '<div class="crew-opt-role">'+(c.role?umRoleLabel(c.role):'')+(c.email?' · '+c.email:'')+'</div></div>'+
         (sel?'<span style="color:var(--green);font-size:.9rem;">✓</span>':'')+
-        '</div>';
+      '</div>';
     }).join('');
+  } else if (!html) {
+    html = '<div style="padding:10px 14px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No crew found</div>';
   }
+
+  dd.innerHTML = html;
   dd.classList.add('open');
 }
 
@@ -9611,6 +9720,112 @@ function crewRemove(id) {
 
 function crewCloseDD() {
   var dd = G('crew-dd'); if (dd) dd.classList.remove('open');
+}
+
+function crewGroupSelect(groupId) {
+  if (!calDrawerJob) return;
+  var g = (CREW_GROUPS||[]).find(function(g){ return g.id === groupId; });
+  if (!g) return;
+  calDrawerJob._crewModified = true;
+  calDrawerJob._crewGroupId = g.id;
+  calDrawerJob._crewIds = g.memberIds.slice();
+  var chips = G('crew-chips');
+  if (chips) chips.outerHTML = '<div class="crew-chips" id="crew-chips">'+_crewPickerChipsHTML(calDrawerJob)+'</div>';
+  var si = G('crew-search'); if (si) crewSearch(si.value);
+  autoFire('crew_assigned', calDrawerJob);
+}
+
+function crewGroupClear() {
+  if (!calDrawerJob) return;
+  calDrawerJob._crewModified = true;
+  calDrawerJob._crewGroupId = '';
+  calDrawerJob._crewIds = [];
+  var chips = G('crew-chips');
+  if (chips) chips.outerHTML = '<div class="crew-chips" id="crew-chips"></div>';
+  var si = G('crew-search'); if (si) crewSearch(si.value);
+}
+
+// ── Named Crew Groups ─────────────────────────────────────────────────────────
+
+function crewGroupCreate() {
+  var nameEl = G('cg-new-name'); if (!nameEl) return;
+  var name = nameEl.value.trim();
+  if (!name) { alert('Crew name is required.'); return; }
+  // Collect checked member IDs
+  var memberIds = [];
+  document.querySelectorAll('.cg-member-check:checked').forEach(function(cb){ memberIds.push(cb.value); });
+  if (!memberIds.length) { alert('Select at least one Service Technician.'); return; }
+  var leadEl = G('cg-new-lead');
+  var leadId = leadEl ? leadEl.value : memberIds[0];
+  var group = { id: crewGroupUID(), name: name, memberIds: memberIds, leadId: leadId };
+  CREW_GROUPS.push(group);
+  dashPersistState();
+  crewGroupRenderPage();
+  nameEl.value = '';
+}
+
+function crewGroupDelete(id) {
+  var g = CREW_GROUPS.find(function(g){ return g.id === id; });
+  if (!g || !confirm('Delete crew "' + g.name + '"?')) return;
+  CREW_GROUPS = CREW_GROUPS.filter(function(g){ return g.id !== id; });
+  dashPersistState();
+  crewGroupRenderPage();
+}
+
+function crewGroupRenderPage() {
+  var listEl = G('cg-list'); if (!listEl) return;
+  var techs = (CREW_ROSTER || []).filter(function(m){ return m.role === 'service_technician'; });
+  if (!CREW_GROUPS.length) {
+    listEl.innerHTML = '<div style="padding:14px;font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);text-align:center;">No crews yet — create one below.</div>';
+  } else {
+    listEl.innerHTML = CREW_GROUPS.map(function(g) {
+      var lead = CREW_ROSTER.find(function(m){ return m.id === g.leadId; });
+      var members = g.memberIds.map(function(id){
+        var m = CREW_ROSTER.find(function(c){ return c.id === id; });
+        return m ? m.name : id;
+      });
+      return '<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div>' +
+          '<div style="font-family:\'Outfit\',sans-serif;font-size:.85rem;font-weight:600;color:var(--text);">👷 ' + g.name + '</div>' +
+          '<div style="font-family:\'Outfit\',sans-serif;font-size:.65rem;color:var(--muted);margin-top:3px;">' +
+            (lead ? '<span style="color:var(--accent);">★ Lead: ' + lead.name + '</span> · ' : '') +
+            members.join(', ') +
+          '</div>' +
+        '</div>' +
+        '<button onclick="crewGroupDelete(\'' + g.id + '\')" class="btn bo" style="font-size:.58rem;padding:3px 8px;color:var(--red);border-color:var(--red);flex-shrink:0;">Delete</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Render the member checkbox list for the create form
+  var memberListEl = G('cg-member-list'); if (!memberListEl) return;
+  if (!techs.length) {
+    memberListEl.innerHTML = '<div style="font-family:\'Outfit\',sans-serif;font-size:.7rem;color:var(--muted);">No Service Technicians in the roster yet.</div>';
+  } else {
+    memberListEl.innerHTML = techs.map(function(m) {
+      return '<label style="display:flex;align-items:center;gap:6px;font-family:\'Outfit\',sans-serif;font-size:.75rem;color:var(--text);cursor:pointer;padding:4px 0;">' +
+        '<input type="checkbox" class="cg-member-check" value="' + m.id + '" onchange="crewGroupUpdateLeadOptions()" style="accent-color:var(--accent);">' +
+        m.name +
+      '</label>';
+    }).join('');
+  }
+  crewGroupUpdateLeadOptions();
+}
+
+function crewGroupUpdateLeadOptions() {
+  var leadEl = G('cg-new-lead'); if (!leadEl) return;
+  var checked = [];
+  document.querySelectorAll('.cg-member-check:checked').forEach(function(cb){
+    checked.push(cb.value);
+  });
+  var prev = leadEl.value;
+  leadEl.innerHTML = checked.length
+    ? checked.map(function(id) {
+        var m = CREW_ROSTER.find(function(c){ return c.id === id; });
+        var label = m ? m.name : id;
+        return '<option value="' + id + '"' + (id === prev ? ' selected' : '') + '>' + label + '</option>';
+      }).join('')
+    : '<option value="">— select members first —</option>';
 }
 
 // Get crew objects for a job
@@ -12478,6 +12693,7 @@ function dashPersistState() {
         SMS_QUEUE:   SMS_QUEUE,
         AUTO_RULES:  AUTO_RULES,
         CREW_ROSTER: CREW_ROSTER,
+        CREW_GROUPS: CREW_GROUPS,
         PIWR_ROWS:   PIWR_ROWS,
         AUDIT_LOG:   AUDIT_LOG ? AUDIT_LOG.slice(-200) : [],
         DASH_UID:    DASH_UID,
@@ -12514,6 +12730,7 @@ function dashRestoreState() {
     if (state.SMS_QUEUE   && state.SMS_QUEUE.length)   SMS_QUEUE   = state.SMS_QUEUE;
     if (state.AUTO_RULES  && state.AUTO_RULES.length)  AUTO_RULES  = state.AUTO_RULES;
     if (state.CREW_ROSTER && state.CREW_ROSTER.length) CREW_ROSTER = state.CREW_ROSTER;
+    if (state.CREW_GROUPS && state.CREW_GROUPS.length) CREW_GROUPS = state.CREW_GROUPS;
     if (state.PIWR_ROWS   && state.PIWR_ROWS.length)   PIWR_ROWS   = state.PIWR_ROWS;
     if (state.AUDIT_LOG   && state.AUDIT_LOG.length)   AUDIT_LOG   = state.AUDIT_LOG;
     if (state.DASH_UID)    DASH_UID    = state.DASH_UID;
