@@ -22,6 +22,7 @@ export class Os3ApiStack extends cdk.Stack {
     // The existing table is encrypted with this customer-managed KMS key;
     // the Lambda role needs decrypt/generate access to read & write it.
     const EXISTING_TABLE_KMS_KEY_ARN = `arn:aws:kms:${this.region}:${this.account}:key/0a3b1eca-356d-423f-9b4d-c63c0ce203e4`;
+    const ATTACHMENTS_BUCKET = 'mm-install-pro-attachments-130423149110';
 
     const userPool = cognito.UserPool.fromUserPoolId(this, 'ImportedUserPool', EXISTING_USER_POOL_ID);
 
@@ -53,10 +54,14 @@ export class Os3ApiStack extends cdk.Stack {
       actions: ['kms:Decrypt', 'kms:GenerateDataKey', 'kms:DescribeKey'],
       resources: [EXISTING_TABLE_KMS_KEY_ARN],
     }));
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['s3:PutObject', 's3:GetObject'],
+      resources: [`arn:aws:s3:::${ATTACHMENTS_BUCKET}/*`],
+    }));
 
     const asset = lambda.Code.fromAsset(path.join(__dirname, '../../backend/dist'));
 
-    const makeFn = (fnId: string, handler: string, tableName: string) => {
+    const makeFn = (fnId: string, handler: string, tableName: string, extraEnv: Record<string, string> = {}) => {
       const logGroup = new logs.LogGroup(this, `${fnId}Logs`, {
         retention: logs.RetentionDays.ONE_MONTH,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -66,7 +71,7 @@ export class Os3ApiStack extends cdk.Stack {
         code: asset,
         handler,
         role: lambdaRole,
-        environment: { TABLE_NAME: tableName, REGION: this.region },
+        environment: { TABLE_NAME: tableName, REGION: this.region, ...extraEnv },
         timeout: cdk.Duration.seconds(30),
         memorySize: 256,
         logGroup,
@@ -77,6 +82,7 @@ export class Os3ApiStack extends cdk.Stack {
     const jobsFn = makeFn('Os3JobsFn', 'handlers/jobs.handler', EXISTING_TABLE_NAME);
     const auditFn = makeFn('Os3AuditFn', 'handlers/audit.handler', EXISTING_TABLE_NAME);
     const customersFn = makeFn('Os3CustomersFn', 'handlers/customers.handler', EXISTING_TABLE_NAME);
+    const attachmentsFn = makeFn('Os3AttachmentsFn', 'handlers/attachments.handler', EXISTING_TABLE_NAME, { ATTACHMENTS_BUCKET });
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName);
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
@@ -119,6 +125,7 @@ export class Os3ApiStack extends cdk.Stack {
     job.addMethod('PUT', integ(jobsFn), auth);
     job.addMethod('DELETE', integ(jobsFn), auth);
     job.addResource('audit').addMethod('GET', integ(auditFn), auth);
+    job.addResource('attachments').addMethod('POST', integ(attachmentsFn), auth);
 
     // /customers
     const customers = api.root.addResource('customers');

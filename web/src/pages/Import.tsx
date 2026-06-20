@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
+import { uploadAttachment } from '../lib/api';
 
 // Sales → Operations Handoff (Workflow 01) as a step-by-step wizard.
 // Each stage is a form; you progress stage to stage until Job Setup,
@@ -55,6 +56,19 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
     </label>
   );
 }
+function FileInput({ label, file, onChange }: { label: string; file: File | null; onChange: (f: File | null) => void }) {
+  return (
+    <div>
+      {label && <label className="mb-1 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">{label}</label>}
+      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-glass bg-white/[0.03] px-3 py-2 text-[0.76rem] text-muted transition hover:border-accent hover:text-text">
+        <span className="text-accent">📎</span>
+        <span className="truncate">{file ? file.name : 'Attach file…'}</span>
+        <input type="file" className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} />
+        {file && <span onClick={(e) => { e.preventDefault(); onChange(null); }} className="ml-auto text-faint hover:text-[#f4607a]">✕</span>}
+      </label>
+    </div>
+  );
+}
 
 export default function Import() {
   const { createJob } = useJobsCtx();
@@ -63,6 +77,13 @@ export default function Import() {
   const set = <K extends keyof Form>(k: K) => (v: Form[K]) => setF((s) => ({ ...s, [k]: v }));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  // Attachments collected during the wizard, uploaded after the job is created.
+  const [quoteFile, setQuoteFile] = useState<File | null>(null);
+  const [hoContract, setHoContract] = useState<File | null>(null);
+  const [hoDocs, setHoDocs] = useState<File | null>(null);
+  const [hoScope, setHoScope] = useState<File | null>(null);
+  const [reviewFile, setReviewFile] = useState<File | null>(null);
 
   const stepValid = (i: number): boolean => {
     switch (STAGES[i].key) {
@@ -91,7 +112,7 @@ export default function Import() {
       f.openItems.trim() && `Ops review — open items: ${f.openItems.trim()}`,
     ].filter(Boolean).join('\n');
     try {
-      await createJob({
+      const jobId = await createJob({
         jobName: f.jobName.trim(),
         customerName: f.customerName.trim() || undefined,
         customerCompany: f.customerCompany.trim() || undefined,
@@ -101,8 +122,17 @@ export default function Import() {
         scheduledDate: f.scheduledDate || undefined,
         notes,
       });
-      setMsg({ kind: 'ok', text: `Handoff complete — “${f.jobName.trim()}” created and routed to Unscheduled (next: Readiness).` });
+      const files = [quoteFile, hoContract, hoDocs, hoScope, reviewFile].filter(Boolean) as File[];
+      let uploaded = 0;
+      if (jobId && files.length) {
+        for (const file of files) {
+          try { await uploadAttachment(jobId, file); uploaded++; } catch { /* keep going */ }
+        }
+      }
+      const attachNote = files.length ? ` (${uploaded}/${files.length} attachment${files.length === 1 ? '' : 's'} uploaded)` : '';
+      setMsg({ kind: 'ok', text: `Handoff complete — “${f.jobName.trim()}” created and routed to Unscheduled${attachNote}. Next: Readiness.` });
       setF(EMPTY); setStep(0);
+      setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
     } catch (e) {
       setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'Failed to create job' });
     } finally { setBusy(false); }
@@ -161,6 +191,7 @@ export default function Import() {
                 <Field label="Job name" value={f.jobName} onChange={set('jobName')} required placeholder="e.g. Belmont Estate — Patio Doors" />
                 <Field label="Quote / Bid #" value={f.quoteNum} onChange={set('quoteNum')} />
                 <Area label="Scope — drawings, specs" value={f.scope} onChange={set('scope')} />
+                <FileInput label="Attachment — quote / drawings" file={quoteFile} onChange={setQuoteFile} />
               </>
             )}
             {stage.key === 'awarded' && (
@@ -174,15 +205,25 @@ export default function Import() {
             )}
             {stage.key === 'handoff' && (
               <>
-                <div className="text-[0.72rem] text-muted">Confirm Sales has handed the package to Operations.</div>
-                <Check label="Executed contract received" checked={f.hContract} onChange={set('hContract')} />
-                <Check label="Job documents received" checked={f.hDocs} onChange={set('hDocs')} />
-                <Check label="Scope / drawings received" checked={f.hScope} onChange={set('hScope')} />
+                <div className="text-[0.72rem] text-muted">Confirm Sales has handed the package to Operations, and attach each document.</div>
+                <div className="flex flex-col gap-2">
+                  <Check label="Executed contract received" checked={f.hContract} onChange={set('hContract')} />
+                  <FileInput label="" file={hoContract} onChange={setHoContract} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Check label="Job documents received" checked={f.hDocs} onChange={set('hDocs')} />
+                  <FileInput label="" file={hoDocs} onChange={setHoDocs} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Check label="Scope / drawings received" checked={f.hScope} onChange={set('hScope')} />
+                  <FileInput label="" file={hoScope} onChange={setHoScope} />
+                </div>
               </>
             )}
             {stage.key === 'review' && (
               <>
                 <Area label="Risk flags / open items" value={f.openItems} onChange={set('openItems')} placeholder="anything Ops flagged during review" />
+                <FileInput label="Attachment — review docs / notes" file={reviewFile} onChange={setReviewFile} />
                 <Field label="Target schedule date (optional)" type="date" value={f.scheduledDate} onChange={set('scheduledDate')} />
               </>
             )}

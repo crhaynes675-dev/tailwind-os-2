@@ -50,6 +50,17 @@ export async function apiGet<T = unknown>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** Upload a file to a job via the presigned-URL flow (metadata → S3 PUT). */
+export async function uploadAttachment(jobId: string, file: File): Promise<void> {
+  const contentType = file.type || 'application/octet-stream';
+  const meta = await apiSend<{ uploadUrl: string }>('POST', `/jobs/${jobId}/attachments`, {
+    filename: file.name,
+    contentType,
+  });
+  const put = await fetch(meta.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
+  if (!put.ok) throw new Error(`Upload failed for ${file.name}`);
+}
+
 export async function apiSend<T = unknown>(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
   ensureSession();
   const token = getToken();

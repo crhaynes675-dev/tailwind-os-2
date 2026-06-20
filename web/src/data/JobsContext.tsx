@@ -59,7 +59,7 @@ interface JobsState {
     quoteNum?: string;
     notes?: string;
     scheduledDate?: string;
-  }) => Promise<void>;
+  }) => Promise<string | undefined>;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -119,8 +119,9 @@ export function JobsProvider({ children }: { children: ReactNode }) {
       notes?: string;
       scheduledDate?: string;
     }) => {
-      await apiSend('POST', '/jobs', data);
+      const res = await apiSend<{ jobId?: string }>('POST', '/jobs', data);
       await load();
+      return res?.jobId;
     },
     [load],
   );
