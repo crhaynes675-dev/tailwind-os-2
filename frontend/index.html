@@ -1097,44 +1097,28 @@ body{
 .bo{background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--text);}
 .bo:hover{border-color:var(--accent);color:var(--accent);background:rgba(41,195,236,.10);}
 /* Header → translucent top bar */
-.hdr{background:rgba(10,16,32,.55);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:400;}
+.hdr{background:rgba(10,16,32,.55);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-bottom:1px solid var(--glass-border);}
 :root.light .hdr{background:rgba(255,255,255,.7);}
-.ct,.um-title{background:linear-gradient(90deg,var(--text),var(--muted));-webkit-background-clip:text;background-clip:text;}
 
-/* ── LEFT SIDEBAR ─────────────────────────────────────────────── */
-body.has-sidebar .hdr,body.has-sidebar .pg{margin-left:var(--sbw);}
-#app-sidebar{
-  position:fixed;left:0;top:0;width:var(--sbw);height:100vh;z-index:600;
-  display:flex;flex-direction:column;
-  background:linear-gradient(180deg,rgba(17,26,50,.92),rgba(9,13,28,.96));
-  -webkit-backdrop-filter:blur(24px) saturate(1.2);backdrop-filter:blur(24px) saturate(1.2);
-  border-right:1px solid var(--glass-border);box-shadow:2px 0 44px -22px rgba(0,0,0,.85);
-}
-:root.light #app-sidebar{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(238,242,249,.96));}
-.sb-brand{padding:18px 18px 14px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;}
-.sb-brand img{height:40px;width:auto;display:block;}
-.sb-nav{flex:1;overflow-y:auto;padding:12px 12px 26px;}
-#app-sidebar .ng{display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;margin:2px 0;border-radius:var(--radius-sm);background:transparent;border:1px solid transparent;color:var(--muted);font-size:.75rem;font-weight:600;letter-spacing:.2px;text-transform:none;cursor:pointer;text-align:left;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s;}
-#app-sidebar .ng:hover{background:rgba(255,255,255,.05);color:var(--text);}
-#app-sidebar .ng.on{background:var(--grad-soft);color:#fff;border-color:var(--glass-border);box-shadow:inset 0 0 0 1px rgba(41,195,236,.18),0 8px 22px -12px rgba(41,195,236,.5);}
-:root.light #app-sidebar .ng.on{color:var(--text);}
-#app-sidebar .ng .ng-dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.85;margin:0;top:0;}
-#app-sidebar .ng.on .ng-dot{background:var(--accent);box-shadow:0 0 8px var(--accent);opacity:1;}
-#app-sidebar .sub-tabs{display:none;flex-direction:column;background:transparent;border:none;padding:2px 0 8px 16px;margin:0;overflow:visible;}
-#app-sidebar .sub-tabs.on{display:flex;}
-#app-sidebar .tb{display:block;width:100%;text-align:left;text-transform:none;font-size:.72rem;font-weight:500;letter-spacing:.1px;color:var(--muted);padding:7px 12px;margin:1px 0;border:none;border-left:2px solid var(--glass-border);border-radius:0 var(--radius-sm) var(--radius-sm) 0;background:transparent;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s;}
-#app-sidebar .tb:hover{color:var(--text);background:rgba(255,255,255,.05);}
-#app-sidebar .tb.on{color:#fff;background:var(--grad-soft);border-left:2px solid var(--accent);box-shadow:-2px 0 12px -3px rgba(41,195,236,.5);}
-:root.light #app-sidebar .tb.on{color:var(--text);}
-#app-sidebar .tb-sep{display:none;}
-#sb-toggle{display:none;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:var(--radius-sm);color:var(--text);font-size:1.1rem;line-height:1;padding:6px 11px;cursor:pointer;margin-right:auto;}
-#sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:550;}
-@media(max-width:980px){
-  body.has-sidebar .hdr,body.has-sidebar .pg{margin-left:0;}
-  #app-sidebar{transform:translateX(-100%);transition:transform .26s ease;}
-  body.sidebar-open #app-sidebar{transform:translateX(0);}
-  body.sidebar-open #sb-backdrop{display:block;}
-  #sb-toggle{display:inline-flex;align-items:center;}
+/* ── MODERN TOP NAV (glass) ───────────────────────────────────── */
+.nav-groups{background:rgba(10,16,32,.5);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-bottom:1px solid var(--glass-border);padding:11px 26px 0;gap:6px;align-items:flex-end;}
+:root.light .nav-groups{background:rgba(255,255,255,.6);}
+.ng{border-radius:var(--radius-sm) var(--radius-sm) 0 0;padding:10px 18px 12px;font-size:.76rem;font-weight:600;letter-spacing:.2px;color:var(--muted);background:transparent;border:1px solid transparent;border-bottom:none;margin-bottom:-1px;box-shadow:none;}
+.ng:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.ng.on{color:var(--text);background:var(--glass);border-color:var(--glass-border);border-bottom-color:transparent;box-shadow:0 -8px 22px -12px rgba(41,195,236,.6);}
+.ng .ng-dot{opacity:.7;}
+.ng.on .ng-dot{background:var(--accent);box-shadow:0 0 9px var(--accent);opacity:1;}
+.sub-tabs{background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-bottom:1px solid var(--glass-border);padding:8px 26px;gap:5px;}
+.sub-tabs.on{display:flex;align-items:center;flex-wrap:wrap;}
+.tb{border-radius:var(--radius-pill);padding:7px 15px;font-size:.62rem;font-weight:600;letter-spacing:.7px;color:var(--muted);border:1px solid transparent;background:transparent;margin-bottom:0;}
+.tb:hover{color:var(--text);background:rgba(255,255,255,.06);}
+.tb.on{color:#fff;background:var(--grad-soft);border-color:rgba(41,195,236,.35);box-shadow:0 5px 16px -7px rgba(41,195,236,.55);}
+:root.light .tb.on{color:var(--text);}
+.tb-sep{align-self:center;}
+@media(max-width:860px){
+  .nav-groups{padding:8px 12px 0;}
+  .ng{padding:8px 13px 10px;font-size:.7rem;}
+  .sub-tabs{padding:7px 12px;}
 }
 </style>
 <body>
@@ -12158,9 +12142,13 @@ function dashRenderKPI() {
     { label:'Canceled',             val: DASH_JOBS.filter(function(j){return j.status==='Canceled';}).length,                                      color:'#e05252' },
   ];
   row.innerHTML = kpis.map(function(k) {
-    return '<div class="card" style="padding:12px 14px;text-align:center;cursor:default;">' +
-      '<div style="font-family:\'Outfit\',sans-serif;font-size:1.8rem;letter-spacing:2px;color:' + k.color + ';">' + k.val + '</div>' +
-      '<div style="font-family:\'Outfit\',sans-serif;font-size:.55rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:2px;">' + k.label + '</div>' +
+    return '<div class="card" style="padding:15px 16px;position:relative;overflow:hidden;cursor:default;">' +
+      '<div style="position:absolute;top:-22px;right:-22px;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,' + k.color + '33,transparent 68%);pointer-events:none;"></div>' +
+      '<div style="display:flex;align-items:center;gap:7px;position:relative;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + k.color + ';box-shadow:0 0 10px ' + k.color + ';flex-shrink:0;"></span>' +
+        '<span style="font-family:\'Outfit\',sans-serif;font-size:.55rem;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + k.label + '</span>' +
+      '</div>' +
+      '<div style="font-family:\'Outfit\',sans-serif;font-size:2.3rem;font-weight:700;letter-spacing:-.5px;line-height:1.05;margin-top:9px;color:' + k.color + ';position:relative;">' + k.val + '</div>' +
     '</div>';
   }).join('');
 }
@@ -13576,49 +13564,6 @@ function crewGroupsRestore() {
   } catch(e) {}
 }
 
-// ── Build the left sidebar by relocating the existing nav (reuses all handlers) ─
-function buildAppSidebar(){
-  if(document.getElementById('app-sidebar')) return;
-  var ng = document.querySelector('.nav-groups');
-  if(!ng) return;
-  var aside = document.createElement('aside');
-  aside.id = 'app-sidebar';
-  var brand = document.createElement('div'); brand.className = 'sb-brand';
-  var logo = document.querySelector('.hdr-logo-wrap');
-  if(logo) brand.appendChild(logo);
-  aside.appendChild(brand);
-  var nav = document.createElement('div'); nav.className = 'sb-nav';
-  ['sales','install','ops','customer','reports','billing','sa'].forEach(function(g){
-    var b = document.getElementById('ng-'+g);
-    var s = document.getElementById('st-'+g);
-    if(b) nav.appendChild(b);   // group header
-    if(s) nav.appendChild(s);   // its sub-tabs (nested, accordion via .on)
-  });
-  aside.appendChild(nav);
-  document.body.insertBefore(aside, document.body.firstChild);
-  if(ng.parentNode) ng.parentNode.removeChild(ng);  // now-empty group bar
-  document.body.classList.add('has-sidebar');
-  // Mobile: toggle button in the top bar + dismiss backdrop
-  var hdr = document.querySelector('.hdr');
-  if(hdr && !document.getElementById('sb-toggle')){
-    var t = document.createElement('button');
-    t.id = 'sb-toggle'; t.setAttribute('aria-label','Toggle navigation'); t.innerHTML = '☰';
-    t.onclick = function(){ document.body.classList.toggle('sidebar-open'); };
-    hdr.insertBefore(t, hdr.firstChild);
-  }
-  if(!document.getElementById('sb-backdrop')){
-    var bd = document.createElement('div'); bd.id = 'sb-backdrop';
-    bd.onclick = function(){ document.body.classList.remove('sidebar-open'); };
-    document.body.appendChild(bd);
-  }
-  // Close the drawer after navigating on mobile
-  aside.addEventListener('click', function(e){
-    if(e.target.closest('.tb') && window.innerWidth <= 980) document.body.classList.remove('sidebar-open');
-  });
-}
-if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildAppSidebar);
-else buildAppSidebar();
-
 // ── Boot — MUST be last ───────────────────────────────────────────────────────
 (function authBoot() {
   // Restore persisted state first (before auth, so data is ready)
@@ -14432,11 +14377,12 @@ if ('serviceWorker' in navigator) {
 <!-- ═══════════ PAGE 14 · DISPATCH ═══════════ -->
 <div class="pg" id="p14">
 
-  <!-- ── Dispatch header ──────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+  <!-- ── Dashboard hero ───────────────────────────────────────────────────── -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;letter-spacing:3px;color:var(--accent);">Operational Dashboard</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Job management · Dispatch control</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:.62rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">Operations</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.5px;line-height:1.05;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Dashboard</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--muted);margin-top:6px;">Live job management &amp; dispatch control</div>
     </div>
   </div>
 
@@ -14461,7 +14407,7 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <!-- ── Overview cards ────────────────────────────────────────────────────── -->
-  <div id="dash-kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px;"></div>
+  <div id="dash-kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;"></div>
 
   <!-- ── Main layout: jobs queue + right panels ─────────────────────────────── -->
   <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
