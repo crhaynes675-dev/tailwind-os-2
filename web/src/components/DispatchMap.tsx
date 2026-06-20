@@ -11,7 +11,8 @@ function loadMaps(): Promise<void> {
   if (mapsPromise) return mapsPromise;
   mapsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}`;
+    // Match the legacy app's loader (same key + libraries).
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&libraries=geometry,places`;
     s.async = true;
     s.defer = true;
     s.onload = () => resolve();
@@ -43,9 +44,11 @@ export default function DispatchMap({ jobs, techs }: { jobs: Job[]; techs: { nam
   const geocoderRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
   const cacheRef = useRef<Cache>(loadCache());
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'denied'>('loading');
 
   useEffect(() => {
+    // Google calls this if the key/domain auth fails (e.g. RefererNotAllowedMapError).
+    (window as any).gm_authFailure = () => setStatus('denied');
     loadMaps()
       .then(() => {
         if (!elRef.current) return;
@@ -125,8 +128,17 @@ export default function DispatchMap({ jobs, techs }: { jobs: Job[]; techs: { nam
       <div ref={elRef} className="h-full w-full" />
       {status === 'loading' && <div className="absolute inset-0 grid place-items-center text-sm text-muted">Loading map…</div>}
       {status === 'error' && (
-        <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">
-          Map couldn’t load — the Google Maps key may be restricted to other domains.
+        <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">Map couldn’t load — network or script error.</div>
+      )}
+      {status === 'denied' && (
+        <div className="absolute inset-0 grid place-items-center bg-[#0f1628] p-6 text-center">
+          <div>
+            <div className="text-sm font-semibold text-text">Google Maps blocked this domain</div>
+            <div className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-muted">
+              The API key is referrer-restricted. Add <code className="rounded bg-white/10 px-1 text-accent">dkuo47zxewlgu.cloudfront.net/*</code> to the key’s
+              <b> Website restrictions</b> in Google Cloud Console (APIs &amp; Services → Credentials → the Maps key).
+            </div>
+          </div>
         </div>
       )}
       <div className="absolute right-3 top-3 max-h-[64%] w-44 overflow-y-auto rounded-xl border border-glass bg-[#0b1322]/85 p-2 backdrop-blur-md">
