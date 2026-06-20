@@ -110,3 +110,15 @@ export function normalizeStatus(raw: string | null | undefined): JobStatus {
   if (!raw) return 'Unscheduled';
   return LEGACY_MAP[raw.trim().toLowerCase()] ?? 'Unscheduled';
 }
+
+// What to PERSIST for each canonical state. Uses legacy-recognized strings
+// so the existing (still-live) app stays consistent, while normalizeStatus()
+// maps them back onto the same canonical OS3 state.
+export const WRITE_STATUS: Record<JobStatus, string> = {
+  Unscheduled: 'Unscheduled',
+  Scheduled: 'Scheduled',
+  'In Progress': 'In Progress',
+  'Ready for Post-Install Walk': 'Ready for Site Review',
+  'Final Walkthrough Ready': 'Final Walkthrough Ready',
+  Completed: 'Completed',
+};

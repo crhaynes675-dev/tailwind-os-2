@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { apiGet } from '../lib/api';
-import { normalizeStatus } from '../domain/status';
+import { apiGet, apiSend } from '../lib/api';
+import { normalizeStatus, WRITE_STATUS, type JobStatus } from '../domain/status';
 import type { Job } from './jobs';
 
 interface ApiJob {
@@ -40,6 +40,7 @@ export interface UseJobs {
   loading: boolean;
   error: string | null;
   reload: () => void;
+  updateStatus: (id: string, status: JobStatus) => Promise<void>;
 }
 
 export function useJobs(): UseJobs {
@@ -68,5 +69,16 @@ export function useJobs(): UseJobs {
     load();
   }, [load]);
 
-  return { jobs, loading, error, reload: load };
+  const updateStatus = useCallback(async (id: string, status: JobStatus) => {
+    // optimistic
+    setJobs((js) => js.map((j) => (j.id === id ? { ...j, status } : j)));
+    try {
+      await apiSend('PUT', `/jobs/${id}`, { status: WRITE_STATUS[status] });
+    } catch (e) {
+      await load(); // resync to authoritative server state on failure
+      throw e;
+    }
+  }, [load]);
+
+  return { jobs, loading, error, reload: load, updateStatus };
 }
