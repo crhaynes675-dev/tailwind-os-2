@@ -1120,6 +1120,20 @@ body{
   .ng{padding:8px 13px 10px;font-size:.7rem;}
   .sub-tabs{padding:7px 12px;}
 }
+
+/* ── Reusable page hero + gradient titles ─────────────────────── */
+.um-title,.page-title{background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.page-hero{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+.page-eyebrow{font-family:'Outfit',sans-serif;font-size:.62rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:4px;}
+.page-title{font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;line-height:1.05;}
+.page-sub{font-family:'Outfit',sans-serif;font-size:.72rem;color:var(--muted);margin-top:6px;}
+/* Tables — modern glass treatment */
+.ut th,.um-table th{border-bottom:1px solid var(--glass-border);}
+.ut td{border-bottom:1px solid rgba(255,255,255,.05);}
+:root.light .ut td{border-bottom:1px solid rgba(20,40,80,.06);}
+.ut tbody tr{transition:background .12s;}
+.ut tbody tr:hover td{background:rgba(255,255,255,.03);}
+:root.light .ut tbody tr:hover td{background:rgba(20,40,80,.03);}
 </style>
 <body>
 
@@ -2479,7 +2493,7 @@ body{
 
   <!-- ── Top toolbar ────────────────────────────────────────────────────── -->
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-    <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;letter-spacing:3px;color:var(--accent);flex-shrink:0;">Dispatch</div>
+    <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.3px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0;">Dispatch</div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
       <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
         <button id="cal-view-day"   onclick="calSetView('day')"   style="padding:5px 13px;font-family:'Outfit',sans-serif;font-size:.62rem;letter-spacing:.8px;background:none;border:none;cursor:pointer;color:var(--muted);transition:background .15s,color .15s;">Day</button>
@@ -13835,7 +13849,7 @@ if ('serviceWorker' in navigator) {
   <!-- Top action bar -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">New Customer Intake</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">New Customer Intake</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Capture all customer and job details before the install</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -14103,7 +14117,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Customer Database</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Customer Database</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Import customers via CSV / Excel or add manually — link to job intakes on PDF import</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -14286,7 +14300,7 @@ if ('serviceWorker' in navigator) {
 <div class="pg" id="p12">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Automations</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Automations</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">When (trigger) → If (condition) → Then (action) · Admin only</div>
     </div>
     <button class="btn bp" onclick="autoOpenNew()" style="font-size:.65rem;">+ New Automation</button>
@@ -14575,7 +14589,7 @@ if ('serviceWorker' in navigator) {
   <!-- ── Page header ─────────────────────────────────────────────────────────── -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Mobile App</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Mobile App</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Real-time job routing · Route optimization · Field navigation</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -14825,7 +14839,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Reports</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Reports</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">AI-powered data analysis · Custom reports · Export to PDF &amp; Excel</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -14944,7 +14958,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Completed Jobs</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Completed Jobs</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Finalized job archive · Full history · Documents · Inspection results</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -14966,7 +14980,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Projects</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Projects</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Customer project folders · All jobs by customer · Status · Documents · History</div>
     </div>
     <input type="text" id="proj-search" placeholder="🔍 Search customers or jobs…"
@@ -15004,7 +15018,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">Billing &amp; Plan</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Billing &amp; Plan</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Manage your subscription and billing details</div>
     </div>
   </div>
@@ -15055,7 +15069,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;letter-spacing:3px;color:var(--accent);">All Tenants</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">All Tenants</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Super admin · All organizations · Status · Plan · Users</div>
     </div>
     <button class="btn-primary" onclick="saTenantsShow()" style="font-size:.65rem;padding:6px 14px;">↺ Refresh</button>
@@ -15089,7 +15103,7 @@ if ('serviceWorker' in navigator) {
   <!-- Map page header -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div>
-      <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;letter-spacing:3px;color:var(--accent);">Map</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:-.4px;background:linear-gradient(120deg,#22d3ee,#7c6cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Map</div>
       <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);letter-spacing:1px;margin-top:2px;">Live map · Field tracking · Crew locations</div>
     </div>
   </div>
