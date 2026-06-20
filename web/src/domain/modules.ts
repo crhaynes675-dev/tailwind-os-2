@@ -1,0 +1,25 @@
+// ── Tailwind OS3 — Modules (navigation map) ─────────────────────────
+
+export interface ModuleDef {
+  id: string;
+  label: string;
+  path: string;
+  /** false until the module screen is built out */
+  ready: boolean;
+  /** net-new module not present in the legacy app */
+  isNew?: boolean;
+}
+
+export const MODULES: ModuleDef[] = [
+  { id: 'dashboard', label: 'Dashboard Hub', path: '/', ready: true },
+  { id: 'customers', label: 'Customer Database', path: '/customers', ready: false },
+  { id: 'import', label: 'PDF Import', path: '/import', ready: false },
+  { id: 'schedule', label: 'Schedule', path: '/schedule', ready: false },
+  { id: 'dispatch', label: 'Dispatch', path: '/dispatch', ready: false },
+  { id: 'delivery', label: 'Delivery', path: '/delivery', ready: false, isNew: true },
+  { id: 'installation', label: 'Installation', path: '/installation', ready: false },
+  { id: 'postinstall', label: 'Post-Install', path: '/post-install', ready: false },
+  { id: 'service', label: 'Service', path: '/service', ready: false, isNew: true },
+  { id: 'routing', label: 'Routing', path: '/routing', ready: false },
+  { id: 'reporting', label: 'Reporting', path: '/reporting', ready: false },
+];
