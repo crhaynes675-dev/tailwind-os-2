@@ -5,6 +5,7 @@ import {
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
   AdminDeleteUserCommand,
+  AdminUpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ok, created, noContent, badRequest, notFound, serverError, forbidden } from '../lib/response';
 import { getTenantId } from '../lib/tenant';
@@ -87,6 +88,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     if (!username) return badRequest('username is required', event);
+
+    // PUT /users/{username} — update role, name, or email (admin only)
+    if (httpMethod === 'PUT' && !isPasswordPath) {
+      if (!isAdmin) return forbidden('Admin access required', event);
+      const body = JSON.parse(event.body ?? '{}');
+      const attrs: { Name: string; Value: string }[] = [];
+      if (body.role)       attrs.push({ Name: 'custom:role',   Value: body.role });
+      if (body.givenName)  attrs.push({ Name: 'given_name',    Value: body.givenName });
+      if (body.familyName) attrs.push({ Name: 'family_name',   Value: body.familyName });
+      if (body.email)      attrs.push({ Name: 'email',         Value: body.email },
+                                      { Name: 'email_verified', Value: 'true' });
+      if (!attrs.length) return badRequest('No valid fields to update', event);
+      await cognito.send(new AdminUpdateUserAttributesCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: username,
+        UserAttributes: attrs,
+      }));
+      return ok({ updated: true }, event);
+    }
 
     // PUT /users/{username}/password — set a new permanent password (admin only)
     if (httpMethod === 'PUT' && isPasswordPath) {

@@ -1980,12 +1980,48 @@ input,select,textarea,button { touch-action:manipulation; }
       <div style="overflow-x:auto">
         <table class="um-table">
           <thead>
-            <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th></th></tr>
+            <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th style="width:130px"></th></tr>
           </thead>
           <tbody id="um-user-list">
             <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
           </tbody>
         </table>
+      </div>
+      <!-- Inline edit panel -->
+      <div id="um-edit-panel" style="display:none;margin-top:10px;padding:14px;background:rgba(91,155,213,.05);border:1px solid rgba(91,155,213,.25);border-radius:4px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Edit User: <span id="um-edit-label" style="color:var(--text);text-transform:none;letter-spacing:0;"></span></div>
+        <div class="um-form-row" style="flex-wrap:wrap">
+          <div class="um-form-field">
+            <label class="um-form-label" for="um-edit-given">First Name</label>
+            <input class="um-form-input" id="um-edit-given" type="text" autocomplete="off">
+          </div>
+          <div class="um-form-field">
+            <label class="um-form-label" for="um-edit-family">Last Name</label>
+            <input class="um-form-input" id="um-edit-family" type="text" autocomplete="off">
+          </div>
+          <div class="um-form-field">
+            <label class="um-form-label" for="um-edit-email">Email</label>
+            <input class="um-form-input" id="um-edit-email" type="email" autocomplete="off">
+          </div>
+          <div class="um-form-field" style="max-width:180px">
+            <label class="um-form-label" for="um-edit-role">Role</label>
+            <select class="um-form-select" id="um-edit-role">
+              <option value="admin">Admin</option>
+              <option value="sales">Sales</option>
+              <option value="work_coordinator">Work Coordinator</option>
+              <option value="service_technician">Service Technician</option>
+              <option value="project_manager">Project Manager</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+            <label class="um-form-label">&nbsp;</label>
+            <div style="display:flex;gap:6px;">
+              <button class="um-create-btn" id="um-edit-save-btn" onclick="umSaveEdit()">Save Changes</button>
+              <button class="btn bo" onclick="umCancelEdit()" style="font-size:.7rem;">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="um-msg" id="um-edit-msg"></div>
       </div>
     </div>
 
@@ -7307,22 +7343,29 @@ function umRenderPage() {
   if (isAdmin) umRenderList();
 }
 
+var _umUserCache = [];
+
 function umRenderList() {
   var tbody = document.getElementById('um-user-list');
   tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Loading…</td></tr>';
   mmApi('GET', '/users').then(function(users) {
+    _umUserCache = users || [];
     if (!users || !users.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">No users found.</td></tr>';
     } else {
       tbody.innerHTML = users.map(function(u) {
         var isSelf = AUTH_CURRENT_USER && u.username === AUTH_CURRENT_USER.username;
         var name = ((u.givenName || '') + ' ' + (u.familyName || '')).trim();
+        var uid = u.username.replace(/'/g,"\\'");
         return '<tr' + (isSelf ? ' class="um-self"' : '') + '>' +
           '<td>' + u.username + (isSelf ? '<span class="um-you">you</span>' : '') + '</td>' +
           '<td>' + (name || '—') + '</td>' +
           '<td style="color:var(--muted);font-size:.8rem">' + (u.email || '—') + '</td>' +
           '<td><span class="um-role-badge ' + u.role + '">' + umRoleLabel(u.role) + '</span></td>' +
-          '<td>' + (isSelf ? '' : '<button onclick="umDeleteUser(\'' + u.username.replace(/'/g,'\\\'') + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.75rem;padding:2px 6px">Delete</button>') + '</td>' +
+          '<td style="display:flex;gap:4px;align-items:center;">' +
+            '<button onclick="umOpenEdit(\'' + uid + '\')" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.72rem;padding:3px 8px;border-radius:3px;font-family:\'Outfit\',sans-serif;">Edit</button>' +
+            (isSelf ? '' : '<button onclick="umDeleteUser(\'' + uid + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:.75rem;padding:2px 6px">Delete</button>') +
+          '</td>' +
         '</tr>';
       }).join('');
     }
@@ -7335,6 +7378,60 @@ function umRenderList() {
   }).catch(function(err) {
     tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:14px">Failed to load users: ' + (err.message || err) + '</td></tr>';
   });
+}
+
+var _umEditUsername = '';
+
+function umOpenEdit(username) {
+  var u = _umUserCache.find(function(x){ return x.username === username; });
+  if (!u) return;
+  _umEditUsername = username;
+  var panel = document.getElementById('um-edit-panel');
+  var label = document.getElementById('um-edit-label');
+  if (label) label.textContent = username;
+  var g = document.getElementById('um-edit-given');   if (g) g.value = u.givenName  || '';
+  var f = document.getElementById('um-edit-family');  if (f) f.value = u.familyName || '';
+  var e = document.getElementById('um-edit-email');   if (e) e.value = u.email      || '';
+  var r = document.getElementById('um-edit-role');    if (r) r.value = u.role       || 'service_technician';
+  var msg = document.getElementById('um-edit-msg');   if (msg) { msg.textContent = ''; msg.style.display = 'none'; }
+  if (panel) { panel.style.display = 'block'; panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+}
+
+function umCancelEdit() {
+  _umEditUsername = '';
+  var panel = document.getElementById('um-edit-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function umSaveEdit() {
+  if (!_umEditUsername) return;
+  var givenName  = (document.getElementById('um-edit-given').value  || '').trim();
+  var familyName = (document.getElementById('um-edit-family').value || '').trim();
+  var email      = (document.getElementById('um-edit-email').value  || '').trim();
+  var role       = document.getElementById('um-edit-role').value;
+  if (!givenName || !familyName) { umShowEditMsg('First and last name are required.', 'error'); return; }
+  var btn = document.getElementById('um-edit-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  var payload = { givenName: givenName, familyName: familyName, role: role };
+  if (email) payload.email = email;
+  mmApi('PUT', '/users/' + encodeURIComponent(_umEditUsername), payload)
+    .then(function() {
+      umShowEditMsg('User updated.', 'success');
+      setTimeout(umCancelEdit, 1200);
+      umRenderList();
+      crewRefreshRoster();
+    })
+    .catch(function(err) { umShowEditMsg(err.message || 'Failed to update user.', 'error'); })
+    .then(function() { if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; } });
+}
+
+function umShowEditMsg(text, type) {
+  var el = document.getElementById('um-edit-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'um-msg show ' + type;
+  el.style.display = 'block';
+  if (type === 'success') setTimeout(function(){ el.style.display='none'; }, 3000);
 }
 
 function umCreateUser() {
@@ -7359,7 +7456,7 @@ function umCreateUser() {
       document.getElementById('um-new-given').value    = '';
       document.getElementById('um-new-family').value   = '';
       document.getElementById('um-new-password').value = '';
-      document.getElementById('um-new-role').value     = 'user';
+      document.getElementById('um-new-role').value     = 'service_technician';
       umShowMsg('User "' + username + '" created in Cognito.', 'success');
       umRenderList();
       crewRefreshRoster();
