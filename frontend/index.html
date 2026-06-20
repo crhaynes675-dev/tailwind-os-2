@@ -1456,7 +1456,7 @@ input,select,textarea,button { touch-action:manipulation; }
   <button class="tb" data-idx="21" onclick="ST(21)" title="Map">Map</button>
   <button class="tb" data-idx="13" onclick="ST(13)" title="Mobile App">Mobile App</button>
   <button class="tb" data-idx="16" onclick="ST(16)" title="Completed Jobs">Completed Jobs</button>
-  <button class="tb" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Crew" id="tab-crew">Crew</button>
+  <button class="tb" data-idx="20" onclick="ST(20);crewMgmtLoad();" title="Service Technicians / Crew" id="tab-crew">Service Technicians / Crew</button>
 </div>
 
 <!-- SUB-TABS: CUSTOMER DATABASE -->
@@ -2094,7 +2094,7 @@ input,select,textarea,button { touch-action:manipulation; }
 <div class="pg" id="p20">
 
   <div class="um-header">
-    <h2 class="um-title">Crew Management</h2>
+    <h2 class="um-title">Service Technicians / Crew Management</h2>
     <span class="um-badge">Admin / Work Coordinator</span>
   </div>
   <p class="um-sub">Create and manage named crews. Assign service technicians and a crew lead to each crew.</p>
@@ -2166,6 +2166,125 @@ input,select,textarea,button { touch-action:manipulation; }
       </div>
     </div>
   </div>
+
+  <!-- ── Tech Scheduler (vacations + jobs timeline) ───────────────────────── -->
+  <div class="um-section">
+    <div class="um-section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>Tech Scheduler — Vacations &amp; Jobs</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn bo" onclick="schedShiftDays(-7)" style="font-size:.58rem;padding:3px 8px;">◀ Prev</button>
+        <span id="sched-range-label" style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);min-width:140px;text-align:center;text-transform:none;letter-spacing:0;"></span>
+        <button class="btn bo" onclick="schedShiftDays(7)" style="font-size:.58rem;padding:3px 8px;">Next ▶</button>
+        <button class="btn bo" onclick="schedToday()" style="font-size:.58rem;padding:3px 8px;">Today</button>
+      </div>
+    </div>
+    <div style="font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--muted);margin-bottom:8px;">
+      Click any day in a tech's row to add time-off. Click a colored block to remove it. Job bars come from scheduled work.
+    </div>
+    <div id="sched-timeline" style="overflow-x:auto;border:1px solid var(--border);border-radius:4px;background:var(--bg);"></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);">
+      <span><span style="color:#e0a23c;">▇</span> Vacation</span>
+      <span><span style="color:#8b5cf6;">▇</span> PTO</span>
+      <span><span style="color:#e05c5c;">▇</span> Sick</span>
+      <span><span style="color:#5a7090;">▇</span> Unavailable</span>
+      <span><span style="color:var(--accent);">▇</span> Scheduled Job</span>
+    </div>
+  </div>
+
+  <!-- ── Crew Assignment (drag techs in — no edit) ────────────────────────── -->
+  <div class="um-section">
+    <div class="um-section-title">Crew Assignment — drag a tech into a crew</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">Available Techs</div>
+        <div id="sched-tech-pool" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px dashed var(--border);border-radius:4px;min-height:48px;align-content:flex-start;"></div>
+      </div>
+      <div style="flex:2;min-width:280px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">Crews (drop here)</div>
+        <div id="sched-crew-targets" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time-off add modal -->
+  <div id="sched-vac-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+    <div class="card" style="width:340px;max-width:92vw;">
+      <div class="ct" style="font-size:.95rem;">Add Time-Off</div>
+      <div id="sched-vac-tech" style="font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--accent);margin:6px 0 14px;font-weight:600;"></div>
+      <label class="um-form-label">Type</label>
+      <select id="sched-vac-type" class="um-form-select" style="margin-bottom:10px;width:100%;">
+        <option value="vacation">Vacation</option>
+        <option value="pto">PTO</option>
+        <option value="sick">Sick</option>
+        <option value="unavailable">Unavailable</option>
+      </select>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <div style="flex:1;"><label class="um-form-label">Start</label><input type="date" id="sched-vac-start" class="um-form-input" style="width:100%;"></div>
+        <div style="flex:1;"><label class="um-form-label">End</label><input type="date" id="sched-vac-end" class="um-form-input" style="width:100%;"></div>
+      </div>
+      <label class="um-form-label">Notes</label>
+      <input type="text" id="sched-vac-notes" class="um-form-input" style="margin-bottom:16px;width:100%;" placeholder="optional">
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn bo" onclick="schedCloseVacModal()" style="font-size:.7rem;">Cancel</button>
+        <button class="um-create-btn" onclick="schedSaveVac()">Save Time-Off</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Notifications (SMS) ────────── -->
+  <div class="um-section">
+    <div class="um-section-title">Notifications</div>
+      <div class="card" style="max-width:620px;">
+      <div class="ct">📱 Notifications</div>
+      <div id="dash-sms-unconfigured" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;">
+        ⚠ SMS provider not configured · <span style="color:var(--accent);">Demo mode</span> — messages logged locally
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Template</label>
+        <select id="dash-sms-template" onchange="dashFillTemplate()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
+          <option value="">— Select template —</option>
+          <option value="crew_dispatch">Crew Dispatch</option>
+          <option value="customer_confirm">Customer Confirmation</option>
+          <option value="crew_enroute">Crew En Route</option>
+          <option value="customer_enroute">Customer En Route</option>
+          <option value="delay">Delay Notification</option>
+        </select>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Recipient</label>
+        <select id="dash-sms-recipient" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
+          <option value="crew">Crew</option>
+          <option value="customer">Customer</option>
+        </select>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Message</label>
+        <textarea id="dash-sms-body" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:7px 9px;outline:none;resize:vertical;"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div>
+          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Send</label>
+          <select id="dash-sms-when" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
+            <option value="now">Now</option>
+            <option value="24h">24h before</option>
+            <option value="2h">2h before</option>
+            <option value="30m">30min before</option>
+            <option value="on_dispatch">On dispatch</option>
+            <option value="on_enroute">On en route</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Phone</label>
+          <input type="tel" id="dash-sms-phone" placeholder="+1 704 555 0000"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
+        </div>
+      </div>
+      <button class="btn bp" onclick="dashSendSMS()" style="width:100%;font-size:.68rem;">📤 Queue Message</button>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message Log</div>
+        <div id="dash-sms-log" style="max-height:140px;overflow-y:auto;font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);">No messages queued.</div>
+      </div>
+      </div>  </div>
 
 </div>
 
@@ -7522,6 +7641,7 @@ var _CREW_ROLE_LABELS = { service_technician:'Service Technician', project_manag
 
 function crewMgmtLoad() {
   crewGroupRenderPage();
+  if (typeof schedInit === 'function') schedInit();
   if (!mmGetToken()) return;
   mmApi('GET', '/users').then(function(res) {
     if (res && Array.isArray(res) && res.length) {
@@ -7531,6 +7651,8 @@ function crewMgmtLoad() {
       });
     }
     crewGroupRenderPage();
+    if (typeof schedRender === 'function') schedRender();
+    if (typeof schedRenderCrewAssign === 'function') schedRenderCrewAssign();
   }).catch(function(){});
 }
 
@@ -10039,6 +10161,199 @@ function crewGroupSaveEdit() {
   dashPersistState(); crewGroupsPersist();
   crewGroupCancelEdit();
   crewGroupRenderPage();
+}
+
+// ══════════════════════════════════════════════
+//  TECH SCHEDULER — vacations + jobs timeline, drag-to-crew
+// ══════════════════════════════════════════════
+var VACATIONS = [];                // [{vacationId, techId, techName, startDate, endDate, type, notes}]
+var SCHED_START = null;            // Date of first visible column (local midnight)
+var SCHED_DAYS = 21;              // number of day columns
+var SCHED_COLW = 42;             // px per day
+var _schedJobsByTech = {};        // techId -> [jobs]
+var SCHED_VAC_COLORS = { vacation:'#e0a23c', pto:'#8b5cf6', sick:'#e05c5c', unavailable:'#5a7090' };
+var _schedVacCtx = { techId:'', techName:'' };
+var _schedDragTechId = '';
+
+function schedParseYMD(s){ var p=(s||'').split('-'); return new Date(+p[0], (+p[1]||1)-1, +p[2]||1); }
+function schedYMD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function schedAddDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function schedStartOfWeek(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
+function schedFmt(d){ return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate(); }
+function schedInitials(n){ var p=(n||'').trim().split(/\s+/); return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase(); }
+function schedDayIndex(ds){ if(!SCHED_START||!ds) return -999; return Math.round((schedParseYMD(ds)-SCHED_START)/86400000); }
+function schedTechs(){ return (CREW_ROSTER||[]).filter(function(m){ return m.role==='service_technician'||m.role==='project_manager'; }); }
+
+function schedInit(){
+  if(!SCHED_START) SCHED_START = schedStartOfWeek(new Date());
+  schedRender();
+  schedRenderCrewAssign();
+  schedLoadData();
+}
+
+function schedLoadData(){
+  if(!mmGetToken()) return;
+  var from = schedYMD(schedAddDays(new Date(), -45));
+  var to   = schedYMD(schedAddDays(new Date(), 150));
+  Promise.all([
+    mmApi('GET','/vacations').catch(function(){ return []; }),
+    mmApi('GET','/jobs?from='+from+'&to='+to).catch(function(){ return []; })
+  ]).then(function(r){
+    VACATIONS = Array.isArray(r[0]) ? r[0] : [];
+    _schedJobsByTech = {};
+    (Array.isArray(r[1])?r[1]:[]).forEach(function(j){
+      var tid = j.assignedTo; if(!tid) return;
+      var st = j.scheduledDate; if(!st || st==='0001-01-01') return;
+      if(['Completed','Canceled'].indexOf(j.status)!==-1) return;
+      (_schedJobsByTech[tid] = _schedJobsByTech[tid] || []).push(j);
+    });
+    schedRender();
+  });
+}
+
+function schedShiftDays(n){ if(!SCHED_START) SCHED_START=schedStartOfWeek(new Date()); SCHED_START=schedAddDays(SCHED_START,n); schedRender(); }
+function schedToday(){ SCHED_START=schedStartOfWeek(new Date()); schedRender(); }
+
+function schedRender(){
+  var el = G('sched-timeline'); if(!el) return;
+  if(!SCHED_START) SCHED_START = schedStartOfWeek(new Date());
+  var techs = schedTechs();
+  var LABELW=150, COLW=SCHED_COLW, DAYS=SCHED_DAYS, ROWH=46;
+  var trackW = COLW*DAYS;
+  var todayStr = schedYMD(new Date());
+  var rl = G('sched-range-label'); if(rl) rl.textContent = schedFmt(SCHED_START)+' – '+schedFmt(schedAddDays(SCHED_START,DAYS-1));
+
+  // Header
+  var h = '<div style="display:flex;min-width:'+(LABELW+trackW)+'px;position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--border);">';
+  h += '<div style="width:'+LABELW+'px;flex:0 0 '+LABELW+'px;padding:6px 8px;font-family:Outfit,sans-serif;font-size:.55rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Technician</div>';
+  for(var i=0;i<DAYS;i++){
+    var d=schedAddDays(SCHED_START,i), ds=schedYMD(d), we=(d.getDay()===0||d.getDay()===6), isT=ds===todayStr;
+    h += '<div style="width:'+COLW+'px;flex:0 0 '+COLW+'px;text-align:center;padding:4px 0;font-family:Outfit,sans-serif;font-size:.54rem;line-height:1.3;color:'+(isT?'var(--accent)':(we?'var(--muted)':'var(--text)'))+';'+(we?'background:rgba(90,112,144,.06);':'')+(isT?'box-shadow:inset 0 -2px 0 var(--accent);':'')+'">'+
+      ['Su','Mo','Tu','We','Th','Fr','Sa'][d.getDay()]+'<br><span style="font-size:.62rem;font-weight:700;">'+d.getDate()+'</span></div>';
+  }
+  h += '</div>';
+
+  var rows='';
+  if(!techs.length){
+    rows = '<div style="padding:16px;font-family:Outfit,sans-serif;font-size:.7rem;color:var(--muted);text-align:center;">No technicians found. Add Service Technicians in User Management.</div>';
+  } else {
+    techs.forEach(function(tech){
+      rows += '<div style="display:flex;min-width:'+(LABELW+trackW)+'px;border-bottom:1px solid var(--border);height:'+ROWH+'px;">';
+      rows += '<div draggable="true" ondragstart="schedTechDragStart(event,\''+tech.id+'\')" title="Drag into a crew below" style="width:'+LABELW+'px;flex:0 0 '+LABELW+'px;padding:0 8px;display:flex;align-items:center;gap:7px;cursor:grab;border-right:1px solid var(--border);">'+
+        '<span style="width:24px;height:24px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:.55rem;font-weight:700;color:var(--accent);flex-shrink:0;">'+schedInitials(tech.name)+'</span>'+
+        '<span style="font-family:Outfit,sans-serif;font-size:.7rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(tech.name)+'</span></div>';
+      rows += '<div style="position:relative;width:'+trackW+'px;flex:0 0 '+trackW+'px;height:'+ROWH+'px;">';
+      for(var k=0;k<DAYS;k++){
+        var dd=schedAddDays(SCHED_START,k), wk=(dd.getDay()===0||dd.getDay()===6);
+        rows += '<div onclick="schedOpenVacModal(\''+tech.id+'\','+k+')" style="position:absolute;left:'+(k*COLW)+'px;top:0;width:'+COLW+'px;height:100%;border-right:1px solid var(--border);'+(wk?'background:rgba(90,112,144,.05);':'')+'cursor:pointer;"></div>';
+      }
+      (VACATIONS||[]).filter(function(v){ return v.techId===tech.id; }).forEach(function(v){
+        var s=schedDayIndex(v.startDate), e=schedDayIndex(v.endDate); if(e<s) e=s;
+        if(e<0||s>DAYS-1) return;
+        var cs=Math.max(0,s), ce=Math.min(DAYS-1,e), span=ce-cs+1;
+        var col=SCHED_VAC_COLORS[v.type]||'#e0a23c';
+        rows += '<div onclick="event.stopPropagation();schedVacClick(\''+v.vacationId+'\')" title="'+esc(v.type)+(v.notes?': '+esc(v.notes):'')+' — click to remove" style="position:absolute;left:'+(cs*COLW+1)+'px;top:24px;width:'+(span*COLW-3)+'px;height:18px;background:'+col+'33;border:1px solid '+col+';border-radius:3px;cursor:pointer;display:flex;align-items:center;padding:0 4px;overflow:hidden;box-sizing:border-box;">'+
+          '<span style="font-family:Outfit,sans-serif;font-size:.5rem;color:'+col+';white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;font-weight:700;">'+esc(v.type)+'</span></div>';
+      });
+      (_schedJobsByTech[tech.id]||[]).forEach(function(j){
+        var idx=schedDayIndex(j.scheduledDate); if(idx<0||idx>DAYS-1) return;
+        var wo=((j.workOrderNumber||'').replace('WO-','').replace(/^\d{4}-/,'')) || (j.jobName||'').slice(0,5);
+        rows += '<div title="'+esc(j.jobName||'Job')+' — '+esc(j.status||'')+'" style="position:absolute;left:'+(idx*COLW+1)+'px;top:4px;width:'+(COLW-3)+'px;height:16px;background:var(--accent);border-radius:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;">'+
+          '<span style="font-family:Outfit,sans-serif;font-size:.5rem;color:#04121a;font-weight:700;white-space:nowrap;">'+esc(wo)+'</span></div>';
+      });
+      rows += '</div></div>';
+    });
+  }
+  el.innerHTML = h + rows;
+}
+
+function schedOpenVacModal(techId, dayIndex){
+  var tech = (CREW_ROSTER||[]).find(function(m){ return m.id===techId; });
+  _schedVacCtx = { techId:techId, techName: tech?tech.name:techId };
+  var ds = schedYMD(schedAddDays(SCHED_START, dayIndex));
+  if(G('sched-vac-tech'))  G('sched-vac-tech').textContent = _schedVacCtx.techName;
+  if(G('sched-vac-type'))  G('sched-vac-type').value = 'vacation';
+  if(G('sched-vac-start')) G('sched-vac-start').value = ds;
+  if(G('sched-vac-end'))   G('sched-vac-end').value = ds;
+  if(G('sched-vac-notes')) G('sched-vac-notes').value = '';
+  if(G('sched-vac-modal')) G('sched-vac-modal').style.display = 'flex';
+}
+function schedCloseVacModal(){ if(G('sched-vac-modal')) G('sched-vac-modal').style.display='none'; }
+
+function schedSaveVac(){
+  var start=(G('sched-vac-start')||{}).value, end=(G('sched-vac-end')||{}).value||start;
+  if(!start){ alert('Start date is required.'); return; }
+  if(end<start){ var tmp=end; end=start; start=tmp; }
+  var payload = { techId:_schedVacCtx.techId, techName:_schedVacCtx.techName, startDate:start, endDate:end, type:(G('sched-vac-type')||{}).value||'vacation', notes:((G('sched-vac-notes')||{}).value||'').trim() };
+  schedCloseVacModal();
+  mmApi('POST','/vacations',payload).then(function(rec){
+    if(rec && rec.vacationId) VACATIONS.push(rec);
+    schedRender();
+  }).catch(function(e){ alert('Could not save time-off: '+(e&&e.message||e)); });
+}
+
+function schedVacClick(id){
+  var v=(VACATIONS||[]).find(function(x){ return x.vacationId===id; }); if(!v) return;
+  var range = v.startDate + (v.endDate!==v.startDate ? ' → '+v.endDate : '');
+  if(!confirm('Remove '+v.type+' for '+(v.techName||v.techId)+' ('+range+')?')) return;
+  mmApi('DELETE','/vacations/'+id).then(function(){
+    VACATIONS = VACATIONS.filter(function(x){ return x.vacationId!==id; });
+    schedRender();
+  }).catch(function(e){ alert('Could not remove: '+(e&&e.message||e)); });
+}
+
+// ── Drag techs into crews (no edit form) ──────────────────────────
+function schedTechDragStart(e, techId){ _schedDragTechId=techId; if(e.dataTransfer){ e.dataTransfer.effectAllowed='copy'; e.dataTransfer.setData('text/plain',techId); } }
+function schedCrewDragOver(e){ e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='copy'; }
+function schedCrewDrop(e, crewId){
+  e.preventDefault();
+  var techId = _schedDragTechId || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || '';
+  _schedDragTechId='';
+  if(!techId) return;
+  var g=(CREW_GROUPS||[]).find(function(x){ return x.id===crewId; }); if(!g) return;
+  g.memberIds = g.memberIds || [];
+  if(g.memberIds.indexOf(techId)===-1){
+    g.memberIds.push(techId);
+    if(!g.leadId) g.leadId=techId;
+    crewGroupsPersist(); if(typeof dashPersistState==='function') dashPersistState();
+  }
+  schedRenderCrewAssign();
+  if(typeof crewGroupRenderPage==='function') crewGroupRenderPage();
+}
+function schedRemoveMember(crewId, techId){
+  var g=(CREW_GROUPS||[]).find(function(x){ return x.id===crewId; }); if(!g) return;
+  g.memberIds=(g.memberIds||[]).filter(function(id){ return id!==techId; });
+  if(g.leadId===techId) g.leadId = g.memberIds[0]||'';
+  crewGroupsPersist(); if(typeof dashPersistState==='function') dashPersistState();
+  schedRenderCrewAssign();
+  if(typeof crewGroupRenderPage==='function') crewGroupRenderPage();
+}
+function schedRenderCrewAssign(){
+  var techs = schedTechs();
+  var pool = G('sched-tech-pool');
+  if(pool){
+    pool.innerHTML = techs.length ? techs.map(function(t){
+      return '<div draggable="true" ondragstart="schedTechDragStart(event,\''+t.id+'\')" style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;cursor:grab;font-family:Outfit,sans-serif;font-size:.68rem;color:var(--text);">'+
+        '<span style="color:var(--accent);">⠿</span>'+esc(t.name)+'</div>';
+    }).join('') : '<span style="font-family:Outfit,sans-serif;font-size:.65rem;color:var(--muted);">No technicians.</span>';
+  }
+  var tgt = G('sched-crew-targets');
+  if(tgt){
+    if(!CREW_GROUPS.length){
+      tgt.innerHTML = '<div style="font-family:Outfit,sans-serif;font-size:.68rem;color:var(--muted);padding:12px;border:1px dashed var(--border);border-radius:4px;">No crews yet — create one in “Named Crews” above, then drag techs here.</div>';
+    } else {
+      tgt.innerHTML = CREW_GROUPS.map(function(g){
+        var chips=(g.memberIds||[]).map(function(id){
+          var m=CREW_ROSTER.find(function(c){ return c.id===id; }); var nm=m?m.name:id; var isLead=g.leadId===id;
+          return '<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;background:var(--bg);border:1px solid '+(isLead?'var(--accent)':'var(--border)')+';border-radius:12px;font-family:Outfit,sans-serif;font-size:.62rem;color:var(--text);">'+(isLead?'★ ':'')+esc(nm)+
+            '<span onclick="schedRemoveMember(\''+g.id+'\',\''+id+'\')" title="Remove from crew" style="cursor:pointer;color:var(--red);font-weight:700;">×</span></span>';
+        }).join(' ');
+        return '<div ondragover="schedCrewDragOver(event)" ondrop="schedCrewDrop(event,\''+g.id+'\')" style="padding:10px 12px;border:1px solid var(--border);border-radius:5px;background:var(--surface);">'+
+          '<div style="font-family:Outfit,sans-serif;font-size:.76rem;font-weight:600;color:var(--text);margin-bottom:7px;">👷 '+esc(g.name)+' <span style="font-size:.56rem;color:var(--muted);font-weight:400;">— drop a tech to add</span></div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:5px;">'+(chips||'<span style="font-family:Outfit,sans-serif;font-size:.62rem;color:var(--muted);">No members yet</span>')+'</div></div>';
+      }).join('');
+    }
+  }
 }
 
 // Get crew objects for a job
@@ -14725,58 +15040,19 @@ if ('serviceWorker' in navigator) {
       <div id="dispatch-map-loading" style="display:none;position:absolute;top:10px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:'Outfit',sans-serif;font-size:.62rem;color:var(--accent);z-index:10;">⏳ Geocoding jobs…</div>
     </div>
 
-    <!-- RIGHT: Notifications -->
-    <div class="card" style="overflow-y:auto;">
-      <div class="ct">📱 Notifications</div>
-      <div id="dash-sms-unconfigured" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;">
-        ⚠ SMS provider not configured · <span style="color:var(--accent);">Demo mode</span> — messages logged locally
-      </div>
-      <div style="margin-bottom:8px;">
-        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Template</label>
-        <select id="dash-sms-template" onchange="dashFillTemplate()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
-          <option value="">— Select template —</option>
-          <option value="crew_dispatch">Crew Dispatch</option>
-          <option value="customer_confirm">Customer Confirmation</option>
-          <option value="crew_enroute">Crew En Route</option>
-          <option value="customer_enroute">Customer En Route</option>
-          <option value="delay">Delay Notification</option>
-        </select>
-      </div>
-      <div style="margin-bottom:8px;">
-        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Recipient</label>
-        <select id="dash-sms-recipient" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 8px;outline:none;">
-          <option value="crew">Crew</option>
-          <option value="customer">Customer</option>
-        </select>
-      </div>
-      <div style="margin-bottom:8px;">
-        <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Message</label>
-        <textarea id="dash-sms-body" rows="3" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:7px 9px;outline:none;resize:vertical;"></textarea>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-        <div>
-          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Send</label>
-          <select id="dash-sms-when" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
-            <option value="now">Now</option>
-            <option value="24h">24h before</option>
-            <option value="2h">2h before</option>
-            <option value="30m">30min before</option>
-            <option value="on_dispatch">On dispatch</option>
-            <option value="on_enroute">On en route</option>
-          </select>
+    <!-- RIGHT: Active Jobs -->
+    <div class="card" style="display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">📋 Active Jobs</div>
+          <div id="dispatch-job-count" style="font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--accent);">0 total</div>
         </div>
-        <div>
-          <label style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Phone</label>
-          <input type="tel" id="dash-sms-phone" placeholder="+1 704 555 0000"
-            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.7rem;padding:6px 7px;outline:none;">
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <button id="djf-all"        onclick="dispatchFilterJobs('all')"        style="flex:1;font-family:'Outfit',sans-serif;font-size:.6rem;padding:4px 6px;border-radius:4px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;">All</button>
+          <button id="djf-unassigned" onclick="dispatchFilterJobs('unassigned')" style="flex:1;font-family:'Outfit',sans-serif;font-size:.6rem;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Unassigned</button>
+          <button id="djf-active"     onclick="dispatchFilterJobs('active')"     style="flex:1;font-family:'Outfit',sans-serif;font-size:.6rem;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">En Route</button>
         </div>
-      </div>
-      <button class="btn bp" onclick="dashSendSMS()" style="width:100%;font-size:.68rem;">📤 Queue Message</button>
-      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
-        <div style="font-family:'Outfit',sans-serif;font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Message Log</div>
-        <div id="dash-sms-log" style="max-height:140px;overflow-y:auto;font-family:'Outfit',sans-serif;font-size:.6rem;color:var(--muted);">No messages queued.</div>
-      </div>
-    </div>
+        <div id="dispatch-job-list" style="display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;min-height:0;"></div>
+    </div><!-- /Active Jobs (right column) -->
 
   </div>
 

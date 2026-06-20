@@ -82,6 +82,7 @@ export class ApiStack extends cdk.Stack {
     const nciFn         = makeFn('NciFn',         'handlers/nci.handler');
     const customersFn   = makeFn('CustomersFn',   'handlers/customers.handler');
     const crewFn        = makeFn('CrewFn',        'handlers/crew.handler');
+    const vacationsFn   = makeFn('VacationsFn',   'handlers/vacations.handler');
     const smsFn         = makeFn('SmsFn',         'handlers/sms.handler');
     const automationsFn = makeFn('AutomationsFn', 'handlers/automations.handler');
     const tenantsFn     = makeFn('TenantsFn',     'handlers/tenants.handler');
@@ -180,6 +181,14 @@ export class ApiStack extends cdk.Stack {
     const crewId = crew.addResource('{crewId}');
     crewId.addMethod('PUT',    new apigateway.LambdaIntegration(crewFn), auth);
     crewId.addMethod('DELETE', new apigateway.LambdaIntegration(crewFn), auth);
+
+    // Tech vacations / time-off
+    const vacations   = this.api.root.addResource('vacations');
+    vacations.addMethod('GET',  new apigateway.LambdaIntegration(vacationsFn), auth);
+    vacations.addMethod('POST', new apigateway.LambdaIntegration(vacationsFn), auth);
+    const vacationId  = vacations.addResource('{vacationId}');
+    vacationId.addMethod('PUT',    new apigateway.LambdaIntegration(vacationsFn), auth);
+    vacationId.addMethod('DELETE', new apigateway.LambdaIntegration(vacationsFn), auth);
 
     // SMS queue
     const sms       = this.api.root.addResource('sms');
