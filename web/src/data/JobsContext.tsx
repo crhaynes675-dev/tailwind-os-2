@@ -50,6 +50,7 @@ interface JobsState {
   reload: () => void;
   updateJob: (id: string, patch: Partial<Job>) => Promise<void>;
   updateStatus: (id: string, status: JobStatus) => Promise<void>;
+  createJob: (data: { jobName: string; address?: string; customerName?: string; scheduledDate?: string }) => Promise<void>;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -98,8 +99,16 @@ export function JobsProvider({ children }: { children: ReactNode }) {
 
   const updateStatus = useCallback((id: string, status: JobStatus) => updateJob(id, { status }), [updateJob]);
 
+  const createJob = useCallback(
+    async (data: { jobName: string; address?: string; customerName?: string; scheduledDate?: string }) => {
+      await apiSend('POST', '/jobs', data);
+      await load();
+    },
+    [load],
+  );
+
   return (
-    <JobsContext.Provider value={{ jobs, loading, error, reload: load, updateJob, updateStatus, selectedId, select: setSelectedId }}>
+    <JobsContext.Provider value={{ jobs, loading, error, reload: load, updateJob, updateStatus, createJob, selectedId, select: setSelectedId }}>
       {children}
     </JobsContext.Provider>
   );

@@ -4,6 +4,13 @@ import Dashboard from './pages/Dashboard';
 import Schedule from './pages/Schedule';
 import Dispatch from './pages/Dispatch';
 import Reporting from './pages/Reporting';
+import Installation from './pages/Installation';
+import PostInstall from './pages/PostInstall';
+import Delivery from './pages/Delivery';
+import Service from './pages/Service';
+import Customers from './pages/Customers';
+import Routing from './pages/Routing';
+import Import from './pages/Import';
 import ModuleStub from './pages/ModuleStub';
 import Login from './pages/Login';
 import { MODULES } from './domain/modules';
@@ -14,6 +21,13 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   schedule: Schedule,
   dispatch: Dispatch,
   reporting: Reporting,
+  installation: Installation,
+  postinstall: PostInstall,
+  delivery: Delivery,
+  service: Service,
+  customers: Customers,
+  routing: Routing,
+  import: Import,
 };
 
 export default function App() {
