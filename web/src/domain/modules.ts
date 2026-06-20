@@ -25,4 +25,5 @@ export const MODULES: ModuleDef[] = [
   { id: 'routing', label: 'Routing', path: '/routing', ready: true },
   { id: 'manager', label: 'Install Manager', path: '/manager', ready: true },
   { id: 'reporting', label: 'Reporting', path: '/reporting', ready: true },
+  { id: 'users', label: 'Users', path: '/users', ready: true },
 ];

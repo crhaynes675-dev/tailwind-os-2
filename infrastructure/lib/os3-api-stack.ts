@@ -59,7 +59,14 @@ export class Os3ApiStack extends cdk.Stack {
       resources: [`arn:aws:s3:::${ATTACHMENTS_BUCKET}/*`],
     }));
     lambdaRole.addToPolicy(new iam.PolicyStatement({
-      actions: ['cognito-idp:ListUsers'],
+      actions: [
+        'cognito-idp:ListUsers',
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminDeleteUser',
+        'cognito-idp:AdminUpdateUserAttributes',
+        'cognito-idp:AdminGetUser',
+      ],
       resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${EXISTING_USER_POOL_ID}`],
     }));
 
@@ -140,8 +147,14 @@ export class Os3ApiStack extends cdk.Stack {
     customer.addMethod('PUT', integ(customersFn), auth);
     customer.addMethod('DELETE', integ(customersFn), auth);
 
-    // /users (read-only roster for assignment)
-    api.root.addResource('users').addMethod('GET', integ(usersFn), auth);
+    // /users — roster + management (admin-gated in the handler)
+    const users = api.root.addResource('users');
+    users.addMethod('GET', integ(usersFn), auth);
+    users.addMethod('POST', integ(usersFn), auth);
+    const userByName = users.addResource('{username}');
+    userByName.addMethod('PUT', integ(usersFn), auth);
+    userByName.addMethod('DELETE', integ(usersFn), auth);
+    userByName.addResource('password').addMethod('PUT', integ(usersFn), auth);
 
     // /service
     const service = api.root.addResource('service');
