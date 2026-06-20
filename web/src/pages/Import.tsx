@@ -17,17 +17,17 @@ const STAGES = [
 interface Form {
   customerName: string; customerCompany: string; customerPhone: string; email: string; whyLead: string;
   jobName: string; scope: string; quoteNum: string;
-  contractRef: string; awardDate: string; address: string;
+  awarded: string; contractRef: string; awardDate: string; address: string;
   hContract: boolean; hDocs: boolean; hScope: boolean;
-  openItems: string; scheduledDate: string;
+  openItems: string; scheduledDate: string; lostReason: string;
 }
 
 const EMPTY: Form = {
   customerName: '', customerCompany: '', customerPhone: '', email: '', whyLead: '',
   jobName: '', scope: '', quoteNum: '',
-  contractRef: '', awardDate: '', address: '',
+  awarded: '', contractRef: '', awardDate: '', address: '',
   hContract: false, hDocs: false, hScope: false,
-  openItems: '', scheduledDate: '',
+  openItems: '', scheduledDate: '', lostReason: '',
 };
 
 function Field({ label, value, onChange, placeholder, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean }) {
@@ -73,6 +73,7 @@ function FileInput({ label, file, onChange }: { label: string; file: File | null
 export default function Import() {
   const { createJob } = useJobsCtx();
   const [step, setStep] = useState(0);
+  const [lostPath, setLostPath] = useState(false); // diverted to "not awarded"
   const [f, setF] = useState<Form>(EMPTY);
   const set = <K extends keyof Form>(k: K) => (v: Form[K]) => setF((s) => ({ ...s, [k]: v }));
   const [busy, setBusy] = useState(false);
@@ -89,6 +90,7 @@ export default function Import() {
     switch (STAGES[i].key) {
       case 'lead': return !!f.customerName.trim();
       case 'quote': return !!f.jobName.trim();
+      case 'awarded': return f.awarded === 'yes' || f.awarded === 'no';
       case 'handoff': return f.hContract && f.hDocs && f.hScope;
       default: return true;
     }
@@ -98,9 +100,36 @@ export default function Import() {
 
   function next() {
     if (!stepValid(step)) return;
+    // Branch: not awarded → divert to the reason screen (no job).
+    if (STAGES[step].key === 'awarded' && f.awarded === 'no') { setLostPath(true); return; }
     if (!isLast) setStep((s) => s + 1);
   }
   function back() { setStep((s) => Math.max(0, s - 1)); }
+
+  async function saveLostLead() {
+    setBusy(true); setMsg(null);
+    const notes = [
+      f.whyLead.trim() && `Lead reason: ${f.whyLead.trim()}`,
+      f.lostReason.trim() && `Not awarded — reason: ${f.lostReason.trim()}`,
+    ].filter(Boolean).join('\n');
+    try {
+      await apiSend('POST', '/customers', {
+        name: f.customerName.trim(), customerName: f.customerName.trim(),
+        company: f.customerCompany.trim() || undefined, customerCompany: f.customerCompany.trim() || undefined,
+        phone: f.customerPhone.trim() || undefined, customerPhone: f.customerPhone.trim() || undefined,
+        email: f.email.trim() || undefined,
+        address: f.address.trim() || undefined,
+        notes: notes || undefined,
+        source: 'Lost Lead',
+        status: 'Not Awarded',
+      });
+      setMsg({ kind: 'ok', text: `${f.customerName.trim() || 'Lead'} saved to the customer database (not awarded). No job created.` });
+      setF(EMPTY); setStep(0); setLostPath(false);
+      setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
+    } catch (e) {
+      setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'Failed to save lead' });
+    } finally { setBusy(false); }
+  }
 
   async function create() {
     setBusy(true); setMsg(null);
@@ -183,6 +212,25 @@ export default function Import() {
         })}
       </div>
 
+      {lostPath && (
+        <div className="mx-auto max-w-2xl">
+          <section className="glass rounded-2xl p-6">
+            <div className="mb-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-faint">Lead outcome · Not awarded</div>
+            <h2 className="mb-1 text-lg font-semibold text-text">Not awarded</h2>
+            <p className="mb-5 text-[0.72rem] text-muted">Capture why this didn’t convert. {f.customerName.trim() || 'The lead'} will still be saved to the customer database — no job is created.</p>
+            <Area label="Reason — why was it not awarded?" value={f.lostReason} onChange={set('lostReason')} placeholder="budget, timing, went with a competitor, project canceled…" />
+            {msg && <div className={`mt-4 rounded-lg px-3 py-2 text-[0.74rem] ${msg.kind === 'err' ? 'bg-[#f4607a]/10 text-[#f4607a]' : 'bg-[#34d39a]/10 text-[#34d39a]'}`}>{msg.text}</div>}
+            <div className="mt-6 flex items-center justify-between">
+              <button onClick={() => setLostPath(false)} className="rounded-lg border border-glass bg-white/5 px-4 py-2 text-xs font-semibold text-muted transition hover:text-text">← Back</button>
+              <button onClick={saveLostLead} disabled={busy || !f.customerName.trim()} className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-5 py-2.5 text-sm font-semibold text-white transition enabled:hover:brightness-105 disabled:opacity-40">
+                {busy ? 'Saving…' : 'Save to customer database →'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {!lostPath && (
       <div className="mx-auto max-w-2xl">
         <section className="glass rounded-2xl p-6">
           <div className="mb-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-faint">Step {step + 1} of {STAGES.length} · {stage.owner}</div>
@@ -216,11 +264,38 @@ export default function Import() {
             )}
             {stage.key === 'awarded' && (
               <>
-                <div className="grid grid-cols-2 gap-3.5">
-                  <Field label="Contract / Award ref" value={f.contractRef} onChange={set('contractRef')} placeholder="executed contract #" />
-                  <Field label="Award date" type="date" value={f.awardDate} onChange={set('awardDate')} />
+                <div>
+                  <label className="mb-1.5 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Was the sale awarded?</label>
+                  <div className="flex gap-2">
+                    {(['yes', 'no'] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => set('awarded')(v)}
+                        className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${
+                          f.awarded === v
+                            ? v === 'yes' ? 'border-[#34d39a]/50 bg-[#34d39a]/15 text-[#34d39a]' : 'border-[#f4607a]/50 bg-[#f4607a]/15 text-[#f4607a]'
+                            : 'border-glass bg-white/[0.03] text-muted hover:text-text'
+                        }`}
+                      >
+                        {v === 'yes' ? 'Yes — awarded' : 'No — not awarded'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Field label="Job site address" value={f.address} onChange={set('address')} placeholder="defaults to lead address" />
+                {f.awarded === 'yes' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <Field label="Contract / Award ref" value={f.contractRef} onChange={set('contractRef')} placeholder="executed contract #" />
+                      <Field label="Award date" type="date" value={f.awardDate} onChange={set('awardDate')} />
+                    </div>
+                    <Field label="Job site address" value={f.address} onChange={set('address')} placeholder="defaults to lead address" />
+                  </>
+                )}
+                {f.awarded === 'no' && (
+                  <div className="rounded-lg border border-[#f4607a]/25 bg-[#f4607a]/[0.06] px-3.5 py-2.5 text-[0.74rem] text-muted">
+                    Not awarded. Next, add a reason — the customer will still be saved to the database, but no job is created.
+                  </div>
+                )}
               </>
             )}
             {stage.key === 'handoff' && (
@@ -280,6 +355,7 @@ export default function Import() {
           </div>
         </section>
       </div>
+      )}
     </>
   );
 }
