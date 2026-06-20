@@ -11,6 +11,9 @@ import Service from './pages/Service';
 import Customers from './pages/Customers';
 import Routing from './pages/Routing';
 import Import from './pages/Import';
+import Readiness from './pages/Readiness';
+import Closeout from './pages/Closeout';
+import Manager from './pages/Manager';
 import ModuleStub from './pages/ModuleStub';
 import Login from './pages/Login';
 import { MODULES } from './domain/modules';
@@ -28,6 +31,9 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   customers: Customers,
   routing: Routing,
   import: Import,
+  readiness: Readiness,
+  closeout: Closeout,
+  manager: Manager,
 };
 
 export default function App() {

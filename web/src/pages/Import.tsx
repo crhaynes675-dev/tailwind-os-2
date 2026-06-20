@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
+import { WORKFLOWS } from '../domain/workflows';
+
+const HANDOFF = WORKFLOWS.find((w) => w.id === '01')!;
 
 export default function Import() {
   const { createJob } = useJobsCtx();
@@ -39,9 +42,20 @@ export default function Import() {
   return (
     <>
       <div className="mb-6">
-        <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Intake</div>
+        <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Workflow 01 · Intake &amp; Handoff</div>
         <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">PDF Import</h1>
-        <p className="mt-1.5 text-sm text-muted">Bring jobs into the pipeline. Manual intake is live; automated PDF parsing is a later port of the legacy engine.</p>
+        <p className="mt-1.5 text-sm text-muted">Sales → Operations handoff. Bring awarded jobs into the pipeline (intake creates the job record). Automated PDF parsing is a later port.</p>
+      </div>
+
+      {/* Sales → Ops handoff flow (workflow 01) */}
+      <div className="glass mb-5 flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3">
+        <span className="mr-1 text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-faint">Handoff flow</span>
+        {HANDOFF.steps.map((s, i) => (
+          <span key={s.step} className="flex items-center gap-2">
+            <span className="rounded-md border border-white/10 px-2.5 py-1 text-[0.66rem] text-text" title={`${s.owner} · ${s.output}`}>{s.step}</span>
+            {i < HANDOFF.steps.length - 1 && <span className="text-faint">→</span>}
+          </span>
+        ))}
       </div>
 
       <div className="grid gap-5" style={{ gridTemplateColumns: 'minmax(300px,1fr) minmax(260px,0.8fr)' }}>
