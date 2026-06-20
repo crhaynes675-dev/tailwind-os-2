@@ -26,6 +26,13 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEYS.id);
 }
 
+export function isTokenExpired(): boolean {
+  const t = getToken();
+  if (!t) return true;
+  const c = parseJwt(t);
+  return !c.exp || c.exp < Math.floor(Date.now() / 1000);
+}
+
 export function getStoredUser(): AuthUser | null {
   const id = getToken();
   if (!id) return null;
