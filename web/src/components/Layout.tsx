@@ -1,10 +1,17 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { MODULES } from '../domain/modules';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { MODULES, NAV_GROUPS, MODULE_BY_ID } from '../domain/modules';
 import { useAuth } from '../auth/AuthContext';
 import JobDrawer from './JobDrawer';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  const currentModule = MODULES.find((m) => m.path === pathname) || MODULE_BY_ID['dashboard'];
+  const activeGroup = NAV_GROUPS.find((g) => g.modules.includes(currentModule.id)) || NAV_GROUPS[0];
+  const subModules = activeGroup.modules.map((id) => MODULE_BY_ID[id]).filter(Boolean);
+
   return (
     <div className="min-h-full">
       {/* Top bar */}
@@ -31,31 +38,49 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Module nav */}
+      {/* Group bar */}
       <nav className="glass sticky top-[57px] z-30 flex gap-1.5 overflow-x-auto px-6 py-2.5">
-        {MODULES.map((m) => (
-          <NavLink
-            key={m.id}
-            to={m.path}
-            end={m.path === '/'}
-            className={({ isActive }) =>
-              [
-                'relative whitespace-nowrap rounded-full px-4 py-2 text-[0.72rem] font-semibold tracking-wide transition',
+        {NAV_GROUPS.map((g) => {
+          const isActive = g.id === activeGroup.id;
+          const firstPath = MODULE_BY_ID[g.modules[0]]?.path || '/';
+          return (
+            <button
+              key={g.id}
+              onClick={() => navigate(firstPath)}
+              className={[
+                'whitespace-nowrap rounded-full px-4 py-2 text-[0.74rem] font-semibold tracking-wide transition',
                 isActive
-                  ? 'bg-gradient-to-br from-[rgba(34,211,238,0.16)] to-[rgba(124,108,255,0.16)] text-white shadow-[0_5px_16px_-7px_rgba(41,195,236,0.55)] ring-1 ring-[rgba(41,195,236,0.35)]'
+                  ? 'bg-gradient-to-br from-[rgba(34,211,238,0.18)] to-[rgba(124,108,255,0.18)] text-white shadow-[0_5px_16px_-7px_rgba(41,195,236,0.55)] ring-1 ring-[rgba(41,195,236,0.35)]'
                   : 'text-muted hover:bg-white/5 hover:text-text',
-              ].join(' ')
-            }
-          >
-            {m.label}
-            {m.isNew && (
-              <span className="ml-1.5 rounded-full bg-accent2/20 px-1.5 py-px text-[0.5rem] font-bold uppercase text-accent2">
-                new
-              </span>
-            )}
-          </NavLink>
-        ))}
+              ].join(' ')}
+            >
+              {g.label}
+            </button>
+          );
+        })}
       </nav>
+
+      {/* Sub-tab bar (only when the group has more than one screen) */}
+      {subModules.length > 1 && (
+        <div className="sticky top-[100px] z-20 flex gap-1.5 overflow-x-auto border-b border-glass bg-[#0a0f1c]/70 px-6 py-2 backdrop-blur-md">
+          {subModules.map((m) => (
+            <NavLink
+              key={m.id}
+              to={m.path}
+              end={m.path === '/'}
+              className={({ isActive }) =>
+                [
+                  'relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-[0.68rem] font-semibold tracking-wide transition',
+                  isActive ? 'bg-white/10 text-white ring-1 ring-[rgba(41,195,236,0.35)]' : 'text-muted hover:bg-white/5 hover:text-text',
+                ].join(' ')
+              }
+            >
+              {m.label}
+              {m.isNew && <span className="ml-1.5 rounded-full bg-accent2/20 px-1.5 py-px text-[0.5rem] font-bold uppercase text-accent2">new</span>}
+            </NavLink>
+          ))}
+        </div>
+      )}
 
       <main className="px-6 py-7">
         <Outlet />

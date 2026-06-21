@@ -27,3 +27,21 @@ export const MODULES: ModuleDef[] = [
   { id: 'reporting', label: 'Reporting', path: '/reporting', ready: true },
   { id: 'users', label: 'Users', path: '/users', ready: true },
 ];
+
+// Two-tier navigation: a row of groups, each revealing its modules.
+export interface NavGroup {
+  id: string;
+  label: string;
+  modules: string[]; // module ids, in order
+}
+
+export const NAV_GROUPS: NavGroup[] = [
+  { id: 'dashboard', label: 'Dashboard', modules: ['dashboard'] },
+  { id: 'sales', label: 'Sales', modules: ['import', 'customers'] },
+  { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing'] },
+  { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
+  { id: 'service', label: 'Service', modules: ['service'] },
+  { id: 'admin', label: 'Admin', modules: ['manager', 'reporting', 'users'] },
+];
+
+export const MODULE_BY_ID: Record<string, ModuleDef> = Object.fromEntries(MODULES.map((m) => [m.id, m]));
