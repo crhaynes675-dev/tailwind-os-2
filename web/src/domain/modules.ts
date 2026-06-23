@@ -26,6 +26,7 @@ export const MODULES: ModuleDef[] = [
   { id: 'manager', label: 'Install Manager', path: '/manager', ready: true },
   { id: 'reporting', label: 'Reporting', path: '/reporting', ready: true },
   { id: 'users', label: 'Users', path: '/users', ready: true },
+  { id: 'field', label: 'Field App', path: '/field', ready: true },
 ];
 
 // Two-tier navigation: a row of groups, each revealing its modules.
@@ -41,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing'] },
   { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
   { id: 'service', label: 'Service', modules: ['service'] },
+  { id: 'fieldapp', label: 'Field App', modules: ['field'] },
   { id: 'admin', label: 'Admin', modules: ['manager', 'reporting', 'users'] },
 ];
 
