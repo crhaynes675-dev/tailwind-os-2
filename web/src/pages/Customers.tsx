@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet } from '../lib/api';
 import { useJobsCtx } from '../data/JobsContext';
 import { STATUS_META } from '../domain/status';
+
+interface Quote { quoteId: string; quoteNumber: string; jobName?: string; customerName?: string; customerCompany?: string; totalToInvoice?: number; createdAt?: string }
 
 const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
@@ -39,10 +42,22 @@ export default function Customers() {
   }, [active, jobs]);
   const activeValue = activeJobs.reduce((sum, j) => sum + (j.contractAmount ?? 0), 0);
 
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const activeQuotes = useMemo(() => {
+    if (!active) return [];
+    const names = [field(active, 'name', 'customerName'), field(active, 'company', 'customerCompany')]
+      .filter(Boolean)
+      .map((s) => s.toLowerCase());
+    return quotes
+      .filter((qt) => names.includes((qt.customerCompany || '').toLowerCase()) || names.includes((qt.customerName || '').toLowerCase()))
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }, [active, quotes]);
+
   useEffect(() => {
     apiGet<Customer[]>('/customers')
       .then((r) => setRows(Array.isArray(r) ? r : []))
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load customers'));
+    apiGet<Quote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
 
   const filtered = useMemo(() => {
@@ -157,6 +172,33 @@ export default function Customers() {
                         </button>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5">
+                <div className="mb-2 text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Quote history</div>
+                {activeQuotes.length === 0 ? (
+                  <div className="text-xs text-faint">No quotes for this customer yet.</div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {activeQuotes.map((qt) => (
+                      <Link
+                        key={qt.quoteId}
+                        to={`/estimator?quote=${qt.quoteId}`}
+                        onClick={() => setActive(null)}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 hover:bg-white/5"
+                      >
+                        <span className="truncate">
+                          <span className="text-xs font-semibold text-accent">{qt.quoteNumber}</span>{' '}
+                          <span className="text-xs text-muted">{qt.jobName || 'Untitled'}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="text-[0.66rem] text-text">{usd(qt.totalToInvoice || 0)}</span>
+                          <span className="text-[0.6rem] text-accent">open →</span>
+                        </span>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>

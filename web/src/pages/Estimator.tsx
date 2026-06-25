@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiGet, apiSend } from '../lib/api';
 
 const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -51,6 +52,28 @@ export default function Estimator() {
 
   const loadQuotes = () => apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
   useEffect(() => { loadQuotes(); }, []);
+
+  // Deep-link: /estimator?quote=<id> loads that saved quote into the form.
+  const [params] = useSearchParams();
+  useEffect(() => {
+    const id = params.get('quote');
+    if (!id) return;
+    interface QD { jobName?: string; customerName?: string; customerCompany?: string; address?: string; units?: Unit[]; inputs?: Record<string, number | boolean> }
+    apiGet<QD>(`/quotes/${id}`).then((qd) => {
+      if (!qd) return;
+      if (Array.isArray(qd.units) && qd.units.length) {
+        setUnits(qd.units.map((u, i) => ({ id: `ld${i}_${++uid}`, type: u.type || '', qty: Number(u.qty) || 0, laborOn: u.laborOn ?? true, labor: Number(u.labor) || 0, mat: Number(u.mat) || 0 })));
+      }
+      setJobName(qd.jobName || ''); setCustomerName(qd.customerName || ''); setCustomerCompany(qd.customerCompany || ''); setAddress(qd.address || '');
+      const k = qd.inputs || {};
+      const n = (v: number | boolean | undefined, d: number) => (v == null ? d : Number(v));
+      setLr(n(k.lr, 65)); setLh(n(k.lh, 8)); setLd(n(k.ld, 1)); setLhc(n(k.lhc, 0)); setLhr(n(k.lhr, 35)); setLot(n(k.lot, 0));
+      setTm(n(k.tm, 0)); setTr2(n(k.tr2, 0.67)); setTt(n(k.tt, 0)); setTp(n(k.tp, 0));
+      setDlOn(!!k.dlOn); setDlMi(n(k.dlMi, 0)); setDlRate(n(k.dlRate, 0.67)); setDlFlat(n(k.dlFlat, 0));
+      setMp(n(k.mp, 0)); setMd(n(k.md, 0)); setMe(n(k.me, 0)); setMs(n(k.ms, 0)); setMo(n(k.mo, 0));
+      setMu(n(k.mu, 25));
+    }).catch(() => {});
+  }, [params]);
 
   const c = useMemo(() => {
     const tq = units.reduce((s, u) => s + (u.qty || 0), 0);
