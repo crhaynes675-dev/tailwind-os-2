@@ -100,7 +100,7 @@ export class Os3ApiStack extends cdk.Stack {
     // Shared access code that gates public company signup (change to rotate).
     const tenantsFn = makeFn('Os3TenantsFn', 'handlers/tenants.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID, SIGNUP_ACCESS_CODE: 'tailwind-2026' });
     // New handlers → new OS3 table
-    const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName);
+    const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName, { CONFIG_TABLE: EXISTING_TABLE_NAME });
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
 
     const api = new apigateway.RestApi(this, 'Os3Api', {

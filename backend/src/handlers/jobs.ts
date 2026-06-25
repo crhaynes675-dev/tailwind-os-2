@@ -1,7 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
-import { ok, created, noContent, notFound, badRequest, serverError } from '../lib/response';
+import { ok, created, noContent, notFound, badRequest, forbidden, serverError } from '../lib/response';
+import { planAllows } from '../lib/plan';
 import { getTenantId, tpk, tgsi } from '../lib/tenant';
 import { randomUUID } from 'crypto';
 
@@ -158,6 +159,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (!Object.keys(body).some(k => ['jobName','address','scheduledDate','scheduledTime','assignedTo','status','notes','quoteNum','parentJobId','customerName','customerCompany','customerPhone'].includes(k))) {
           return ok({ jobId, updated: true, workOrderNumber: assignedWo }, event);
         }
+      }
+
+      // Server-side gate: writing financials is a Pro feature.
+      const FINANCIAL = ['contractAmount', 'materialCost', 'laborCost', 'invoiceStatus', 'invoicedAt', 'paidAt'];
+      if (FINANCIAL.some((f) => Object.prototype.hasOwnProperty.call(body, f)) && !(await planAllows(t, 'invoicing'))) {
+        return forbidden('Invoicing requires the Pro plan.', event);
       }
 
       const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone',

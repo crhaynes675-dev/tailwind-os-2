@@ -1,8 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
-import { ok, badRequest, serverError } from '../lib/response';
+import { ok, badRequest, forbidden, serverError } from '../lib/response';
 import { getTenantId, tpk, tgsi } from '../lib/tenant';
+import { planAllows } from '../lib/plan';
 
 // Tech vacation / time-off blocks. One record per block.
 //   PK     = TENANT#{t}#VACATION#{id}   SK = RECORD
@@ -10,6 +11,7 @@ import { getTenantId, tpk, tgsi } from '../lib/tenant';
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const t = getTenantId(event);
+    if (!(await planAllows(t, 'timeoff'))) return forbidden('Crew Time-Off requires the Enterprise plan.', event);
     const { httpMethod, pathParameters, queryStringParameters } = event;
     const vacationId = pathParameters?.vacationId;
 

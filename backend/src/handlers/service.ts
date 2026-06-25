@@ -1,8 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, DeleteCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
-import { ok, badRequest, notFound, serverError } from '../lib/response';
+import { ok, badRequest, notFound, forbidden, serverError } from '../lib/response';
 import { getTenantId, tpk, tgsi } from '../lib/tenant';
+import { planAllows } from '../lib/plan';
 import { randomUUID } from 'crypto';
 
 // Service tickets (Workflows 08/09) — stored in the OS3 table.
@@ -11,6 +12,7 @@ import { randomUUID } from 'crypto';
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const t = getTenantId(event);
+    if (!(await planAllows(t, 'service'))) return forbidden('Service tickets require the Enterprise plan.', event);
     const { httpMethod, pathParameters } = event;
     const id = pathParameters?.id;
 
