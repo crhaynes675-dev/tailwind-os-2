@@ -17,6 +17,7 @@ import Closeout from './pages/Closeout';
 import Manager from './pages/Manager';
 import UserManagement from './pages/UserManagement';
 import Company from './pages/Company';
+import Plans from './pages/Plans';
 import Invoicing from './pages/Invoicing';
 import TimeOff from './pages/TimeOff';
 import Field from './pages/Field';
@@ -25,6 +26,8 @@ import Login from './pages/Login';
 import { MODULES } from './domain/modules';
 import { useAuth } from './auth/AuthContext';
 import { JobsProvider } from './data/JobsContext';
+import { PlanProvider } from './data/PlanContext';
+import Gated from './components/Gated';
 
 const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   schedule: Schedule,
@@ -43,6 +46,7 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   manager: Manager,
   users: UserManagement,
   company: Company,
+  plans: Plans,
   invoicing: Invoicing,
   timeoff: TimeOff,
   field: Field,
@@ -54,18 +58,21 @@ export default function App() {
 
   return (
     <JobsProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            {MODULES.filter((m) => m.id !== 'dashboard').map((m) => {
-              const Custom = CUSTOM_PAGES[m.id];
-              return <Route key={m.id} path={m.path} element={Custom ? <Custom /> : <ModuleStub module={m} />} />;
-            })}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <PlanProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              {MODULES.filter((m) => m.id !== 'dashboard').map((m) => {
+                const Custom = CUSTOM_PAGES[m.id];
+                const page = Custom ? <Custom /> : <ModuleStub module={m} />;
+                return <Route key={m.id} path={m.path} element={<Gated id={m.id}>{page}</Gated>} />;
+              })}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </PlanProvider>
     </JobsProvider>
   );
 }

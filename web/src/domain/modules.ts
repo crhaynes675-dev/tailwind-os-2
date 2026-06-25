@@ -30,6 +30,7 @@ export const MODULES: ModuleDef[] = [
   { id: 'invoicing', label: 'Invoicing & AR', path: '/invoicing', ready: true, isNew: true },
   { id: 'users', label: 'Users', path: '/users', ready: true },
   { id: 'company', label: 'Company', path: '/company', ready: true },
+  { id: 'plans', label: 'Plans & Billing', path: '/plans', ready: true },
   { id: 'field', label: 'Field App', path: '/field', ready: true },
 ];
 
@@ -47,7 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
   { id: 'service', label: 'Service', modules: ['service'] },
   { id: 'fieldapp', label: 'Field App', modules: ['field'] },
-  { id: 'admin', label: 'Admin', modules: ['manager', 'reporting', 'invoicing', 'users', 'company'] },
+  { id: 'admin', label: 'Admin', modules: ['manager', 'reporting', 'invoicing', 'users', 'company', 'plans'] },
 ];
 
 export const MODULE_BY_ID: Record<string, ModuleDef> = Object.fromEntries(MODULES.map((m) => [m.id, m]));

@@ -131,7 +131,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const tenantId = getTenantId(event);
 
       const body = JSON.parse(event.body ?? '{}');
-      const allowed = ['companyName', 'industry', 'adminFirstName', 'adminLastName', 'adminEmail', 'adminPhone'];
+      if (body.plan && !['starter', 'pro', 'enterprise', 'trial'].includes(body.plan)) {
+        return badRequest('Invalid plan', event);
+      }
+      // NOTE: 'plan' is self-serve while billing is in placeholder mode.
+      // When Stripe is wired, drop it here and let the webhook set the plan.
+      const allowed = ['companyName', 'industry', 'adminFirstName', 'adminLastName', 'adminEmail', 'adminPhone', 'plan'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No updatable fields provided', event);
 

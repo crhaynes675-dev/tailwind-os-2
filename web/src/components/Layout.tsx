@@ -3,11 +3,13 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MODULES, NAV_GROUPS, MODULE_BY_ID } from '../domain/modules';
 import { useAuth } from '../auth/AuthContext';
 import { useJobsCtx } from '../data/JobsContext';
+import { usePlan } from '../data/PlanContext';
 import JobDrawer from './JobDrawer';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
   const { jobs, select } = useJobsCtx();
+  const { allowed } = usePlan();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -89,7 +91,7 @@ export default function Layout() {
       <nav className="glass sticky top-[57px] z-30 flex gap-1.5 overflow-x-auto px-6 py-2.5">
         {NAV_GROUPS.map((g) => {
           const isActive = g.id === activeGroup.id;
-          const firstPath = MODULE_BY_ID[g.modules[0]]?.path || '/';
+          const firstPath = MODULE_BY_ID[g.modules.find((id) => allowed(id)) || g.modules[0]]?.path || '/';
           return (
             <button
               key={g.id}
@@ -111,20 +113,31 @@ export default function Layout() {
       {subModules.length > 1 && (
         <div className="sticky top-[100px] z-20 flex gap-1.5 overflow-x-auto border-b border-glass bg-[#0a0f1c]/70 px-6 py-2 backdrop-blur-md">
           {subModules.map((m) => (
-            <NavLink
-              key={m.id}
-              to={m.path}
-              end={m.path === '/'}
-              className={({ isActive }) =>
-                [
-                  'relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-[0.68rem] font-semibold tracking-wide transition',
-                  isActive ? 'bg-white/10 text-white ring-1 ring-[rgba(41,195,236,0.35)]' : 'text-muted hover:bg-white/5 hover:text-text',
-                ].join(' ')
-              }
-            >
-              {m.label}
-              {m.isNew && <span className="ml-1.5 rounded-full bg-accent2/20 px-1.5 py-px text-[0.5rem] font-bold uppercase text-accent2">new</span>}
-            </NavLink>
+            allowed(m.id) ? (
+              <NavLink
+                key={m.id}
+                to={m.path}
+                end={m.path === '/'}
+                className={({ isActive }) =>
+                  [
+                    'relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-[0.68rem] font-semibold tracking-wide transition',
+                    isActive ? 'bg-white/10 text-white ring-1 ring-[rgba(41,195,236,0.35)]' : 'text-muted hover:bg-white/5 hover:text-text',
+                  ].join(' ')
+                }
+              >
+                {m.label}
+                {m.isNew && <span className="ml-1.5 rounded-full bg-accent2/20 px-1.5 py-px text-[0.5rem] font-bold uppercase text-accent2">new</span>}
+              </NavLink>
+            ) : (
+              <button
+                key={m.id}
+                onClick={() => navigate('/plans')}
+                title="Upgrade to unlock"
+                className="relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-[0.68rem] font-semibold tracking-wide text-faint transition hover:text-muted"
+              >
+                🔒 {m.label}
+              </button>
+            )
           ))}
         </div>
       )}

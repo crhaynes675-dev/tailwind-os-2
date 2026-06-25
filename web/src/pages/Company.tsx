@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet, apiSend } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -82,6 +83,7 @@ export default function Company() {
       <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Admin</div>
       <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Company</h1>
       <p className="mt-1.5 text-sm text-muted">Your company code and account details.</p>
+      <Link to="/plans" className="mt-2 inline-block text-xs font-semibold text-accent hover:underline">Manage plan &amp; billing →</Link>
 
       {/* code */}
       <div className="glass mt-5 rounded-2xl p-5">
