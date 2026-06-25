@@ -97,6 +97,20 @@ export default function Estimator() {
 
   const setUnit = (id: string, patch: Partial<Unit>) => setUnits((us) => us.map((u) => (u.id === id ? { ...u, ...patch } : u)));
 
+  // After a save, clear back to a blank estimate — everything to zero,
+  // keeping only the per-mile rates (mileage + delivery fuel).
+  function resetForm() {
+    setUnits([newUnit()]);
+    setLr(0); setLh(0); setLd(0); setLhc(0); setLhr(0); setLot(0);
+    setTm(0); setTr2(0.67); setTt(0); setTp(0);
+    setDlOn(false); setDlMi(0); setDlRate(0.67); setDlFlat(0);
+    setMp(0); setMd(0); setMe(0); setMs(0); setMo(0);
+    setMu(0);
+    setJobName(''); setCustomerName(''); setCustomerCompany(''); setAddress('');
+    setLoadedQuoteId(null); setLoadedQuoteNumber(null);
+    setParams({});
+  }
+
   async function saveQuote(asNew = false) {
     setSaving(true);
     setSavedMsg(null);
@@ -109,13 +123,13 @@ export default function Estimator() {
     try {
       if (loadedQuoteId && !asNew) {
         const res = await apiSend<{ quoteNumber?: string }>('PUT', `/quotes/${loadedQuoteId}`, payload);
-        setSavedMsg(`Updated quote ${res?.quoteNumber || loadedQuoteNumber || ''} — ${usd(c.tch)}`);
+        setSavedMsg(`Updated quote ${res?.quoteNumber || loadedQuoteNumber || ''} — ${usd(c.tch)}. Form cleared.`);
       } else {
         const res = await apiSend<{ quoteId?: string; quoteNumber?: string }>('POST', '/quotes', payload);
-        if (res?.quoteId) { setLoadedQuoteId(res.quoteId); setLoadedQuoteNumber(res.quoteNumber || null); }
-        setSavedMsg(`Saved as quote ${res?.quoteNumber || ''} — ${usd(c.tch)}`);
+        setSavedMsg(`Saved as quote ${res?.quoteNumber || ''} — ${usd(c.tch)}. Form cleared.`);
       }
       await loadQuotes();
+      resetForm();
     } catch (e) {
       setSavedMsg(e instanceof Error ? e.message : 'Save failed');
     } finally {
