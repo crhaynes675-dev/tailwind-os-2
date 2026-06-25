@@ -72,24 +72,39 @@ function JobCard({ job, selected, onSelect, onStep, onPhoto, busy, uploading }: 
 export default function Field() {
   const { jobs, loading, updateJob } = useJobsCtx();
   const { user } = useAuth();
-  const [myName, setMyName] = useState<string | null>(null);
+  const [me, setMe] = useState<{ first: string; last: string; full: string } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   useEffect(() => {
     apiGet<ApiUser[]>('/users').then((us) => {
-      const me = (us || []).find((u) => u.username === user?.username);
-      if (me) { const n = `${me.givenName || ''} ${me.familyName || ''}`.trim(); if (n) setMyName(n); }
+      const u = (us || []).find((x) => x.username === user?.username);
+      if (u) {
+        const first = (u.givenName || '').trim();
+        const last = (u.familyName || '').trim();
+        const full = `${first} ${last}`.trim();
+        if (full) setMe({ first, last, full });
+      }
     }).catch(() => {});
   }, [user?.username]);
 
-  // My field jobs (assigned to me). If we can't resolve my name, fall back to all field work.
-  const myJobs = useMemo(() => {
-    let list = jobs.filter((j) => FIELD_STATUSES.includes(j.status));
-    if (myName) list = list.filter((j) => j.crew === myName);
-    return list;
-  }, [jobs, myName]);
+  // Assignments are crew/tech labels ("Anthony", "Crew 1", or comma-lists like
+  // "Charles Haynes, Anthony Gripper") — match my first/last/full name loosely.
+  function isMine(job: Job): boolean {
+    if (!me) return true; // identity not resolved → show all field work
+    const crew = (job.crew || '').toLowerCase();
+    if (!crew) return false;
+    const full = me.full.toLowerCase(), first = me.first.toLowerCase(), last = me.last.toLowerCase();
+    return crew.split(/[,/&]+/).map((s) => s.trim()).filter(Boolean).some((p) =>
+      full.includes(p) || p.includes(full) || (!!first && p.includes(first)) || (!!last && p.includes(last)),
+    );
+  }
+
+  const myJobs = useMemo(
+    () => jobs.filter((j) => FIELD_STATUSES.includes(j.status) && isMine(j)),
+    [jobs, me], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const today = useMemo(() => myJobs.filter((j) => j.status === 'In Progress' || !j.scheduledDate || j.scheduledDate <= todayStr).sort(byDate), [myJobs, todayStr]);
@@ -117,7 +132,7 @@ export default function Field() {
           <div className="text-[0.6rem] font-semibold uppercase tracking-[0.25em] text-accent">Field App</div>
           <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[1.7rem] font-bold leading-tight tracking-tight text-transparent">My Jobs</h1>
         </div>
-        <div className="text-right text-[0.78rem] text-muted">{headerDate}{myName ? ` · ${myName}` : ''}</div>
+        <div className="text-right text-[0.78rem] text-muted">{headerDate}{me ? ` · ${me.full}` : ''}</div>
       </div>
 
       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[380px_1fr] lg:overflow-hidden">
