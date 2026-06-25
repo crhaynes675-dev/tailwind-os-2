@@ -1,12 +1,31 @@
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { MODULES, NAV_GROUPS, MODULE_BY_ID } from '../domain/modules';
 import { useAuth } from '../auth/AuthContext';
+import { useJobsCtx } from '../data/JobsContext';
 import JobDrawer from './JobDrawer';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
+  const { jobs, select } = useJobsCtx();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  const [q, setQ] = useState('');
+  const results =
+    q.trim().length >= 2
+      ? jobs
+          .filter((j) => {
+            const s = q.toLowerCase();
+            return (
+              j.workOrder.toLowerCase().includes(s) ||
+              j.name.toLowerCase().includes(s) ||
+              j.customer.toLowerCase().includes(s) ||
+              j.address.toLowerCase().includes(s)
+            );
+          })
+          .slice(0, 8)
+      : [];
 
   const currentModule = MODULES.find((m) => m.path === pathname) || MODULE_BY_ID['dashboard'];
   const activeGroup = NAV_GROUPS.find((g) => g.modules.includes(currentModule.id)) || NAV_GROUPS[0];
@@ -24,6 +43,34 @@ export default function Layout() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-faint">Field Operations</div>
           </div>
         </div>
+
+        {/* global search */}
+        <div className="relative ml-4 w-full max-w-sm">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search jobs — WO #, customer, address…"
+            className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-1.5 text-xs text-text outline-none placeholder:text-faint focus:border-accent focus:ring-2 focus:ring-accent/20"
+          />
+          {results.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-glass bg-[#0b1322]/95 shadow-xl backdrop-blur-xl">
+              {results.map((j) => (
+                <button
+                  key={j.id}
+                  onMouseDown={() => { select(j.id); setQ(''); }}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs hover:bg-white/5"
+                >
+                  <span className="truncate">
+                    <span className="font-semibold text-accent">{j.workOrder}</span>{' '}
+                    <span className="text-muted">{j.name}</span>
+                  </span>
+                  <span className="shrink-0 text-[0.6rem] text-faint">{j.customer}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="ml-auto flex items-center gap-3">
           <div className="text-right leading-tight">
             <div className="text-xs font-medium text-text">{user?.username}</div>

@@ -1,8 +1,33 @@
 import { useMemo } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
 import { STATUS_PIPELINE, STATUS_META, type JobStatus } from '../domain/status';
+import type { Job } from '../data/jobs';
 
-function Tile({ label, value, color }: { label: string; value: number; color: string }) {
+const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+function exportJobsCsv(jobs: Job[]) {
+  const cell = (v: unknown) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const headers = ['Work Order', 'Job', 'Customer', 'Status', 'Crew', 'Scheduled', 'Completed', 'Contract', 'Material', 'Labor', 'Margin', 'Invoice'];
+  const rows = jobs.map((j) => [
+    j.workOrder, j.name, j.customer, j.status, j.crew ?? '', j.scheduledDate ?? '',
+    j.completedAt ? j.completedAt.slice(0, 10) : '',
+    j.contractAmount ?? '', j.materialCost ?? '', j.laborCost ?? '',
+    (j.contractAmount ?? 0) - (j.materialCost ?? 0) - (j.laborCost ?? 0),
+    j.invoiceStatus ?? 'none',
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map(cell).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `os3-jobs-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function Tile({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
     <div className="glass relative overflow-hidden rounded-2xl p-4">
       <div className="pointer-events-none absolute -right-5 -top-5 h-24 w-24 rounded-full" style={{ background: `radial-gradient(circle, ${color}33, transparent 68%)` }} />
@@ -33,7 +58,24 @@ export default function Reporting() {
       .filter((j) => j.scheduledDate && j.scheduledDate >= todayStr && j.scheduledDate <= in7 && j.status !== 'Completed')
       .sort((a, b) => (a.scheduledDate || '').localeCompare(b.scheduledDate || ''));
 
-    return { total: jobs.length, byStatus, crewLoad, upcoming };
+    let revenue = 0, collected = 0, ar = 0, margin = 0, completedCount = 0, cycleSum = 0, cycleN = 0;
+    jobs.forEach((j) => {
+      const amt = j.contractAmount ?? 0;
+      revenue += amt;
+      margin += amt - (j.materialCost ?? 0) - (j.laborCost ?? 0);
+      if (j.invoiceStatus === 'paid') collected += amt;
+      else if (j.invoiceStatus === 'invoiced') ar += amt;
+      if (j.status === 'Completed') {
+        completedCount += 1;
+        if (j.scheduledDate && j.completedAt) {
+          const d = (new Date(j.completedAt).getTime() - new Date(j.scheduledDate).getTime()) / 86400000;
+          if (isFinite(d) && d >= 0) { cycleSum += d; cycleN += 1; }
+        }
+      }
+    });
+    const avgCycleDays = cycleN ? Math.round(cycleSum / cycleN) : null;
+
+    return { total: jobs.length, byStatus, crewLoad, upcoming, revenue, collected, ar, margin, completedCount, avgCycleDays };
   }, [jobs]);
 
   const active = stats.byStatus['In Progress'] + stats.byStatus['Ready for Post-Install Walk'];
@@ -44,14 +86,30 @@ export default function Reporting() {
     <>
       <div className="mb-6">
         <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Reporting</div>
-        <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Reporting</h1>
-        <p className="mt-1.5 text-sm text-muted">Live pipeline throughput and workload across the OS3 status architecture.</p>
+        <div className="flex items-end justify-between gap-3">
+          <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Reporting</h1>
+          <button
+            onClick={() => exportJobsCsv(jobs)}
+            className="rounded-lg border border-glass bg-white/5 px-3.5 py-2 text-xs font-semibold text-accent transition hover:bg-white/10"
+          >
+            ↓ Export CSV
+          </button>
+        </div>
+        <p className="mt-1.5 text-sm text-muted">Live pipeline throughput, workload, and financials across the OS3 status architecture.</p>
       </div>
 
       {loading && jobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-24 text-sm text-muted">Loading…</div>
       ) : (
         <>
+          <div className="mb-3.5 grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
+            <Tile label="Revenue (contracted)" value={usd(stats.revenue)} color="#29c3ec" />
+            <Tile label="Gross margin" value={usd(stats.margin)} color="#34d39a" />
+            <Tile label="Outstanding AR" value={usd(stats.ar)} color="#fb7185" />
+            <Tile label="Collected" value={usd(stats.collected)} color="#7c6cff" />
+            <Tile label="Avg schedule→done" value={stats.avgCycleDays != null ? `${stats.avgCycleDays}d` : '—'} color="#f0a23c" />
+          </div>
+
           <div className="mb-6 grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
             <Tile label="Total jobs" value={stats.total} color="#29c3ec" />
             <Tile label="Active on site" value={active} color={STATUS_META['In Progress'].color} />

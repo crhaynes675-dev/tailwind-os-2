@@ -22,6 +22,31 @@ interface Attachment {
   url: string;
 }
 
+interface ChecklistItem { prompt: string; passed: boolean }
+interface JobDetail {
+  preFlight?: ChecklistItem[];
+  inspection?: ChecklistItem[];
+  enrouteAt?: string;
+  onSiteAt?: string;
+  completedAt?: string;
+}
+
+function Checklist({ title, items }: { title: string; items: ChecklistItem[] }) {
+  return (
+    <div>
+      <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-wide text-accent">{title}</div>
+      <div className="flex flex-col gap-1">
+        {items.map((it, i) => (
+          <div key={i} className="flex items-center gap-2 text-[0.72rem]">
+            <span className={it.passed ? 'text-completed' : 'text-faint'}>{it.passed ? '✓' : '○'}</span>
+            <span className={it.passed ? 'text-muted' : 'text-faint'}>{it.prompt}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div>
@@ -51,6 +76,7 @@ export default function JobDrawer() {
   const [fin, setFin] = useState({ contractAmount: '', materialCost: '', laborCost: '' });
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
   const [attachments, setAttachments] = useState<Attachment[] | null>(null);
+  const [detail, setDetail] = useState<JobDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [savingFin, setSavingFin] = useState(false);
   const [pendingTo, setPendingTo] = useState<JobStatus | null>(null);
@@ -71,6 +97,10 @@ export default function JobDrawer() {
     apiGet<{ attachments: Attachment[] }>(`/jobs/${job.id}/attachments`)
       .then((r) => setAttachments(r.attachments || []))
       .catch(() => setAttachments([]));
+    setDetail(null);
+    apiGet<JobDetail>(`/jobs/${job.id}`)
+      .then(setDetail)
+      .catch(() => setDetail(null));
   }, [job?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!job) return null;
@@ -244,6 +274,30 @@ export default function JobDrawer() {
               </div>
             )}
           </div>
+
+          {/* completion record */}
+          {detail && (detail.enrouteAt || detail.onSiteAt || detail.completedAt || detail.preFlight?.length || detail.inspection?.length) && (
+            <div className="mt-6">
+              <div className="mb-2 text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Completion record</div>
+              <div className="flex flex-col gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                {(detail.enrouteAt || detail.onSiteAt || detail.completedAt) && (
+                  <div className="flex flex-col gap-1 text-[0.72rem]">
+                    {detail.enrouteAt && <div className="flex justify-between"><span className="text-faint">Enroute</span><span className="text-muted">{new Date(detail.enrouteAt).toLocaleString()}</span></div>}
+                    {detail.onSiteAt && <div className="flex justify-between"><span className="text-faint">On site</span><span className="text-muted">{new Date(detail.onSiteAt).toLocaleString()}</span></div>}
+                    {detail.completedAt && <div className="flex justify-between"><span className="text-faint">Completed</span><span className="text-muted">{new Date(detail.completedAt).toLocaleString()}</span></div>}
+                    {detail.onSiteAt && detail.completedAt && (
+                      <div className="flex justify-between border-t border-white/5 pt-1">
+                        <span className="text-faint">Time on site</span>
+                        <span className="font-semibold text-accent">{Math.max(0, Math.round((new Date(detail.completedAt).getTime() - new Date(detail.onSiteAt).getTime()) / 60000))} min</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {detail.preFlight && detail.preFlight.length > 0 && <Checklist title="Pre-flight" items={detail.preFlight} />}
+                {detail.inspection && detail.inspection.length > 0 && <Checklist title="Inspection" items={detail.inspection} />}
+              </div>
+            </div>
+          )}
 
           {/* history */}
           <div className="mt-6">
