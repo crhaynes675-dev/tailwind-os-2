@@ -12,6 +12,7 @@ export interface ModuleDef {
 
 export const MODULES: ModuleDef[] = [
   { id: 'dashboard', label: 'Dashboard Hub', path: '/', ready: true },
+  { id: 'estimator', label: 'Estimator', path: '/estimator', ready: true, isNew: true },
   { id: 'import', label: 'Intake', path: '/import', ready: true },
   { id: 'customers', label: 'Customer Database', path: '/customers', ready: true },
   { id: 'readiness', label: 'Readiness', path: '/readiness', ready: true },
@@ -40,7 +41,7 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', modules: ['dashboard'] },
-  { id: 'sales', label: 'Sales', modules: ['import', 'customers'] },
+  { id: 'sales', label: 'Sales', modules: ['estimator', 'import', 'customers'] },
   { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing', 'timeoff'] },
   { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
   { id: 'service', label: 'Service', modules: ['service'] },

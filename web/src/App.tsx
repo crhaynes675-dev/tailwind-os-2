@@ -11,6 +11,7 @@ import Service from './pages/Service';
 import Customers from './pages/Customers';
 import Routing from './pages/Routing';
 import Import from './pages/Import';
+import Estimator from './pages/Estimator';
 import Readiness from './pages/Readiness';
 import Closeout from './pages/Closeout';
 import Manager from './pages/Manager';
@@ -35,6 +36,7 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   customers: Customers,
   routing: Routing,
   import: Import,
+  estimator: Estimator,
   readiness: Readiness,
   closeout: Closeout,
   manager: Manager,

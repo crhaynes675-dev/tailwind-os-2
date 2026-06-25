@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
-import { uploadAttachment, apiSend } from '../lib/api';
+import { uploadAttachment, apiSend, apiGet } from '../lib/api';
+
+interface SavedQuote { quoteId: string; quoteNumber: string; jobName?: string; customerName?: string; customerCompany?: string; address?: string; totalToInvoice?: number }
+const fmtUsd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
 // Sales → Operations Handoff (Workflow 01) as a step-by-step wizard.
 // Each stage is a form; you progress stage to stage until Job Setup,
@@ -86,6 +89,27 @@ export default function Import() {
   const [hoScope, setHoScope] = useState<File | null>(null);
   const [reviewFile, setReviewFile] = useState<File | null>(null);
 
+  // Saved estimator quotes — selectable in the Quote step.
+  const [quotes, setQuotes] = useState<SavedQuote[]>([]);
+  const [pickedQuoteId, setPickedQuoteId] = useState('');
+  const [quoteAmount, setQuoteAmount] = useState<number | undefined>(undefined);
+  useEffect(() => { apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
+
+  function pickQuote(id: string) {
+    setPickedQuoteId(id);
+    const q = quotes.find((x) => x.quoteId === id);
+    if (!q) { setQuoteAmount(undefined); return; }
+    setQuoteAmount(q.totalToInvoice);
+    setF((s) => ({
+      ...s,
+      jobName: s.jobName || q.jobName || '',
+      quoteNum: q.quoteNumber || s.quoteNum,
+      address: s.address || q.address || '',
+      customerName: s.customerName || q.customerName || '',
+      customerCompany: s.customerCompany || q.customerCompany || '',
+    }));
+  }
+
   const stepValid = (i: number): boolean => {
     switch (STAGES[i].key) {
       case 'lead': return !!f.customerName.trim();
@@ -165,6 +189,8 @@ export default function Import() {
         quoteNum: f.quoteNum.trim() || undefined,
         scheduledDate: f.scheduledDate || undefined,
         notes,
+        contractAmount: quoteAmount,
+        quoteId: pickedQuoteId || undefined,
       });
       const files = [quoteFile, hoContract, hoDocs, hoScope, reviewFile].filter(Boolean) as File[];
       let uploaded = 0;
@@ -256,6 +282,17 @@ export default function Import() {
             )}
             {stage.key === 'quote' && (
               <>
+                {quotes.length > 0 && (
+                  <div>
+                    <label className="mb-1 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Use a saved estimate</label>
+                    <select value={pickedQuoteId} onChange={(e) => pickQuote(e.target.value)}
+                      className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent">
+                      <option value="">— none (enter manually) —</option>
+                      {quotes.map((q) => <option key={q.quoteId} value={q.quoteId}>{q.quoteNumber} · {q.jobName || 'Untitled'} · {fmtUsd(q.totalToInvoice || 0)}</option>)}
+                    </select>
+                    {quoteAmount != null && <div className="mt-1 text-[0.66rem] text-completed">Contract amount {fmtUsd(quoteAmount)} will carry onto the job.</div>}
+                  </div>
+                )}
                 <Field label="Job name" value={f.jobName} onChange={set('jobName')} required placeholder="e.g. Belmont Estate — Patio Doors" />
                 <Field label="Quote / Bid #" value={f.quoteNum} onChange={set('quoteNum')} />
                 <Area label="Scope — drawings, specs" value={f.scope} onChange={set('scope')} />

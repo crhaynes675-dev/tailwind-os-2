@@ -95,6 +95,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         customerCompany: body.customerCompany ?? '',
         customerPhone:   body.customerPhone   ?? '',
         scheduledTime:   body.scheduledTime   ?? '',
+        contractAmount:  body.contractAmount,
+        quoteId:         body.quoteId,
         createdBy: callerUsername(event),
         createdAt: now,
         updatedAt: now,

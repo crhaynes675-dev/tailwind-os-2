@@ -79,6 +79,8 @@ interface JobsState {
     quoteNum?: string;
     notes?: string;
     scheduledDate?: string;
+    contractAmount?: number;
+    quoteId?: string;
   }) => Promise<string | undefined>;
   selectedId: string | null;
   select: (id: string | null) => void;
@@ -138,6 +140,8 @@ export function JobsProvider({ children }: { children: ReactNode }) {
       quoteNum?: string;
       notes?: string;
       scheduledDate?: string;
+      contractAmount?: number;
+      quoteId?: string;
     }) => {
       // New jobs enter the pipeline Unscheduled (the API otherwise defaults
       // to "scheduled"); they flow to Readiness / Needs Scheduling next.

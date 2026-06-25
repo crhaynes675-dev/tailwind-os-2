@@ -96,6 +96,7 @@ export class Os3ApiStack extends cdk.Stack {
     const attachmentsFn = makeFn('Os3AttachmentsFn', 'handlers/attachments.handler', EXISTING_TABLE_NAME, { ATTACHMENTS_BUCKET });
     const usersFn = makeFn('Os3UsersFn', 'handlers/users.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID });
     const vacationsFn = makeFn('Os3VacationsFn', 'handlers/vacations.handler', EXISTING_TABLE_NAME);
+    const quotesFn = makeFn('Os3QuotesFn', 'handlers/quotes.handler', EXISTING_TABLE_NAME);
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName);
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
@@ -158,6 +159,14 @@ export class Os3ApiStack extends cdk.Stack {
     userByName.addMethod('PUT', integ(usersFn), auth);
     userByName.addMethod('DELETE', integ(usersFn), auth);
     userByName.addResource('password').addMethod('PUT', integ(usersFn), auth);
+
+    // /quotes — saved estimator quotes
+    const quotes = api.root.addResource('quotes');
+    quotes.addMethod('GET', integ(quotesFn), auth);
+    quotes.addMethod('POST', integ(quotesFn), auth);
+    const quoteId = quotes.addResource('{quoteId}');
+    quoteId.addMethod('GET', integ(quotesFn), auth);
+    quoteId.addMethod('DELETE', integ(quotesFn), auth);
 
     // /vacations — crew time-off blocks
     const vacations = api.root.addResource('vacations');
