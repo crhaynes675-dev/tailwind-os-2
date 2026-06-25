@@ -21,6 +21,8 @@ interface ApiJob {
   invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
+  enrouteAt?: string;
+  onSiteAt?: string;
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -43,6 +45,8 @@ function mapJob(j: ApiJob): Job {
     invoicedAt: j.invoicedAt || undefined,
     paidAt: j.paidAt || undefined,
     completedAt: j.completedAt || undefined,
+    enrouteAt: j.enrouteAt || undefined,
+    onSiteAt: j.onSiteAt || undefined,
   };
 }
 
@@ -60,6 +64,9 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.invoiceStatus !== undefined) body.invoiceStatus = patch.invoiceStatus;
   if (patch.invoicedAt !== undefined) body.invoicedAt = patch.invoicedAt;
   if (patch.paidAt !== undefined) body.paidAt = patch.paidAt;
+  if (patch.enrouteAt !== undefined) body.enrouteAt = patch.enrouteAt;
+  if (patch.onSiteAt !== undefined) body.onSiteAt = patch.onSiteAt;
+  if (patch.completedAt !== undefined) body.completedAt = patch.completedAt;
   return body;
 }
 

@@ -36,7 +36,7 @@ type Cache = Record<string, { lat: number; lng: number }>;
 function loadCache(): Cache { try { return JSON.parse(localStorage.getItem('os3_geocache') || '{}'); } catch { return {}; } }
 function saveCache(c: Cache) { try { localStorage.setItem('os3_geocache', JSON.stringify(c)); } catch { /* ignore */ } }
 
-export default function FieldMap({ jobs, onSelect, height = 'h-[60vh]' }: { jobs: Job[]; onSelect?: (id: string) => void; height?: string }) {
+export default function FieldMap({ jobs, onSelect, focusId, height = 'h-[60vh]' }: { jobs: Job[]; onSelect?: (id: string) => void; focusId?: string; height?: string }) {
   const elRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
@@ -138,6 +138,19 @@ export default function FieldMap({ jobs, onSelect, height = 'h-[60vh]' }: { jobs
     );
     return () => navigator.geolocation.clearWatch(id);
   }, [status]);
+
+  // pan to a job when its card is selected
+  useEffect(() => {
+    if (status !== 'ready' || !focusId) return;
+    const g = (window as any).google;
+    const m = markersRef.current[focusId];
+    if (m && mapRef.current) {
+      mapRef.current.panTo(m.getPosition());
+      if (mapRef.current.getZoom() < 13) mapRef.current.setZoom(13);
+      m.setAnimation(g.maps.Animation.BOUNCE);
+      setTimeout(() => m.setAnimation(null), 1400);
+    }
+  }, [focusId, status]);
 
   function recenter() {
     if (meRef.current && mapRef.current) { mapRef.current.panTo(meRef.current.getPosition()); mapRef.current.setZoom(14); }

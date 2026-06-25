@@ -18,6 +18,8 @@ export interface Job {
   invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
+  enrouteAt?: string;
+  onSiteAt?: string;
 }
 
 // Temporary seed data so Phase 1 screens are real and interactive.
