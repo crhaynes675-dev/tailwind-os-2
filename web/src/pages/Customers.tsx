@@ -19,6 +19,7 @@ interface Customer {
   customerPhone?: string;
   email?: string;
   address?: string;
+  _derived?: boolean; // came from a work order, not yet a saved CDB record
 }
 
 function field(c: Customer, ...keys: (keyof Customer)[]) {
@@ -140,17 +141,44 @@ export default function Customers() {
     setActive(null);
   }
 
+  // Customers in the DB + any customer that appears on a work order but isn't
+  // saved yet — so every job's customer shows up here.
+  const allRows = useMemo(() => {
+    const cdb = rows || [];
+    const norm = (s: string) => s.trim().toLowerCase();
+    const known = new Set<string>();
+    cdb.forEach((c) => [field(c, 'name', 'customerName'), field(c, 'company', 'customerCompany')].map(norm).filter(Boolean).forEach((k) => known.add(k)));
+    const derived = new Map<string, Customer>();
+    jobs.forEach((j) => {
+      const key = norm(j.customer || '');
+      if (!key || known.has(key) || derived.has(key)) return;
+      derived.set(key, { customerName: j.customer, customerPhone: j.customerPhone, address: j.address, _derived: true });
+    });
+    return [...cdb, ...derived.values()];
+  }, [rows, jobs]);
+
+  async function addToDatabase(c: Customer) {
+    await apiSend('POST', '/customers', {
+      name: field(c, 'name', 'customerName'), customerName: field(c, 'name', 'customerName'),
+      company: field(c, 'company', 'customerCompany') || undefined, customerCompany: field(c, 'company', 'customerCompany') || undefined,
+      phone: field(c, 'phone', 'customerPhone') || undefined, customerPhone: field(c, 'phone', 'customerPhone') || undefined,
+      address: field(c, 'address') || undefined,
+      source: 'Work Order',
+    }).catch(() => {});
+    await loadCustomers();
+    setActive(null);
+  }
+
   const filtered = useMemo(() => {
-    if (!rows) return [];
     const s = q.toLowerCase();
-    if (!s) return rows;
-    return rows.filter((c) =>
+    if (!s) return allRows;
+    return allRows.filter((c) =>
       [field(c, 'name', 'customerName'), field(c, 'company', 'customerCompany'), field(c, 'phone', 'customerPhone'), field(c, 'email'), field(c, 'address')]
         .join(' ')
         .toLowerCase()
         .includes(s),
     );
-  }, [rows, q]);
+  }, [allRows, q]);
 
   return (
     <>
@@ -158,7 +186,7 @@ export default function Customers() {
         <div>
           <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module</div>
           <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Customer Database</h1>
-          <p className="mt-1.5 text-sm text-muted">{rows ? `${rows.length} customers` : 'Loading…'}</p>
+          <p className="mt-1.5 text-sm text-muted">{rows ? `${allRows.length} customers` : 'Loading…'}</p>
         </div>
         <div className="flex items-center gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers…"
@@ -190,7 +218,10 @@ export default function Customers() {
                 ) : (
                   filtered.map((c, i) => (
                     <tr key={c.customerId || c.id || i} onClick={() => { setEditing(false); setActive(c); }} className="cursor-pointer border-t border-white/5 transition hover:bg-white/[0.03]">
-                      <td className="px-4 py-3 font-medium text-text">{field(c, 'name', 'customerName') || '—'}</td>
+                      <td className="px-4 py-3 font-medium text-text">
+                        {field(c, 'name', 'customerName') || '—'}
+                        {c._derived && <span className="ml-2 rounded-full bg-[#f0a23c]/15 px-1.5 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wide text-[#f0a23c]">from WO</span>}
+                      </td>
                       <td className="px-4 py-3 text-muted">{field(c, 'company', 'customerCompany') || '—'}</td>
                       <td className="px-4 py-3 text-muted">{field(c, 'phone', 'customerPhone') || '—'}</td>
                       <td className="px-4 py-3 text-muted">{field(c, 'email') || '—'}</td>
@@ -216,8 +247,14 @@ export default function Customers() {
                 )}
               </div>
               <div className="flex items-center gap-1">
-                {!editing && <button onClick={startEdit} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-accent hover:bg-white/5">Edit</button>}
-                {!editing && <button onClick={deleteCustomer} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted hover:text-[#fb7185]">Delete</button>}
+                {active._derived ? (
+                  <button onClick={() => addToDatabase(active)} className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-2.5 py-1 text-xs font-semibold text-white">+ Add to database</button>
+                ) : (
+                  <>
+                    {!editing && <button onClick={startEdit} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-accent hover:bg-white/5">Edit</button>}
+                    {!editing && <button onClick={deleteCustomer} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted hover:text-[#fb7185]">Delete</button>}
+                  </>
+                )}
                 <button onClick={() => { setEditing(false); setActive(null); }} className="rounded-lg px-2 py-1 text-muted hover:bg-white/5 hover:text-text">✕</button>
               </div>
             </div>
