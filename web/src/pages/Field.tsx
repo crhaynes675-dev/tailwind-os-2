@@ -26,7 +26,6 @@ export default function Field() {
   const [scope, setScope] = useState<'mine' | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const [pending, setPending] = useState<{ job: Job; to: JobStatus } | null>(null);
-  const [view, setView] = useState<'list' | 'map'>('list');
   const [uploading, setUploading] = useState(false);
   const [photoMsg, setPhotoMsg] = useState<string | null>(null);
   const cl = useChecklist('install');
@@ -72,22 +71,12 @@ export default function Field() {
         ))}
       </div>
 
-      {/* list / map */}
-      <div className="mb-4 flex rounded-xl border border-glass bg-white/[0.04] p-1">
-        {(['list', 'map'] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`flex-1 rounded-lg py-2 text-[0.8rem] font-semibold capitalize transition ${view === v ? 'bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] text-white' : 'text-muted'}`}
-          >
-            {v === 'list' ? '☰ List' : '🗺 Map'}
-          </button>
-        ))}
+      {/* map — your location + your work */}
+      <div className="mb-4">
+        <FieldMap jobs={fieldJobs} onSelect={setOpenId} height="h-72" />
       </div>
 
-      {view === 'map' ? (
-        <FieldMap jobs={fieldJobs} onSelect={setOpenId} />
-      ) : loading && jobs.length === 0 ? (
+      {loading && jobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-24 text-sm text-muted">Loading…</div>
       ) : fieldJobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-20 text-center text-sm text-muted">{scope === 'mine' ? 'No jobs assigned to you.' : 'No active field work.'}</div>

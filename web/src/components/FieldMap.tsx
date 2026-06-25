@@ -36,7 +36,7 @@ type Cache = Record<string, { lat: number; lng: number }>;
 function loadCache(): Cache { try { return JSON.parse(localStorage.getItem('os3_geocache') || '{}'); } catch { return {}; } }
 function saveCache(c: Cache) { try { localStorage.setItem('os3_geocache', JSON.stringify(c)); } catch { /* ignore */ } }
 
-export default function FieldMap({ jobs, onSelect }: { jobs: Job[]; onSelect?: (id: string) => void }) {
+export default function FieldMap({ jobs, onSelect, height = 'h-[60vh]' }: { jobs: Job[]; onSelect?: (id: string) => void; height?: string }) {
   const elRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
@@ -144,7 +144,7 @@ export default function FieldMap({ jobs, onSelect }: { jobs: Job[]; onSelect?: (
   }
 
   return (
-    <div className="glass relative h-[60vh] w-full overflow-hidden rounded-2xl">
+    <div className={`glass relative w-full overflow-hidden rounded-2xl ${height}`}>
       <div ref={elRef} className="h-full w-full" />
       {status === 'loading' && <div className="absolute inset-0 grid place-items-center text-sm text-muted">Loading map…</div>}
       {status === 'error' && <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted">Map couldn’t load.</div>}
