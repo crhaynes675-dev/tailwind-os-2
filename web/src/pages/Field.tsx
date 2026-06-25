@@ -21,6 +21,12 @@ function fieldStep(job: Job): { label: 'En Route' | 'On Site' | 'Complete'; patc
   return null;
 }
 const STEP_LABEL: Record<string, string> = { 'En Route': '🚗 En Route', 'On Site': '📍 On Site', Complete: '✓ Complete' };
+// Color progresses with each step: En Route (blue) → On Site (amber) → Complete (green).
+const STEP_STYLE: Record<string, string> = {
+  'En Route': 'bg-gradient-to-br from-[#38bdf8] to-[#2563eb]',
+  'On Site': 'bg-gradient-to-br from-[#f59e0b] to-[#d97706]',
+  Complete: 'bg-gradient-to-br from-[#22c55e] to-[#16a34a]',
+};
 
 function JobCard({ job, selected, onSelect, onStep, onPhoto, busy, uploading }: {
   job: Job; selected: boolean; onSelect: (id: string) => void;
@@ -59,7 +65,7 @@ function JobCard({ job, selected, onSelect, onStep, onPhoto, busy, uploading }: 
 
       {st ? (
         <button onClick={(e) => { e.stopPropagation(); onStep(job, st.patch); }} disabled={busy}
-          className="mt-2 w-full rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] py-2.5 text-sm font-semibold text-white shadow-[0_6px_18px_-8px_rgba(41,195,236,0.55)] disabled:opacity-50">
+          className={`mt-2 w-full rounded-lg py-2.5 text-sm font-semibold text-white shadow-[0_5px_16px_-8px_rgba(0,0,0,0.6)] transition disabled:opacity-50 ${STEP_STYLE[st.label]}`}>
           {busy ? '…' : `${STEP_LABEL[st.label]} →`}
         </button>
       ) : (
