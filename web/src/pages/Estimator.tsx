@@ -43,15 +43,15 @@ function NumField({ label, value, onChange, step = 1, prefix, suffix }: {
 export default function Estimator() {
   const [units, setUnits] = useState<Unit[]>([newUnit()]);
   // crew labor
-  const [lr, setLr] = useState(65), [lh, setLh] = useState(8), [ld, setLd] = useState(1);
-  const [lhc, setLhc] = useState(0), [lhr, setLhr] = useState(35), [lot, setLot] = useState(0);
+  const [lr, setLr] = useState(0), [lh, setLh] = useState(0), [ld, setLd] = useState(0);
+  const [lhc, setLhc] = useState(0), [lhr, setLhr] = useState(0), [lot, setLot] = useState(0);
   // travel & site
   const [tm, setTm] = useState(0), [tr2, setTr2] = useState(0.67), [tt, setTt] = useState(0), [tp, setTp] = useState(0);
   const [dlOn, setDlOn] = useState(false), [dlMi, setDlMi] = useState(0), [dlRate, setDlRate] = useState(0.67), [dlFlat, setDlFlat] = useState(0);
   // other costs
   const [mp, setMp] = useState(0), [md, setMd] = useState(0), [me, setMe] = useState(0), [ms, setMs] = useState(0), [mo, setMo] = useState(0);
   // markup
-  const [mu, setMu] = useState(25);
+  const [mu, setMu] = useState(0);
   // quote info
   const [jobName, setJobName] = useState(''), [customerName, setCustomerName] = useState(''), [customerCompany, setCustomerCompany] = useState(''), [address, setAddress] = useState('');
 
