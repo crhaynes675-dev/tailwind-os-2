@@ -40,7 +40,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // POST /tenants — create a new company account (PUBLIC, no auth required)
     if (httpMethod === 'POST') {
       const body = JSON.parse(event.body ?? '{}');
-      const { companyName, industry, adminFirstName, adminLastName, adminEmail, adminUsername, password } = body;
+      const { companyName, industry, adminFirstName, adminLastName, adminEmail, adminUsername, password, adminPhone } = body;
 
       if (!companyName || !industry || !adminFirstName || !adminLastName || !adminEmail || !adminUsername || !password) {
         return badRequest('companyName, industry, adminFirstName, adminLastName, adminEmail, adminUsername, and password are all required', event);
@@ -107,6 +107,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         tenantId,
         companyName,
         industry,
+        adminFirstName,
+        adminLastName,
+        adminPhone: adminPhone ?? '',
         adminEmail,
         adminUsername,
         plan: 'trial',
@@ -128,7 +131,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const tenantId = getTenantId(event);
 
       const body = JSON.parse(event.body ?? '{}');
-      const allowed = ['companyName', 'industry'];
+      const allowed = ['companyName', 'industry', 'adminFirstName', 'adminLastName', 'adminEmail', 'adminPhone'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No updatable fields provided', event);
 

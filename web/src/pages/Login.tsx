@@ -18,7 +18,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   // signup
-  const [s, setS] = useState({ companyName: '', industry: 'millwork', adminFirstName: '', adminLastName: '', adminEmail: '', adminUsername: '', password: '', accessCode: '' });
+  const [s, setS] = useState({ companyName: '', industry: 'millwork', adminFirstName: '', adminLastName: '', adminEmail: '', adminPhone: '', adminUsername: '', password: '', accessCode: '' });
   const sset = (k: keyof typeof s) => (e: { target: { value: string } }) => setS((v) => ({ ...v, [k]: e.target.value }));
   const [sBusy, setSBusy] = useState(false);
   const [sError, setSError] = useState<string | null>(null);
@@ -142,7 +142,10 @@ export default function Login() {
                   <div className="flex flex-col gap-1.5"><label className={labelCls}>First name</label><input value={s.adminFirstName} onChange={sset('adminFirstName')} className={inputCls} /></div>
                   <div className="flex flex-col gap-1.5"><label className={labelCls}>Last name</label><input value={s.adminLastName} onChange={sset('adminLastName')} className={inputCls} /></div>
                 </div>
-                <div className="flex flex-col gap-1.5"><label className={labelCls}>Admin email</label><input type="email" value={s.adminEmail} onChange={sset('adminEmail')} placeholder="you@company.com" className={inputCls} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5"><label className={labelCls}>Contact email</label><input type="email" value={s.adminEmail} onChange={sset('adminEmail')} placeholder="you@company.com" className={inputCls} /></div>
+                  <div className="flex flex-col gap-1.5"><label className={labelCls}>Contact phone</label><input type="tel" value={s.adminPhone} onChange={sset('adminPhone')} placeholder="(555) 123-4567" className={inputCls} /></div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5"><label className={labelCls}>Admin username</label><input value={s.adminUsername} onChange={sset('adminUsername')} placeholder="admin" autoCapitalize="none" className={inputCls} /></div>
                   <div className="flex flex-col gap-1.5"><label className={labelCls}>Password</label><input type="password" value={s.password} onChange={sset('password')} placeholder="••••••••" className={inputCls} /></div>
