@@ -97,7 +97,7 @@ export default function Import() {
   useEffect(() => { apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
 
   // Convert an accepted quote → start the handoff pre-filled from it.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [convertQuoteId, setConvertQuoteId] = useState('');
   const [convertAmount, setConvertAmount] = useState<number | undefined>(undefined);
   useEffect(() => {
@@ -154,6 +154,17 @@ export default function Import() {
     if (!isLast) setStep((s) => s + 1);
   }
   function back() { setStep((s) => Math.max(0, s - 1)); }
+
+  function cancel() {
+    const hasData = f.customerName.trim() || f.jobName.trim() || step > 0;
+    if (hasData && !window.confirm('Discard this intake and start over?')) return;
+    setF(EMPTY); setStep(0); setLostPath(false);
+    setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
+    setPickedQuoteId(''); setQuoteAmount(undefined);
+    setConvertQuoteId(''); setConvertAmount(undefined);
+    setMsg(null);
+    if (searchParams.get('quote')) setSearchParams({});
+  }
 
   async function saveLostLead() {
     setBusy(true); setMsg(null);
@@ -414,7 +425,10 @@ export default function Import() {
           {msg && <div className={`mt-4 rounded-lg px-3 py-2 text-[0.74rem] ${msg.kind === 'err' ? 'bg-[#f4607a]/10 text-[#f4607a]' : 'bg-[#34d39a]/10 text-[#34d39a]'}`}>{msg.text}</div>}
 
           <div className="mt-6 flex items-center justify-between">
-            <button onClick={back} disabled={step === 0} className="rounded-lg border border-glass bg-white/5 px-4 py-2 text-xs font-semibold text-muted transition enabled:hover:text-text disabled:opacity-30">← Back</button>
+            <div className="flex items-center gap-2">
+              <button onClick={back} disabled={step === 0} className="rounded-lg border border-glass bg-white/5 px-4 py-2 text-xs font-semibold text-muted transition enabled:hover:text-text disabled:opacity-30">← Back</button>
+              <button onClick={cancel} className="rounded-lg px-3 py-2 text-xs font-semibold text-muted transition hover:text-[#fb7185]">Cancel</button>
+            </div>
             {isLast ? (
               <button onClick={create} disabled={busy || !f.jobName.trim()} className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-5 py-2.5 text-sm font-semibold text-white transition enabled:hover:brightness-105 disabled:opacity-40">
                 {busy ? 'Creating…' : 'Create job →'}
