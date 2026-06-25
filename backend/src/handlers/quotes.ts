@@ -61,6 +61,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return ok({ quoteId: id, quoteNumber }, event);
     }
 
+    if (httpMethod === 'PUT' && quoteId) {
+      const body = JSON.parse(event.body ?? '{}');
+      const existing = await ddb.send(new GetCommand({ TableName: TABLE, Key: { PK: tpk(t, 'QUOTE', quoteId), SK: 'METADATA' } }));
+      if (!existing.Item) return notFound('Not found', event);
+      const item = {
+        ...existing.Item,
+        customerName: body.customerName ?? existing.Item.customerName,
+        customerCompany: body.customerCompany ?? existing.Item.customerCompany,
+        jobName: body.jobName ?? existing.Item.jobName,
+        address: body.address ?? existing.Item.address,
+        units: body.units ?? existing.Item.units,
+        inputs: body.inputs ?? existing.Item.inputs,
+        totalCost: body.totalCost ?? existing.Item.totalCost,
+        totalToInvoice: body.totalToInvoice ?? existing.Item.totalToInvoice,
+        margin: body.margin ?? existing.Item.margin,
+        totalUnits: body.totalUnits ?? existing.Item.totalUnits,
+        updatedAt: new Date().toISOString(),
+      };
+      await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
+      return ok({ quoteId, quoteNumber: item.quoteNumber }, event);
+    }
+
     if (httpMethod === 'DELETE' && quoteId) {
       await ddb.send(new DeleteCommand({ TableName: TABLE, Key: { PK: tpk(t, 'QUOTE', quoteId), SK: 'METADATA' } }));
       return ok({ deleted: true }, event);

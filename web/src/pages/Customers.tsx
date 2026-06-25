@@ -33,25 +33,28 @@ export default function Customers() {
   const [q, setQ] = useState('');
   const [active, setActive] = useState<Customer | null>(null);
 
+  const activeNames = useMemo(() => {
+    if (!active) return [] as string[];
+    return [field(active, 'name', 'customerName'), field(active, 'company', 'customerCompany')]
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [active]);
+
   const activeJobs = useMemo(() => {
     if (!active) return [];
-    const names = [field(active, 'name', 'customerName'), field(active, 'company', 'customerCompany')]
-      .filter(Boolean)
-      .map((s) => s.toLowerCase());
-    return jobs.filter((j) => names.includes((j.customer || '').toLowerCase()));
-  }, [active, jobs]);
+    return jobs.filter((j) => activeNames.includes((j.customer || '').trim().toLowerCase()));
+  }, [active, jobs, activeNames]);
   const activeValue = activeJobs.reduce((sum, j) => sum + (j.contractAmount ?? 0), 0);
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const activeQuotes = useMemo(() => {
     if (!active) return [];
-    const names = [field(active, 'name', 'customerName'), field(active, 'company', 'customerCompany')]
-      .filter(Boolean)
-      .map((s) => s.toLowerCase());
     return quotes
-      .filter((qt) => names.includes((qt.customerCompany || '').toLowerCase()) || names.includes((qt.customerName || '').toLowerCase()))
+      .filter((qt) =>
+        activeNames.includes((qt.customerCompany || '').trim().toLowerCase()) ||
+        activeNames.includes((qt.customerName || '').trim().toLowerCase()))
       .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  }, [active, quotes]);
+  }, [active, quotes, activeNames]);
 
   useEffect(() => {
     apiGet<Customer[]>('/customers')

@@ -166,6 +166,7 @@ export class Os3ApiStack extends cdk.Stack {
     quotes.addMethod('POST', integ(quotesFn), auth);
     const quoteId = quotes.addResource('{quoteId}');
     quoteId.addMethod('GET', integ(quotesFn), auth);
+    quoteId.addMethod('PUT', integ(quotesFn), auth);
     quoteId.addMethod('DELETE', integ(quotesFn), auth);
 
     // /vacations — crew time-off blocks

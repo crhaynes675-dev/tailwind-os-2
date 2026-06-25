@@ -49,18 +49,22 @@ export default function Estimator() {
   const [quotes, setQuotes] = useState<SavedQuote[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [loadedQuoteId, setLoadedQuoteId] = useState<string | null>(null);
+  const [loadedQuoteNumber, setLoadedQuoteNumber] = useState<string | null>(null);
 
   const loadQuotes = () => apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
   useEffect(() => { loadQuotes(); }, []);
 
   // Deep-link: /estimator?quote=<id> loads that saved quote into the form.
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   useEffect(() => {
     const id = params.get('quote');
     if (!id) return;
-    interface QD { jobName?: string; customerName?: string; customerCompany?: string; address?: string; units?: Unit[]; inputs?: Record<string, number | boolean> }
+    interface QD { quoteNumber?: string; jobName?: string; customerName?: string; customerCompany?: string; address?: string; units?: Unit[]; inputs?: Record<string, number | boolean> }
     apiGet<QD>(`/quotes/${id}`).then((qd) => {
       if (!qd) return;
+      setLoadedQuoteId(id);
+      setLoadedQuoteNumber(qd.quoteNumber || null);
       if (Array.isArray(qd.units) && qd.units.length) {
         setUnits(qd.units.map((u, i) => ({ id: `ld${i}_${++uid}`, type: u.type || '', qty: Number(u.qty) || 0, laborOn: u.laborOn ?? true, labor: Number(u.labor) || 0, mat: Number(u.mat) || 0 })));
       }
@@ -93,17 +97,24 @@ export default function Estimator() {
 
   const setUnit = (id: string, patch: Partial<Unit>) => setUnits((us) => us.map((u) => (u.id === id ? { ...u, ...patch } : u)));
 
-  async function saveQuote() {
+  async function saveQuote(asNew = false) {
     setSaving(true);
     setSavedMsg(null);
+    const payload = {
+      jobName: jobName.trim(), customerName: customerName.trim(), customerCompany: customerCompany.trim(), address: address.trim(),
+      units,
+      inputs: { lr, lh, ld, lhc, lhr, lot, tm, tr2, tt, tp, dlOn, dlMi, dlRate, dlFlat, mp, md, me, ms, mo, mu },
+      totalCost: c.tc, totalToInvoice: c.tch, margin: c.mg, totalUnits: c.tq,
+    };
     try {
-      const res = await apiSend<{ quoteNumber?: string }>('POST', '/quotes', {
-        jobName, customerName, customerCompany, address,
-        units,
-        inputs: { lr, lh, ld, lhc, lhr, lot, tm, tr2, tt, tp, dlOn, dlMi, dlRate, dlFlat, mp, md, me, ms, mo, mu },
-        totalCost: c.tc, totalToInvoice: c.tch, margin: c.mg, totalUnits: c.tq,
-      });
-      setSavedMsg(`Saved as quote ${res?.quoteNumber || ''} — ${usd(c.tch)}`);
+      if (loadedQuoteId && !asNew) {
+        const res = await apiSend<{ quoteNumber?: string }>('PUT', `/quotes/${loadedQuoteId}`, payload);
+        setSavedMsg(`Updated quote ${res?.quoteNumber || loadedQuoteNumber || ''} — ${usd(c.tch)}`);
+      } else {
+        const res = await apiSend<{ quoteId?: string; quoteNumber?: string }>('POST', '/quotes', payload);
+        if (res?.quoteId) { setLoadedQuoteId(res.quoteId); setLoadedQuoteNumber(res.quoteNumber || null); }
+        setSavedMsg(`Saved as quote ${res?.quoteNumber || ''} — ${usd(c.tch)}`);
+      }
       await loadQuotes();
     } catch (e) {
       setSavedMsg(e instanceof Error ? e.message : 'Save failed');
@@ -129,6 +140,12 @@ export default function Estimator() {
       <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Sales</div>
       <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Install Estimator</h1>
       <p className="mt-1.5 text-sm text-muted">Build a unit-by-unit install estimate, then save it as a quote for Intake.</p>
+      {loadedQuoteId && (
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[rgba(41,195,236,0.35)] bg-white/5 px-3 py-1 text-xs">
+          <span className="font-semibold text-accent">Editing {loadedQuoteNumber}</span>
+          <button onClick={() => { setLoadedQuoteId(null); setLoadedQuoteNumber(null); setParams({}); }} className="text-faint hover:text-text">start new ✕</button>
+        </div>
+      )}
 
       {/* quote info */}
       <div className="glass mt-5 grid gap-3 rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -242,11 +259,24 @@ export default function Estimator() {
             <div><div className="text-[0.56rem] uppercase tracking-wide text-faint">Cost / unit</div><div className="mt-1 text-lg font-semibold text-muted">{c.tq > 0 ? usd2(c.costPerUnit) : '—'}</div></div>
             <div><div className="text-[0.56rem] uppercase tracking-wide text-faint">Price / unit</div><div className="mt-1 text-lg font-semibold text-muted">{c.tq > 0 ? usd2(c.pricePerUnit) : '—'}</div></div>
           </div>
-          <div className="mt-4 flex items-center gap-3">
-            <button onClick={saveQuote} disabled={saving || c.tch <= 0}
-              className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(41,195,236,0.55)] disabled:opacity-40">
-              {saving ? 'Saving…' : '💾 Save as quote'}
-            </button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {loadedQuoteId ? (
+              <>
+                <button onClick={() => saveQuote(false)} disabled={saving || c.tch <= 0}
+                  className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(41,195,236,0.55)] disabled:opacity-40">
+                  {saving ? 'Saving…' : `💾 Update ${loadedQuoteNumber || 'quote'}`}
+                </button>
+                <button onClick={() => saveQuote(true)} disabled={saving || c.tch <= 0}
+                  className="rounded-lg border border-glass bg-white/5 px-4 py-2.5 text-sm font-semibold text-accent hover:bg-white/10 disabled:opacity-40">
+                  Save as new
+                </button>
+              </>
+            ) : (
+              <button onClick={() => saveQuote(false)} disabled={saving || c.tch <= 0}
+                className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(41,195,236,0.55)] disabled:opacity-40">
+                {saving ? 'Saving…' : '💾 Save as quote'}
+              </button>
+            )}
             {savedMsg && <span className="text-xs font-semibold text-completed">{savedMsg}</span>}
           </div>
         </div>
@@ -261,9 +291,12 @@ export default function Estimator() {
           <div className="flex flex-col gap-1.5">
             {quotes.map((q) => (
               <div key={q.quoteId} className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm">
-                <span className="truncate"><span className="font-semibold text-accent">{q.quoteNumber}</span> <span className="text-muted">{q.jobName || '—'}</span> <span className="text-faint">· {q.customerCompany || q.customerName || ''}</span></span>
+                <button onClick={() => setParams({ quote: q.quoteId })} className="truncate text-left">
+                  <span className="font-semibold text-accent">{q.quoteNumber}</span> <span className="text-muted">{q.jobName || '—'}</span> <span className="text-faint">· {q.customerCompany || q.customerName || ''}</span>
+                </button>
                 <span className="flex shrink-0 items-center gap-3">
                   <span className="font-semibold text-text">{usd(q.totalToInvoice || 0)}</span>
+                  <button onClick={() => setParams({ quote: q.quoteId })} className="text-xs font-semibold text-accent hover:underline">Edit</button>
                   <button onClick={() => deleteQuote(q.quoteId)} className="text-faint hover:text-[#fb7185]">✕</button>
                 </span>
               </div>
