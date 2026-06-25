@@ -23,6 +23,7 @@ export const MODULES: ModuleDef[] = [
   { id: 'closeout', label: 'Closeout', path: '/closeout', ready: true },
   { id: 'service', label: 'Service', path: '/service', ready: true, isNew: true },
   { id: 'routing', label: 'Routing', path: '/routing', ready: true },
+  { id: 'timeoff', label: 'Crew Time-Off', path: '/time-off', ready: true, isNew: true },
   { id: 'manager', label: 'Install Manager', path: '/manager', ready: true },
   { id: 'reporting', label: 'Reporting', path: '/reporting', ready: true },
   { id: 'invoicing', label: 'Invoicing & AR', path: '/invoicing', ready: true, isNew: true },
@@ -40,7 +41,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', modules: ['dashboard'] },
   { id: 'sales', label: 'Sales', modules: ['import', 'customers'] },
-  { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing'] },
+  { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing', 'timeoff'] },
   { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
   { id: 'service', label: 'Service', modules: ['service'] },
   { id: 'fieldapp', label: 'Field App', modules: ['field'] },
