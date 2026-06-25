@@ -137,7 +137,9 @@ export class Os3ApiStack extends cdk.Stack {
     job.addMethod('PUT', integ(jobsFn), auth);
     job.addMethod('DELETE', integ(jobsFn), auth);
     job.addResource('audit').addMethod('GET', integ(auditFn), auth);
-    job.addResource('attachments').addMethod('POST', integ(attachmentsFn), auth);
+    const attachments = job.addResource('attachments');
+    attachments.addMethod('POST', integ(attachmentsFn), auth);
+    attachments.addMethod('GET', integ(attachmentsFn), auth);
 
     // /customers
     const customers = api.root.addResource('customers');

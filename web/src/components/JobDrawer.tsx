@@ -12,6 +12,16 @@ interface AuditEntry {
   changes?: Record<string, unknown>;
 }
 
+interface Attachment {
+  attachId: string;
+  filename: string;
+  contentType: string;
+  category: string;
+  uploadedBy?: string;
+  uploadedAt?: string;
+  url: string;
+}
+
 function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div>
@@ -32,6 +42,7 @@ export default function JobDrawer() {
 
   const [form, setForm] = useState<Partial<Job>>({});
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingTo, setPendingTo] = useState<JobStatus | null>(null);
 
@@ -39,14 +50,20 @@ export default function JobDrawer() {
     if (!job) return;
     setForm({ name: job.name, address: job.address, crew: job.crew || '', scheduledDate: job.scheduledDate || '' });
     setAudit(null);
+    setAttachments(null);
     apiGet<AuditEntry[]>(`/jobs/${job.id}/audit`)
       .then((a) => setAudit(Array.isArray(a) ? a : []))
       .catch(() => setAudit([]));
+    apiGet<{ attachments: Attachment[] }>(`/jobs/${job.id}/attachments`)
+      .then((r) => setAttachments(r.attachments || []))
+      .catch(() => setAttachments([]));
   }, [job?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!job) return null;
   const meta = STATUS_META[job.status];
   const next = nextStatus(job.status);
+  const signature = attachments?.find((a) => a.category === 'signature') || null;
+  const photos = (attachments || []).filter((a) => a.category !== 'signature' && a.contentType?.startsWith('image/'));
   const dirty =
     form.name !== job.name || form.address !== job.address || (form.crew || '') !== (job.crew || '') || (form.scheduledDate || '') !== (job.scheduledDate || '');
 
@@ -118,6 +135,50 @@ export default function JobDrawer() {
             >
               {saving ? 'Saving…' : 'Save changes'}
             </button>
+          </div>
+
+          {/* field photos & signature */}
+          <div className="mt-6">
+            <div className="mb-2 text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Field photos &amp; signature</div>
+            {attachments === null ? (
+              <div className="text-[0.72rem] text-faint">Loading…</div>
+            ) : attachments.length === 0 ? (
+              <div className="text-[0.72rem] text-faint">Nothing uploaded from the field yet.</div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {signature && (
+                  <div>
+                    <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-wider text-accent">Customer signature</div>
+                    <a href={signature.url} target="_blank" rel="noreferrer">
+                      <img src={signature.url} alt="Customer signature" className="w-full rounded-lg border border-glass bg-white" />
+                    </a>
+                    {signature.uploadedAt && (
+                      <div className="mt-1 text-[0.62rem] text-faint">Signed {new Date(signature.uploadedAt).toLocaleString()}</div>
+                    )}
+                  </div>
+                )}
+                {photos.length > 0 && (
+                  <div>
+                    <div className="mb-1 text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Photos · {photos.length}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {photos.map((a) => (
+                        <a
+                          key={a.attachId}
+                          href={a.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group relative aspect-square overflow-hidden rounded-lg border border-glass"
+                          title={`${a.category} · ${a.uploadedAt ? new Date(a.uploadedAt).toLocaleString() : ''}`}
+                        >
+                          <img src={a.url} alt={a.filename} className="h-full w-full object-cover transition group-hover:scale-105" />
+                          <span className="absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wide text-white">{a.category}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* history */}
