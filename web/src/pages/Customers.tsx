@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { apiGet } from '../lib/api';
+import { apiGet, apiSend } from '../lib/api';
 import { useJobsCtx } from '../data/JobsContext';
 import { STATUS_META } from '../domain/status';
 
@@ -56,12 +56,36 @@ export default function Customers() {
       .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   }, [active, quotes, activeNames]);
 
+  const loadCustomers = () => apiGet<Customer[]>('/customers')
+    .then((r) => setRows(Array.isArray(r) ? r : []))
+    .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load customers'));
   useEffect(() => {
-    apiGet<Customer[]>('/customers')
-      .then((r) => setRows(Array.isArray(r) ? r : []))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load customers'));
+    loadCustomers();
     apiGet<Quote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
+
+  const [creating, setCreating] = useState(false);
+  const [nc, setNc] = useState({ name: '', company: '', phone: '', email: '', address: '' });
+  const [savingNc, setSavingNc] = useState(false);
+  async function createCustomer() {
+    if (!nc.name.trim() && !nc.company.trim()) return;
+    setSavingNc(true);
+    try {
+      await apiSend('POST', '/customers', {
+        name: nc.name.trim(), customerName: nc.name.trim(),
+        company: nc.company.trim() || undefined, customerCompany: nc.company.trim() || undefined,
+        phone: nc.phone.trim() || undefined, customerPhone: nc.phone.trim() || undefined,
+        email: nc.email.trim() || undefined,
+        address: nc.address.trim() || undefined,
+        source: 'Manual',
+      });
+      setNc({ name: '', company: '', phone: '', email: '', address: '' });
+      setCreating(false);
+      await loadCustomers();
+    } finally {
+      setSavingNc(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!rows) return [];
@@ -83,8 +107,11 @@ export default function Customers() {
           <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Customer Database</h1>
           <p className="mt-1.5 text-sm text-muted">{rows ? `${rows.length} customers` : 'Loading…'}</p>
         </div>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers…"
-          className="w-56 rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent focus:ring-2 focus:ring-accent/30" />
+        <div className="flex items-center gap-2">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers…"
+            className="w-56 rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent focus:ring-2 focus:ring-accent/30" />
+          <button onClick={() => setCreating(true)} className="shrink-0 rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2 text-sm font-semibold text-white">+ New customer</button>
+        </div>
       </div>
 
       {error ? (
@@ -100,18 +127,20 @@ export default function Customers() {
                   <th className="px-4 py-3 font-semibold">Name</th>
                   <th className="px-4 py-3 font-semibold">Company</th>
                   <th className="px-4 py-3 font-semibold">Phone</th>
+                  <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Address</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-10 text-center text-muted">No customers found.</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-muted">No customers found.</td></tr>
                 ) : (
                   filtered.map((c, i) => (
                     <tr key={c.customerId || c.id || i} onClick={() => setActive(c)} className="cursor-pointer border-t border-white/5 transition hover:bg-white/[0.03]">
                       <td className="px-4 py-3 font-medium text-text">{field(c, 'name', 'customerName') || '—'}</td>
                       <td className="px-4 py-3 text-muted">{field(c, 'company', 'customerCompany') || '—'}</td>
                       <td className="px-4 py-3 text-muted">{field(c, 'phone', 'customerPhone') || '—'}</td>
+                      <td className="px-4 py-3 text-muted">{field(c, 'email') || '—'}</td>
                       <td className="px-4 py-3 text-muted">{field(c, 'address') || '—'}</td>
                     </tr>
                   ))
@@ -207,6 +236,31 @@ export default function Customers() {
               </div>
             </div>
           </aside>
+        </>
+      )}
+
+      {creating && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setCreating(false)} />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-glass bg-[#0b1322]/95 p-5 backdrop-blur-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-base font-semibold text-text">New customer</div>
+              <button onClick={() => setCreating(false)} className="rounded-lg px-2 py-1 text-muted hover:bg-white/5 hover:text-text">✕</button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {([['name', 'Name'], ['company', 'Company'], ['phone', 'Phone'], ['email', 'Email'], ['address', 'Address']] as const).map(([k, label]) => (
+                <label key={k} className="block">
+                  <span className="mb-1 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">{label}</span>
+                  <input value={nc[k]} type={k === 'email' ? 'email' : 'text'} onChange={(e) => setNc((s) => ({ ...s, [k]: e.target.value }))}
+                    className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent focus:ring-2 focus:ring-accent/30" />
+                </label>
+              ))}
+              <button onClick={createCustomer} disabled={savingNc || (!nc.name.trim() && !nc.company.trim())}
+                className="mt-1 rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+                {savingNc ? 'Saving…' : 'Add customer'}
+              </button>
+            </div>
+          </div>
         </>
       )}
     </>
