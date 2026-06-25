@@ -1,4 +1,4 @@
-import { COGNITO_URL, CLIENT_ID, TOKEN_KEYS } from './config';
+import { COGNITO_URL, CLIENT_ID, TOKEN_KEYS, API_BASE } from './config';
 
 export interface AuthUser {
   username: string;
@@ -61,7 +61,26 @@ function userFromClaims(claims: Record<string, any>): AuthUser {
   };
 }
 
-export async function signIn(username: string, password: string): Promise<AuthUser> {
+/** Self-serve company signup — public, no auth. Returns the company code. */
+export async function signUpCompany(payload: {
+  companyName: string; industry: string; adminFirstName: string; adminLastName: string;
+  adminEmail: string; adminUsername: string; password: string;
+}): Promise<{ tenantId: string; companyName: string }> {
+  const res = await fetch(API_BASE + '/tenants', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || data.message || 'Could not create company.');
+  return data;
+}
+
+export async function signIn(username: string, password: string, companyCode?: string): Promise<AuthUser> {
+  const code = (companyCode || '').trim();
+  // New companies namespace the Cognito username by their code; legacy users
+  // leave the code blank and authenticate with their raw username.
+  const realUsername = code ? `${code}.${username.trim()}` : username.trim();
   const res = await fetch(COGNITO_URL, {
     method: 'POST',
     headers: {
@@ -70,7 +89,7 @@ export async function signIn(username: string, password: string): Promise<AuthUs
     },
     body: JSON.stringify({
       AuthFlow: 'USER_PASSWORD_AUTH',
-      AuthParameters: { USERNAME: username.trim(), PASSWORD: password },
+      AuthParameters: { USERNAME: realUsername, PASSWORD: password },
       ClientId: CLIENT_ID,
     }),
   });
@@ -90,7 +109,7 @@ export async function signIn(username: string, password: string): Promise<AuthUs
 
   const t = data.AuthenticationResult;
   const claims = parseJwt(t.IdToken);
-  const user = userFromClaims({ ...claims, 'cognito:username': claims['cognito:username'] || username });
+  const user = userFromClaims({ ...claims, 'cognito:username': claims['cognito:username'] || realUsername });
   localStorage.setItem(TOKEN_KEYS.id, t.IdToken);
   if (t.AccessToken) localStorage.setItem(TOKEN_KEYS.access, t.AccessToken);
   if (t.RefreshToken) localStorage.setItem(TOKEN_KEYS.refresh, t.RefreshToken);

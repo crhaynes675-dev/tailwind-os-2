@@ -61,9 +61,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return badRequest('username, email, givenName, familyName, and password are all required', event);
       }
 
+      // Namespace usernames by company code so they can repeat across tenants.
+      // Legacy tenants keep raw usernames (no code needed at login).
+      const LEGACY_TENANTS = new Set(['mm', 'default']);
+      const cognitoUsername = LEGACY_TENANTS.has(tenantId) ? newUsername : `${tenantId}.${newUsername}`;
+
       await cognito.send(new AdminCreateUserCommand({
         UserPoolId: USER_POOL_ID,
-        Username: newUsername,
+        Username: cognitoUsername,
         MessageAction: 'SUPPRESS',
         TemporaryPassword: password,
         UserAttributes: [
@@ -79,12 +84,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       // Make the password permanent so the user doesn't have to reset on first login
       await cognito.send(new AdminSetUserPasswordCommand({
         UserPoolId: USER_POOL_ID,
-        Username: newUsername,
+        Username: cognitoUsername,
         Password: password,
         Permanent: true,
       }));
 
-      return created({ username: newUsername, created: true }, event);
+      return created({ username: cognitoUsername, created: true }, event);
     }
 
     if (!username) return badRequest('username is required', event);

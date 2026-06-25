@@ -54,13 +54,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       const tenantId = slugify(companyName) + '-' + Date.now().toString(36).slice(-4);
+      // Namespace the Cognito username by the company code so usernames can
+      // repeat across companies and the entered code scopes login.
+      const adminCognitoUsername = `${tenantId}.${adminUsername}`;
       const now = new Date().toISOString();
       const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       // Create Cognito admin user for this tenant
       await cognito.send(new AdminCreateUserCommand({
         UserPoolId: USER_POOL_ID,
-        Username: adminUsername,
+        Username: adminCognitoUsername,
         MessageAction: 'SUPPRESS',
         TemporaryPassword: password,
         UserAttributes: [
@@ -75,7 +78,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
       await cognito.send(new AdminSetUserPasswordCommand({
         UserPoolId: USER_POOL_ID,
-        Username: adminUsername,
+        Username: adminCognitoUsername,
         Password: password,
         Permanent: true,
       }));

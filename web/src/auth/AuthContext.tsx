@@ -3,7 +3,7 @@ import { type AuthUser, getStoredUser, signIn as doSignIn, signOut as doSignOut 
 
 interface AuthState {
   user: AuthUser | null;
-  signIn: (username: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string, companyCode?: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -19,8 +19,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('os3-unauthorized', onUnauthorized);
   }, []);
 
-  const signIn = useCallback(async (username: string, password: string) => {
-    const u = await doSignIn(username, password);
+  const signIn = useCallback(async (username: string, password: string, companyCode?: string) => {
+    const u = await doSignIn(username, password, companyCode);
     setUser(u);
   }, []);
 

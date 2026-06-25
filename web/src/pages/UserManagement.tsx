@@ -27,6 +27,7 @@ const roleColor: Record<string, string> = {
 
 export default function UserManagement() {
   const { user } = useAuth();
+  const shortName = (un: string) => (user?.tenantId && un.startsWith(user.tenantId + '.') ? un.slice(user.tenantId.length + 1) : un);
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [rows, setRows] = useState<User[] | null>(null);
@@ -150,7 +151,7 @@ export default function UserManagement() {
                     return (
                       <tr key={u.username} className="border-t border-white/5 hover:bg-white/[0.02]">
                         <td className="px-4 py-3 font-medium text-text">{`${u.givenName || ''} ${u.familyName || ''}`.trim() || '—'}{self && <span className="ml-2 rounded border border-white/10 px-1.5 py-px text-[0.5rem] uppercase text-faint">you</span>}</td>
-                        <td className="px-4 py-3 text-muted">{u.username}</td>
+                        <td className="px-4 py-3 text-muted">{shortName(u.username)}</td>
                         <td className="px-4 py-3 text-muted">{u.email || '—'}</td>
                         <td className="px-4 py-3">
                           {locked ? (

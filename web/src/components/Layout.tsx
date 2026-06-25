@@ -73,7 +73,7 @@ export default function Layout() {
 
         <div className="ml-auto flex items-center gap-3">
           <div className="text-right leading-tight">
-            <div className="text-xs font-medium text-text">{user?.username}</div>
+            <div className="text-xs font-medium text-text">{user && user.tenantId && user.username.startsWith(user.tenantId + '.') ? user.username.slice(user.tenantId.length + 1) : user?.username}</div>
             <div className="text-[10px] uppercase tracking-wide text-faint">{user?.role?.replace(/_/g, ' ')}</div>
           </div>
           <button
