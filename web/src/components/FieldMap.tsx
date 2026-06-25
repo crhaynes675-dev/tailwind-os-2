@@ -36,6 +36,17 @@ type Cache = Record<string, { lat: number; lng: number }>;
 function loadCache(): Cache { try { return JSON.parse(localStorage.getItem('os3_geocache') || '{}'); } catch { return {}; } }
 function saveCache(c: Cache) { try { localStorage.setItem('os3_geocache', JSON.stringify(c)); } catch { /* ignore */ } }
 
+// STATUS_META colors are CSS variables (var(--color-…)); Google Maps needs a
+// real hex, so resolve them off :root.
+function resolveColor(css: string): string {
+  const m = css.match(/var\((--[\w-]+)\)/);
+  if (m) {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim();
+    if (v) return v;
+  }
+  return css.startsWith('#') ? css : '#29c3ec';
+}
+
 export default function FieldMap({ jobs, onSelect, focusId, height = 'h-[60vh]' }: { jobs: Job[]; onSelect?: (id: string) => void; focusId?: string; height?: string }) {
   const elRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -83,12 +94,10 @@ export default function FieldMap({ jobs, onSelect, focusId, height = 'h-[60vh]' 
     const place = (j: Job) => {
       const pos = j.address ? cacheRef.current[j.address] : undefined;
       if (!pos) return;
-      const color = STATUS_META[j.status].color;
-      if (markersRef.current[j.id]) { markersRef.current[j.id].setPosition(pos); return; }
-      const m = new g.maps.Marker({
-        position: pos, map, title: j.name,
-        icon: { path: g.maps.SymbolPath.CIRCLE, scale: 11, fillColor: color, fillOpacity: 0.95, strokeColor: '#fff', strokeWeight: 2 },
-      });
+      const color = resolveColor(STATUS_META[j.status].color);
+      const icon = { path: g.maps.SymbolPath.CIRCLE, scale: 11, fillColor: color, fillOpacity: 0.95, strokeColor: '#fff', strokeWeight: 2 };
+      if (markersRef.current[j.id]) { markersRef.current[j.id].setPosition(pos); markersRef.current[j.id].setIcon(icon); return; }
+      const m = new g.maps.Marker({ position: pos, map, title: j.name, icon });
       m.addListener('click', () => onSelect?.(j.id));
       markersRef.current[j.id] = m;
     };
