@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
 import { useAuth } from '../auth/AuthContext';
-import { apiGet } from '../lib/api';
+import { apiGet, uploadAttachment } from '../lib/api';
 import { useChecklist } from '../lib/checklist';
 import { STATUS_META, type JobStatus } from '../domain/status';
 import type { Job } from '../data/jobs';
 import TransitionModal from '../components/TransitionModal';
+import FieldMap from '../components/FieldMap';
 
 interface ApiUser { username: string; givenName?: string; familyName?: string }
 const INSTALL_STEPS = ['On Site', 'Install In Progress', 'Punch Completion'];
@@ -25,7 +26,12 @@ export default function Field() {
   const [scope, setScope] = useState<'mine' | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const [pending, setPending] = useState<{ job: Job; to: JobStatus } | null>(null);
+  const [view, setView] = useState<'list' | 'map'>('list');
+  const [uploading, setUploading] = useState(false);
+  const [photoMsg, setPhotoMsg] = useState<string | null>(null);
   const cl = useChecklist('install');
+
+  useEffect(() => { setPhotoMsg(null); }, [openId]);
 
   useEffect(() => {
     apiGet<ApiUser[]>('/users').then((us) => {
@@ -66,7 +72,22 @@ export default function Field() {
         ))}
       </div>
 
-      {loading && jobs.length === 0 ? (
+      {/* list / map */}
+      <div className="mb-4 flex rounded-xl border border-glass bg-white/[0.04] p-1">
+        {(['list', 'map'] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`flex-1 rounded-lg py-2 text-[0.8rem] font-semibold capitalize transition ${view === v ? 'bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] text-white' : 'text-muted'}`}
+          >
+            {v === 'list' ? '☰ List' : '🗺 Map'}
+          </button>
+        ))}
+      </div>
+
+      {view === 'map' ? (
+        <FieldMap jobs={fieldJobs} onSelect={setOpenId} />
+      ) : loading && jobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-24 text-sm text-muted">Loading…</div>
       ) : fieldJobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-20 text-center text-sm text-muted">{scope === 'mine' ? 'No jobs assigned to you.' : 'No active field work.'}</div>
@@ -114,6 +135,26 @@ export default function Field() {
                   🧭 Navigate · {openJob.address.length > 28 ? openJob.address.slice(0, 28) + '…' : openJob.address}
                 </a>
               )}
+
+              {/* photo capture */}
+              <label className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-glass bg-white/5 py-3 text-sm font-semibold text-accent active:scale-[0.99]">
+                📷 {uploading ? 'Uploading…' : photoMsg || 'Add photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !openJob) return;
+                    setUploading(true); setPhotoMsg(null);
+                    try { await uploadAttachment(openJob.id, file); setPhotoMsg('Photo added ✓'); }
+                    catch { setPhotoMsg('Upload failed'); }
+                    finally { setUploading(false); }
+                    e.target.value = '';
+                  }}
+                />
+              </label>
 
               {/* field checklist while installing */}
               {openJob.status === 'In Progress' && (
