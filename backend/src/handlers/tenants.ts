@@ -46,6 +46,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return badRequest('companyName, industry, adminFirstName, adminLastName, adminEmail, adminUsername, and password are all required', event);
       }
 
+      // Gate public signup behind a shared access code (anti-abuse).
+      const SIGNUP_ACCESS_CODE = process.env.SIGNUP_ACCESS_CODE || '';
+      if (SIGNUP_ACCESS_CODE && String(body.accessCode || '').trim() !== SIGNUP_ACCESS_CODE) {
+        return forbidden('Invalid signup access code. Contact Tailwind OS to get one.', event);
+      }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(adminEmail))) {
+        return badRequest('Enter a valid admin email.', event);
+      }
+
       const VALID_INDUSTRIES = ['hvac','electrical','plumbing','roofing','painting','millwork',
         'flooring','tile','countertops','general_contracting','framing','concrete',
         'landscaping','property_management','inspection','other'];
@@ -61,20 +70,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       // Create Cognito admin user for this tenant
-      await cognito.send(new AdminCreateUserCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: adminCognitoUsername,
-        MessageAction: 'SUPPRESS',
-        TemporaryPassword: password,
-        UserAttributes: [
-          { Name: 'email',           Value: adminEmail },
-          { Name: 'email_verified',  Value: 'true' },
-          { Name: 'given_name',      Value: adminFirstName },
-          { Name: 'family_name',     Value: adminLastName },
-          { Name: 'custom:role',     Value: 'admin' },
-          { Name: 'custom:tenantId', Value: tenantId },
-        ],
-      }));
+      try {
+        await cognito.send(new AdminCreateUserCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: adminCognitoUsername,
+          MessageAction: 'SUPPRESS',
+          TemporaryPassword: password,
+          UserAttributes: [
+            { Name: 'email',           Value: adminEmail },
+            { Name: 'email_verified',  Value: 'true' },
+            { Name: 'given_name',      Value: adminFirstName },
+            { Name: 'family_name',     Value: adminLastName },
+            { Name: 'custom:role',     Value: 'admin' },
+            { Name: 'custom:tenantId', Value: tenantId },
+          ],
+        }));
+      } catch (e) {
+        const name = (e as { name?: string })?.name;
+        if (name === 'UsernameExistsException') return badRequest('That admin username is already taken — pick another.', event);
+        if (name === 'InvalidPasswordException') return badRequest('Password too weak — use at least 8 characters with upper, lower, and a number.', event);
+        throw e;
+      }
 
       await cognito.send(new AdminSetUserPasswordCommand({
         UserPoolId: USER_POOL_ID,

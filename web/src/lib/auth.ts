@@ -64,7 +64,7 @@ function userFromClaims(claims: Record<string, any>): AuthUser {
 /** Self-serve company signup — public, no auth. Returns the company code. */
 export async function signUpCompany(payload: {
   companyName: string; industry: string; adminFirstName: string; adminLastName: string;
-  adminEmail: string; adminUsername: string; password: string;
+  adminEmail: string; adminUsername: string; password: string; accessCode: string;
 }): Promise<{ tenantId: string; companyName: string }> {
   const res = await fetch(API_BASE + '/tenants', {
     method: 'POST',

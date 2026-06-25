@@ -97,7 +97,8 @@ export class Os3ApiStack extends cdk.Stack {
     const usersFn = makeFn('Os3UsersFn', 'handlers/users.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID });
     const vacationsFn = makeFn('Os3VacationsFn', 'handlers/vacations.handler', EXISTING_TABLE_NAME);
     const quotesFn = makeFn('Os3QuotesFn', 'handlers/quotes.handler', EXISTING_TABLE_NAME);
-    const tenantsFn = makeFn('Os3TenantsFn', 'handlers/tenants.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID });
+    // Shared access code that gates public company signup (change to rotate).
+    const tenantsFn = makeFn('Os3TenantsFn', 'handlers/tenants.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID, SIGNUP_ACCESS_CODE: 'tailwind-2026' });
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName);
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);

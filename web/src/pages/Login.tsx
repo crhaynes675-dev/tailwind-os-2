@@ -18,7 +18,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   // signup
-  const [s, setS] = useState({ companyName: '', industry: 'millwork', adminFirstName: '', adminLastName: '', adminEmail: '', adminUsername: '', password: '' });
+  const [s, setS] = useState({ companyName: '', industry: 'millwork', adminFirstName: '', adminLastName: '', adminEmail: '', adminUsername: '', password: '', accessCode: '' });
   const sset = (k: keyof typeof s) => (e: { target: { value: string } }) => setS((v) => ({ ...v, [k]: e.target.value }));
   const [sBusy, setSBusy] = useState(false);
   const [sError, setSError] = useState<string | null>(null);
@@ -125,6 +125,10 @@ export default function Login() {
               </div>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Access code</label>
+                  <input value={s.accessCode} onChange={sset('accessCode')} placeholder="Provided by Tailwind OS" autoCapitalize="none" className={inputCls} />
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Company name</label>
                   <input value={s.companyName} onChange={sset('companyName')} placeholder="Acme Millwork" className={inputCls} />
                 </div>
@@ -147,7 +151,7 @@ export default function Login() {
 
               {sError && <div className="mt-3.5 rounded-[7px] border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 text-[13px] text-[#f87171]">{sError}</div>}
 
-              <button type="submit" disabled={sBusy || !s.companyName.trim() || !s.adminUsername.trim() || !s.password || !s.adminEmail.trim()}
+              <button type="submit" disabled={sBusy || !s.accessCode.trim() || !s.companyName.trim() || !s.adminUsername.trim() || !s.password || !s.adminEmail.trim()}
                 className="mt-5 w-full rounded-lg bg-[#1a8fff] py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-40">
                 {sBusy ? 'Creating…' : 'Create company →'}
               </button>
