@@ -16,6 +16,7 @@ import Readiness from './pages/Readiness';
 import Closeout from './pages/Closeout';
 import Manager from './pages/Manager';
 import UserManagement from './pages/UserManagement';
+import Company from './pages/Company';
 import Invoicing from './pages/Invoicing';
 import TimeOff from './pages/TimeOff';
 import Field from './pages/Field';
@@ -41,6 +42,7 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
   closeout: Closeout,
   manager: Manager,
   users: UserManagement,
+  company: Company,
   invoicing: Invoicing,
   timeoff: TimeOff,
   field: Field,
