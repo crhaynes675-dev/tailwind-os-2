@@ -119,6 +119,37 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         },
       }));
 
+      // Ensure the job's customer exists in the customer database (best-effort).
+      const cName = String(body.customerName ?? '').trim();
+      const cCompany = String(body.customerCompany ?? '').trim();
+      if (cName || cCompany) {
+        try {
+          const cdb = await ddb.send(new QueryCommand({
+            TableName: TABLE, IndexName: 'GSI1',
+            KeyConditionExpression: 'GSI1PK = :pk',
+            ExpressionAttributeValues: { ':pk': tgsi(t, 'CDB_RECORDS') },
+          }));
+          const norm = (s: unknown) => String(s ?? '').trim().toLowerCase();
+          const known = new Set<string>();
+          (cdb.Items ?? []).forEach((it) => [it.customerName, it.name, it.customerCompany, it.company].map(norm).filter(Boolean).forEach((k) => known.add(k)));
+          const exists = (cName && known.has(norm(cName))) || (cCompany && known.has(norm(cCompany)));
+          if (!exists) {
+            const cid = 'cdb_' + Date.now() + '_' + randomUUID().slice(0, 6);
+            await ddb.send(new PutCommand({
+              TableName: TABLE,
+              Item: {
+                PK: tpk(t, 'CDB', cid), SK: 'RECORD',
+                GSI1PK: tgsi(t, 'CDB_RECORDS'), GSI1SK: `ADDED#${now.slice(0, 10)}#${cid}`,
+                id: cid, name: cName, customerName: cName,
+                company: cCompany || undefined, customerCompany: cCompany || undefined,
+                phone: body.customerPhone || undefined, customerPhone: body.customerPhone || undefined,
+                source: 'Work Order', added: now.slice(0, 10), createdAt: now,
+              },
+            }));
+          }
+        } catch { /* don't block job creation on CDB write */ }
+      }
+
       return created(item, event);
     }
 

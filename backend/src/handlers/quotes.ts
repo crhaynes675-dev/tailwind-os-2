@@ -85,7 +85,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         updatedAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));
-      return ok({ quoteId, quoteNumber: item.quoteNumber }, event);
+      return ok({ quoteId, quoteNumber: existing.Item.quoteNumber }, event);
     }
 
     if (httpMethod === 'DELETE' && quoteId) {
