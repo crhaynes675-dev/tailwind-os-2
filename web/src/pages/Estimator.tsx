@@ -14,6 +14,9 @@ const QSTATUS: Record<string, { label: string; color: string }> = {
 };
 const STATUS_ORDER: Record<string, number> = { sent: 0, accepted: 1, draft: 2, won: 3, declined: 4 };
 
+type Cust = Record<string, string | undefined>;
+const cf = (c: Cust, ...keys: string[]) => { for (const k of keys) { const v = c[k]; if (v) return String(v); } return ''; };
+
 interface Unit { id: string; type: string; qty: number; laborOn: boolean; labor: number; mat: number }
 interface SavedQuote {
   quoteId: string; quoteNumber: string; jobName?: string; customerName?: string;
@@ -60,10 +63,15 @@ export default function Estimator() {
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [loadedQuoteId, setLoadedQuoteId] = useState<string | null>(null);
   const [loadedQuoteNumber, setLoadedQuoteNumber] = useState<string | null>(null);
+  const [gateOpen, setGateOpen] = useState(false);
+  const [custList, setCustList] = useState<Cust[]>([]);
 
   const navigate = useNavigate();
   const loadQuotes = () => apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
-  useEffect(() => { loadQuotes(); }, []);
+  useEffect(() => {
+    loadQuotes();
+    apiGet<Cust[]>('/customers').then((r) => setCustList(Array.isArray(r) ? r : [])).catch(() => {});
+  }, []);
 
   async function setQuoteStatus(id: string, status: string) {
     const now = new Date().toISOString();
@@ -86,6 +94,8 @@ export default function Estimator() {
       if (nm) setCustomerName(nm);
       if (co) setCustomerCompany(co);
       if (ad) setAddress(ad);
+      // Opened cold (no lead) → gate to keep Intake the front door.
+      if (!nm && !co) setGateOpen(true);
       return;
     }
     interface QD { quoteNumber?: string; jobName?: string; customerName?: string; customerCompany?: string; address?: string; units?: Unit[]; inputs?: Record<string, number | boolean> }
@@ -359,6 +369,37 @@ export default function Estimator() {
           </div>
         )}
       </div>
+
+      {gateOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-glass bg-[#0b1322]/95 p-6 text-center backdrop-blur-xl">
+            <div className="text-lg font-bold text-text">Estimates start from Intake</div>
+            <p className="mx-auto mt-1.5 max-w-xs text-sm text-muted">Capture the lead in Intake first, then build the estimate — that keeps the customer and the quote tied together.</p>
+            <button onClick={() => navigate('/import')} className="mt-4 w-full rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2.5 text-sm font-semibold text-white">Start an Intake →</button>
+            <div className="my-3 text-[0.6rem] uppercase tracking-[0.18em] text-faint">or build for an existing customer</div>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                const c = custList[Number(e.target.value)];
+                if (!c) return;
+                setCustomerName(cf(c, 'name', 'customerName'));
+                setCustomerCompany(cf(c, 'company', 'customerCompany'));
+                setAddress(cf(c, 'address'));
+                setGateOpen(false);
+              }}
+              className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent"
+            >
+              <option value="" disabled>Select a customer…</option>
+              {custList.map((c, i) => {
+                const nm = cf(c, 'name', 'customerName'), co = cf(c, 'company', 'customerCompany');
+                return <option key={i} value={i}>{nm || co}{nm && co ? ` · ${co}` : ''}</option>;
+              })}
+            </select>
+            <button onClick={() => setGateOpen(false)} className="mt-4 text-[0.7rem] font-semibold text-faint hover:text-muted">or build a blank estimate anyway</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

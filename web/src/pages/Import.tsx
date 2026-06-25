@@ -100,6 +100,7 @@ export default function Import() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [convertQuoteId, setConvertQuoteId] = useState('');
   const [convertAmount, setConvertAmount] = useState<number | undefined>(undefined);
+  const [leadSaved, setLeadSaved] = useState(false);
   useEffect(() => {
     const id = searchParams.get('quote');
     if (!id) return;
@@ -147,8 +148,25 @@ export default function Import() {
 
   const isLast = step === STAGES.length - 1;
 
+  function saveLeadEarly() {
+    if (leadSaved || !f.customerName.trim()) return;
+    setLeadSaved(true);
+    // Persist the lead the moment we leave the Lead step, so an opportunity
+    // that pauses for a quote decision still lives in the customer database.
+    apiSend('POST', '/customers', {
+      name: f.customerName.trim(), customerName: f.customerName.trim(),
+      company: f.customerCompany.trim() || undefined, customerCompany: f.customerCompany.trim() || undefined,
+      phone: f.customerPhone.trim() || undefined, customerPhone: f.customerPhone.trim() || undefined,
+      email: f.email.trim() || undefined,
+      address: f.address.trim() || undefined,
+      notes: f.whyLead.trim() || undefined,
+      source: 'Intake / Lead',
+    }).catch(() => setLeadSaved(false));
+  }
+
   function next() {
     if (!stepValid(step)) return;
+    if (STAGES[step].key === 'lead') saveLeadEarly();
     // Branch: not awarded → divert to the reason screen (no job).
     if (STAGES[step].key === 'awarded' && f.awarded === 'no') { setLostPath(true); return; }
     if (!isLast) setStep((s) => s + 1);
@@ -158,7 +176,7 @@ export default function Import() {
   function cancel() {
     const hasData = f.customerName.trim() || f.jobName.trim() || step > 0;
     if (hasData && !window.confirm('Discard this intake and start over?')) return;
-    setF(EMPTY); setStep(0); setLostPath(false);
+    setF(EMPTY); setStep(0); setLostPath(false); setLeadSaved(false);
     setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
     setPickedQuoteId(''); setQuoteAmount(undefined);
     setConvertQuoteId(''); setConvertAmount(undefined);
@@ -173,18 +191,20 @@ export default function Import() {
       f.lostReason.trim() && `Not awarded — reason: ${f.lostReason.trim()}`,
     ].filter(Boolean).join('\n');
     try {
-      await apiSend('POST', '/customers', {
-        name: f.customerName.trim(), customerName: f.customerName.trim(),
-        company: f.customerCompany.trim() || undefined, customerCompany: f.customerCompany.trim() || undefined,
-        phone: f.customerPhone.trim() || undefined, customerPhone: f.customerPhone.trim() || undefined,
-        email: f.email.trim() || undefined,
-        address: f.address.trim() || undefined,
-        notes: notes || undefined,
-        source: 'Lost Lead',
-        status: 'Not Awarded',
-      });
+      if (!leadSaved) {
+        await apiSend('POST', '/customers', {
+          name: f.customerName.trim(), customerName: f.customerName.trim(),
+          company: f.customerCompany.trim() || undefined, customerCompany: f.customerCompany.trim() || undefined,
+          phone: f.customerPhone.trim() || undefined, customerPhone: f.customerPhone.trim() || undefined,
+          email: f.email.trim() || undefined,
+          address: f.address.trim() || undefined,
+          notes: notes || undefined,
+          source: 'Lost Lead',
+          status: 'Not Awarded',
+        });
+      }
       setMsg({ kind: 'ok', text: `${f.customerName.trim() || 'Lead'} saved to the customer database (not awarded). No job created.` });
-      setF(EMPTY); setStep(0); setLostPath(false);
+      setF(EMPTY); setStep(0); setLostPath(false); setLeadSaved(false);
       setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
     } catch (e) {
       setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'Failed to save lead' });
@@ -202,19 +222,21 @@ export default function Import() {
       f.openItems.trim() && `Ops review — open items: ${f.openItems.trim()}`,
     ].filter(Boolean).join('\n');
     try {
-      // Add the lead to the customer database.
-      await apiSend('POST', '/customers', {
-        name: f.customerName.trim(),
-        customerName: f.customerName.trim(),
-        company: f.customerCompany.trim() || undefined,
-        customerCompany: f.customerCompany.trim() || undefined,
-        phone: f.customerPhone.trim() || undefined,
-        customerPhone: f.customerPhone.trim() || undefined,
-        email: f.email.trim() || undefined,
-        address: f.address.trim() || undefined,
-        notes: f.whyLead.trim() || undefined,
-        source: 'Intake / Lead',
-      }).catch(() => { /* don't block the handoff if CDB write fails */ });
+      // Add the lead to the customer database (unless saved at the Lead step).
+      if (!leadSaved) {
+        await apiSend('POST', '/customers', {
+          name: f.customerName.trim(),
+          customerName: f.customerName.trim(),
+          company: f.customerCompany.trim() || undefined,
+          customerCompany: f.customerCompany.trim() || undefined,
+          phone: f.customerPhone.trim() || undefined,
+          customerPhone: f.customerPhone.trim() || undefined,
+          email: f.email.trim() || undefined,
+          address: f.address.trim() || undefined,
+          notes: f.whyLead.trim() || undefined,
+          source: 'Intake / Lead',
+        }).catch(() => { /* don't block the handoff if CDB write fails */ });
+      }
 
       const jobId = await createJob({
         jobName: f.jobName.trim(),
@@ -241,7 +263,7 @@ export default function Import() {
       }
       const attachNote = files.length ? `, ${uploaded}/${files.length} attachment${files.length === 1 ? '' : 's'} uploaded` : '';
       setMsg({ kind: 'ok', text: `Handoff complete — “${f.jobName.trim()}” created, ${f.customerName.trim() || 'lead'} added to the customer database${attachNote}. Routed to Unscheduled → Readiness.` });
-      setF(EMPTY); setStep(0);
+      setF(EMPTY); setStep(0); setLeadSaved(false);
       setQuoteFile(null); setHoContract(null); setHoDocs(null); setHoScope(null); setReviewFile(null);
     } catch (e) {
       setMsg({ kind: 'err', text: e instanceof Error ? e.message : 'Failed to create job' });

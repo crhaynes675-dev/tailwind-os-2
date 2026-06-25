@@ -41,7 +41,7 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', modules: ['dashboard'] },
-  { id: 'sales', label: 'Sales', modules: ['estimator', 'import', 'customers'] },
+  { id: 'sales', label: 'Sales', modules: ['import', 'estimator', 'customers'] },
   { id: 'scheduling', label: 'Scheduling', modules: ['readiness', 'schedule', 'dispatch', 'routing', 'timeoff'] },
   { id: 'field', label: 'Field', modules: ['delivery', 'installation', 'postinstall', 'closeout'] },
   { id: 'service', label: 'Service', modules: ['service'] },
