@@ -165,7 +165,9 @@ export class Os3ApiStack extends cdk.Stack {
     // /tenants — company signup (POST is PUBLIC) + config (GET /tenants/me authed)
     const tenants = api.root.addResource('tenants');
     tenants.addMethod('POST', integ(tenantsFn)); // public self-serve signup
-    tenants.addResource('me').addMethod('GET', integ(tenantsFn), auth);
+    const tenantMe = tenants.addResource('me');
+    tenantMe.addMethod('GET', integ(tenantsFn), auth);
+    tenantMe.addMethod('PUT', integ(tenantsFn), auth);
 
     // /quotes — saved estimator quotes
     const quotes = api.root.addResource('quotes');

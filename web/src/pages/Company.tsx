@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { apiGet } from '../lib/api';
+import { apiGet, apiSend } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
+
+const INDUSTRIES = ['millwork', 'hvac', 'electrical', 'plumbing', 'roofing', 'painting', 'flooring', 'tile', 'countertops', 'general_contracting', 'framing', 'concrete', 'landscaping', 'property_management', 'inspection', 'other'];
 
 interface TenantConfig {
   tenantId?: string;
@@ -28,17 +30,35 @@ export default function Company() {
   const [cfg, setCfg] = useState<TenantConfig | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [ef, setEf] = useState({ companyName: '', industry: 'millwork' });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    apiGet<TenantConfig>('/tenants/me').then(setCfg).catch(() => {}).finally(() => setLoaded(true));
-  }, []);
+  const load = () => apiGet<TenantConfig>('/tenants/me').then(setCfg).catch(() => {}).finally(() => setLoaded(true));
+  useEffect(() => { load(); }, []);
 
   const code = cfg?.tenantId || user?.tenantId || '—';
+  const isAdmin = user?.role === 'admin';
   const copy = () => {
     navigator.clipboard?.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  function startEdit() {
+    setEf({ companyName: cfg?.companyName || '', industry: cfg?.industry || 'millwork' });
+    setEditing(true);
+  }
+  async function saveEdit() {
+    setSaving(true);
+    try {
+      await apiSend('PUT', '/tenants/me', { companyName: ef.companyName.trim(), industry: ef.industry });
+      await load();
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -60,9 +80,34 @@ export default function Company() {
 
       {/* profile */}
       <div className="glass mt-4 rounded-2xl p-5">
-        <div className="mb-2 text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-faint">Company profile</div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-faint">Company profile</span>
+          {isAdmin && cfg && !editing && (
+            <button onClick={startEdit} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-accent hover:bg-white/5">Edit</button>
+          )}
+        </div>
+
         {!loaded ? (
           <div className="py-6 text-center text-sm text-muted">Loading…</div>
+        ) : editing ? (
+          <div className="flex flex-col gap-3">
+            <label className="block">
+              <span className="mb-1 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Company name</span>
+              <input value={ef.companyName} onChange={(e) => setEf((s) => ({ ...s, companyName: e.target.value }))}
+                className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm text-text outline-none focus:border-accent focus:ring-2 focus:ring-accent/30" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Industry</span>
+              <select value={ef.industry} onChange={(e) => setEf((s) => ({ ...s, industry: e.target.value }))}
+                className="w-full rounded-lg border border-glass bg-white/[0.04] px-3 py-2 text-sm capitalize text-text outline-none focus:border-accent">
+                {INDUSTRIES.map((i) => <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>)}
+              </select>
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              <button onClick={saveEdit} disabled={saving || !ef.companyName.trim()} className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{saving ? 'Saving…' : 'Save'}</button>
+              <button onClick={() => setEditing(false)} className="rounded-lg border border-glass bg-white/5 px-4 py-2 text-sm font-semibold text-muted hover:bg-white/10">Cancel</button>
+            </div>
+          </div>
         ) : cfg ? (
           <div>
             <Row label="Company name" value={cfg.companyName} />
