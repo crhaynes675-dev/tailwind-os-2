@@ -9,11 +9,13 @@ interface ApiJob {
   jobName?: string;
   customerName?: string;
   customerCompany?: string;
+  customerPhone?: string;
   address?: string;
   status?: string;
   assignedTo?: string;
   scheduledDate?: string;
   priority?: string;
+  notes?: string;
   contractAmount?: number;
   materialCost?: number;
   laborCost?: number;
@@ -33,11 +35,13 @@ function mapJob(j: ApiJob): Job {
     workOrder: j.workOrderNumber || '—',
     name: j.jobName || 'Unnamed Job',
     customer: j.customerCompany || j.customerName || '—',
+    customerPhone: j.customerPhone || undefined,
     address: j.address || '',
     status: normalizeStatus(j.status),
     crew: j.assignedTo || undefined,
     scheduledDate: j.scheduledDate && j.scheduledDate !== '0001-01-01' ? j.scheduledDate : undefined,
     priority: (j.priority as Job['priority']) || undefined,
+    notes: j.notes || undefined,
     contractAmount: typeof j.contractAmount === 'number' ? j.contractAmount : undefined,
     materialCost: typeof j.materialCost === 'number' ? j.materialCost : undefined,
     laborCost: typeof j.laborCost === 'number' ? j.laborCost : undefined,
@@ -58,6 +62,7 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.scheduledDate !== undefined) body.scheduledDate = patch.scheduledDate;
   if (patch.name !== undefined) body.jobName = patch.name;
   if (patch.address !== undefined) body.address = patch.address;
+  if (patch.notes !== undefined) body.notes = patch.notes;
   if (patch.contractAmount !== undefined) body.contractAmount = patch.contractAmount;
   if (patch.materialCost !== undefined) body.materialCost = patch.materialCost;
   if (patch.laborCost !== undefined) body.laborCost = patch.laborCost;

@@ -5,11 +5,13 @@ export interface Job {
   workOrder: string;
   name: string;
   customer: string;
+  customerPhone?: string;
   address: string;
   status: JobStatus;
   crew?: string;
   scheduledDate?: string;
   priority?: 'High' | 'Normal' | 'Low';
+  notes?: string;
   // Financials
   contractAmount?: number;   // what the customer is billed (revenue)
   materialCost?: number;
