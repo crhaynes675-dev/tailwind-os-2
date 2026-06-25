@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useJobsCtx } from '../data/JobsContext';
 import { uploadAttachment, apiSend, apiGet } from '../lib/api';
 
@@ -95,6 +96,30 @@ export default function Import() {
   const [quoteAmount, setQuoteAmount] = useState<number | undefined>(undefined);
   useEffect(() => { apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
 
+  // Convert an accepted quote → start the handoff pre-filled from it.
+  const [searchParams] = useSearchParams();
+  const [convertQuoteId, setConvertQuoteId] = useState('');
+  const [convertAmount, setConvertAmount] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const id = searchParams.get('quote');
+    if (!id) return;
+    apiGet<SavedQuote>(`/quotes/${id}`).then((q) => {
+      if (!q) return;
+      setConvertQuoteId(id);
+      setConvertAmount(q.totalToInvoice);
+      setF((s) => ({
+        ...s,
+        customerName: q.customerName || s.customerName,
+        customerCompany: q.customerCompany || s.customerCompany,
+        address: q.address || s.address,
+        jobName: q.jobName || s.jobName,
+        quoteNum: q.quoteNumber || s.quoteNum,
+        awarded: 'yes',
+      }));
+      setStep(3); // jump to Sales Handoff — lead/quote/award are done
+    }).catch(() => {});
+  }, [searchParams]);
+
   function pickQuote(id: string) {
     setPickedQuoteId(id);
     const q = quotes.find((x) => x.quoteId === id);
@@ -189,9 +214,13 @@ export default function Import() {
         quoteNum: f.quoteNum.trim() || undefined,
         scheduledDate: f.scheduledDate || undefined,
         notes,
-        contractAmount: quoteAmount,
-        quoteId: pickedQuoteId || undefined,
+        contractAmount: convertAmount ?? quoteAmount,
+        quoteId: convertQuoteId || pickedQuoteId || undefined,
       });
+      const linkedQuote = convertQuoteId || pickedQuoteId;
+      if (jobId && linkedQuote) {
+        apiSend('PUT', `/quotes/${linkedQuote}`, { status: 'won', jobId }).catch(() => { /* non-blocking */ });
+      }
       const files = [quoteFile, hoContract, hoDocs, hoScope, reviewFile].filter(Boolean) as File[];
       let uploaded = 0;
       if (jobId && files.length) {
@@ -293,6 +322,12 @@ export default function Import() {
                     {quoteAmount != null && <div className="mt-1 text-[0.66rem] text-completed">Contract amount {fmtUsd(quoteAmount)} will carry onto the job.</div>}
                   </div>
                 )}
+                <Link
+                  to={`/estimator?name=${encodeURIComponent(f.customerName)}&company=${encodeURIComponent(f.customerCompany)}&address=${encodeURIComponent(f.address)}`}
+                  className="inline-flex w-fit items-center gap-1 rounded-lg border border-glass bg-white/5 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-white/10"
+                >
+                  ＋ Build a new estimate in the Estimator →
+                </Link>
                 <Field label="Job name" value={f.jobName} onChange={set('jobName')} required placeholder="e.g. Belmont Estate — Patio Doors" />
                 <Field label="Quote / Bid #" value={f.quoteNum} onChange={set('quoteNum')} />
                 <Area label="Scope — drawings, specs" value={f.scope} onChange={set('scope')} />

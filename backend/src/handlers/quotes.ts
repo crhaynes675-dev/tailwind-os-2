@@ -52,7 +52,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         totalToInvoice: body.totalToInvoice ?? 0,
         margin: body.margin ?? 0,
         totalUnits: body.totalUnits ?? 0,
-        status: 'open',
+        status: body.status ?? 'draft',
         notes: body.notes ?? '',
         createdBy: (event.requestContext.authorizer?.claims?.['cognito:username'] as string) ?? 'unknown',
         createdAt: now,
@@ -77,6 +77,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         totalToInvoice: body.totalToInvoice ?? existing.Item.totalToInvoice,
         margin: body.margin ?? existing.Item.margin,
         totalUnits: body.totalUnits ?? existing.Item.totalUnits,
+        status: body.status ?? existing.Item.status,
+        sentAt: body.sentAt ?? existing.Item.sentAt,
+        acceptedAt: body.acceptedAt ?? existing.Item.acceptedAt,
+        declinedAt: body.declinedAt ?? existing.Item.declinedAt,
+        jobId: body.jobId ?? existing.Item.jobId,
         updatedAt: new Date().toISOString(),
       };
       await ddb.send(new PutCommand({ TableName: TABLE, Item: item }));

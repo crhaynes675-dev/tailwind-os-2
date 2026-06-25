@@ -1,14 +1,23 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apiGet, apiSend } from '../lib/api';
 
 const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const usd2 = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const QSTATUS: Record<string, { label: string; color: string }> = {
+  draft: { label: 'Draft', color: '#8da3c7' },
+  sent: { label: 'Sent · awaiting', color: '#f0a23c' },
+  accepted: { label: 'Accepted', color: '#34d39a' },
+  declined: { label: 'Declined', color: '#fb7185' },
+  won: { label: 'Converted', color: '#7c6cff' },
+};
+const STATUS_ORDER: Record<string, number> = { sent: 0, accepted: 1, draft: 2, won: 3, declined: 4 };
+
 interface Unit { id: string; type: string; qty: number; laborOn: boolean; labor: number; mat: number }
 interface SavedQuote {
   quoteId: string; quoteNumber: string; jobName?: string; customerName?: string;
-  customerCompany?: string; totalToInvoice?: number; totalUnits?: number; createdAt?: string;
+  customerCompany?: string; totalToInvoice?: number; totalUnits?: number; createdAt?: string; status?: string;
 }
 
 let uid = 0;
@@ -52,14 +61,33 @@ export default function Estimator() {
   const [loadedQuoteId, setLoadedQuoteId] = useState<string | null>(null);
   const [loadedQuoteNumber, setLoadedQuoteNumber] = useState<string | null>(null);
 
+  const navigate = useNavigate();
   const loadQuotes = () => apiGet<SavedQuote[]>('/quotes').then((r) => setQuotes(Array.isArray(r) ? r : [])).catch(() => {});
   useEffect(() => { loadQuotes(); }, []);
+
+  async function setQuoteStatus(id: string, status: string) {
+    const now = new Date().toISOString();
+    const extra = status === 'sent' ? { sentAt: now } : status === 'accepted' ? { acceptedAt: now } : status === 'declined' ? { declinedAt: now } : {};
+    await apiSend('PUT', `/quotes/${id}`, { status, ...extra }).catch(() => {});
+    await loadQuotes();
+  }
+  const sortedQuotes = useMemo(
+    () => [...quotes].sort((a, b) => (STATUS_ORDER[a.status || 'draft'] ?? 2) - (STATUS_ORDER[b.status || 'draft'] ?? 2)),
+    [quotes],
+  );
 
   // Deep-link: /estimator?quote=<id> loads that saved quote into the form.
   const [params, setParams] = useSearchParams();
   useEffect(() => {
     const id = params.get('quote');
-    if (!id) return;
+    if (!id) {
+      // Prefill from a lead handed off via the Intake "Open Estimator" link.
+      const nm = params.get('name'), co = params.get('company'), ad = params.get('address');
+      if (nm) setCustomerName(nm);
+      if (co) setCustomerCompany(co);
+      if (ad) setAddress(ad);
+      return;
+    }
     interface QD { quoteNumber?: string; jobName?: string; customerName?: string; customerCompany?: string; address?: string; units?: Unit[]; inputs?: Record<string, number | boolean> }
     apiGet<QD>(`/quotes/${id}`).then((qd) => {
       if (!qd) return;
@@ -296,25 +324,38 @@ export default function Estimator() {
         </div>
       </div>
 
-      {/* saved quotes */}
+      {/* quotes pipeline */}
       <div className="glass mt-4 rounded-2xl p-4">
-        <div className="mb-3 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-faint">Saved quotes</div>
-        {quotes.length === 0 ? (
+        <div className="mb-3 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-faint">Quotes pipeline</div>
+        {sortedQuotes.length === 0 ? (
           <div className="py-4 text-center text-xs text-faint">No saved quotes yet.</div>
         ) : (
           <div className="flex flex-col gap-1.5">
-            {quotes.map((q) => (
-              <div key={q.quoteId} className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm">
-                <button onClick={() => setParams({ quote: q.quoteId })} className="truncate text-left">
-                  <span className="font-semibold text-accent">{q.quoteNumber}</span> <span className="text-muted">{q.jobName || '—'}</span> <span className="text-faint">· {q.customerCompany || q.customerName || ''}</span>
-                </button>
-                <span className="flex shrink-0 items-center gap-3">
-                  <span className="font-semibold text-text">{usd(q.totalToInvoice || 0)}</span>
-                  <button onClick={() => setParams({ quote: q.quoteId })} className="text-xs font-semibold text-accent hover:underline">Edit</button>
-                  <button onClick={() => deleteQuote(q.quoteId)} className="text-faint hover:text-[#fb7185]">✕</button>
-                </span>
-              </div>
-            ))}
+            {sortedQuotes.map((q) => {
+              const st = QSTATUS[q.status || 'draft'] || QSTATUS.draft;
+              const status = q.status || 'draft';
+              return (
+                <div key={q.quoteId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-sm">
+                  <button onClick={() => setParams({ quote: q.quoteId })} className="min-w-0 flex-1 truncate text-left">
+                    <span className="font-semibold text-accent">{q.quoteNumber}</span> <span className="text-muted">{q.jobName || '—'}</span> <span className="text-faint">· {q.customerCompany || q.customerName || ''}</span>
+                  </button>
+                  <span className="flex shrink-0 flex-wrap items-center gap-2">
+                    <span className="rounded-full px-2 py-0.5 text-[0.56rem] font-semibold" style={{ color: st.color, background: `${st.color}1a` }}>{st.label}</span>
+                    <span className="font-semibold text-text">{usd(q.totalToInvoice || 0)}</span>
+                    {status === 'draft' && <button onClick={() => setQuoteStatus(q.quoteId, 'sent')} className="rounded border border-glass px-2 py-0.5 text-[0.62rem] font-semibold text-accent hover:bg-white/10">Mark sent</button>}
+                    {status === 'sent' && (
+                      <>
+                        <button onClick={() => setQuoteStatus(q.quoteId, 'accepted')} className="rounded border border-glass px-2 py-0.5 text-[0.62rem] font-semibold text-completed hover:bg-white/10">Accepted</button>
+                        <button onClick={() => setQuoteStatus(q.quoteId, 'declined')} className="rounded border border-glass px-2 py-0.5 text-[0.62rem] font-semibold text-muted hover:bg-white/10">Declined</button>
+                      </>
+                    )}
+                    {status === 'accepted' && <button onClick={() => navigate(`/import?quote=${q.quoteId}`)} className="rounded bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-2.5 py-0.5 text-[0.62rem] font-semibold text-white">Convert to job →</button>}
+                    <button onClick={() => setParams({ quote: q.quoteId })} className="text-[0.62rem] font-semibold text-accent hover:underline">Edit</button>
+                    <button onClick={() => deleteQuote(q.quoteId)} className="text-faint hover:text-[#fb7185]">✕</button>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
