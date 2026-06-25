@@ -36,19 +36,33 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
   );
 }
 
+const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const INV_META: Record<string, { label: string; color: string }> = {
+  none: { label: 'Not invoiced', color: '#8da3c7' },
+  invoiced: { label: 'Invoiced', color: '#f0a23c' },
+  paid: { label: 'Paid', color: '#34d39a' },
+};
+
 export default function JobDrawer() {
   const { jobs, selectedId, select, updateJob } = useJobsCtx();
   const job = jobs.find((j) => j.id === selectedId) || null;
 
   const [form, setForm] = useState<Partial<Job>>({});
+  const [fin, setFin] = useState({ contractAmount: '', materialCost: '', laborCost: '' });
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
   const [attachments, setAttachments] = useState<Attachment[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingFin, setSavingFin] = useState(false);
   const [pendingTo, setPendingTo] = useState<JobStatus | null>(null);
 
   useEffect(() => {
     if (!job) return;
     setForm({ name: job.name, address: job.address, crew: job.crew || '', scheduledDate: job.scheduledDate || '' });
+    setFin({
+      contractAmount: job.contractAmount != null ? String(job.contractAmount) : '',
+      materialCost: job.materialCost != null ? String(job.materialCost) : '',
+      laborCost: job.laborCost != null ? String(job.laborCost) : '',
+    });
     setAudit(null);
     setAttachments(null);
     apiGet<AuditEntry[]>(`/jobs/${job.id}/audit`)
@@ -64,6 +78,28 @@ export default function JobDrawer() {
   const next = nextStatus(job.status);
   const signature = attachments?.find((a) => a.category === 'signature') || null;
   const photos = (attachments || []).filter((a) => a.category !== 'signature' && a.contentType?.startsWith('image/'));
+
+  const num = (s: string) => (s === '' ? 0 : Number(s) || 0);
+  const margin = num(fin.contractAmount) - num(fin.materialCost) - num(fin.laborCost);
+  const marginPct = num(fin.contractAmount) > 0 ? Math.round((margin / num(fin.contractAmount)) * 100) : null;
+  const finDirty =
+    fin.contractAmount !== (job.contractAmount != null ? String(job.contractAmount) : '') ||
+    fin.materialCost !== (job.materialCost != null ? String(job.materialCost) : '') ||
+    fin.laborCost !== (job.laborCost != null ? String(job.laborCost) : '');
+  const invMeta = INV_META[job.invoiceStatus ?? 'none'];
+
+  async function saveFin() {
+    setSavingFin(true);
+    try {
+      await updateJob(job!.id, {
+        contractAmount: fin.contractAmount === '' ? 0 : Number(fin.contractAmount),
+        materialCost: fin.materialCost === '' ? 0 : Number(fin.materialCost),
+        laborCost: fin.laborCost === '' ? 0 : Number(fin.laborCost),
+      });
+    } finally {
+      setSavingFin(false);
+    }
+  }
   const dirty =
     form.name !== job.name || form.address !== job.address || (form.crew || '') !== (job.crew || '') || (form.scheduledDate || '') !== (job.scheduledDate || '');
 
@@ -135,6 +171,34 @@ export default function JobDrawer() {
             >
               {saving ? 'Saving…' : 'Save changes'}
             </button>
+          </div>
+
+          {/* financials */}
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[0.58rem] font-semibold uppercase tracking-wider text-faint">Financials</span>
+              <span className="rounded-full px-2 py-0.5 text-[0.58rem] font-semibold" style={{ color: invMeta.color, background: `${invMeta.color}1a` }}>{invMeta.label}</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Field label="Contract amount ($)" type="number" value={fin.contractAmount} onChange={(v) => setFin((f) => ({ ...f, contractAmount: v }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Material cost ($)" type="number" value={fin.materialCost} onChange={(v) => setFin((f) => ({ ...f, materialCost: v }))} />
+                <Field label="Labor cost ($)" type="number" value={fin.laborCost} onChange={(v) => setFin((f) => ({ ...f, laborCost: v }))} />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+                <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-faint">Margin</span>
+                <span className="text-sm font-bold" style={{ color: margin >= 0 ? '#34d39a' : '#fb7185' }}>
+                  {usd(margin)}{marginPct !== null ? ` · ${marginPct}%` : ''}
+                </span>
+              </div>
+              <button
+                onClick={saveFin}
+                disabled={!finDirty || savingFin}
+                className="self-start rounded-lg border border-glass bg-white/5 px-4 py-2 text-xs font-semibold text-accent transition enabled:hover:bg-white/10 disabled:opacity-40"
+              >
+                {savingFin ? 'Saving…' : 'Save financials'}
+              </button>
+            </div>
           </div>
 
           {/* field photos & signature */}

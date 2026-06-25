@@ -10,6 +10,14 @@ export interface Job {
   crew?: string;
   scheduledDate?: string;
   priority?: 'High' | 'Normal' | 'Low';
+  // Financials
+  contractAmount?: number;   // what the customer is billed (revenue)
+  materialCost?: number;
+  laborCost?: number;
+  invoiceStatus?: 'none' | 'invoiced' | 'paid';
+  invoicedAt?: string;
+  paidAt?: string;
+  completedAt?: string;
 }
 
 // Temporary seed data so Phase 1 screens are real and interactive.

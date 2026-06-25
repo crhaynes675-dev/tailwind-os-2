@@ -161,7 +161,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone',
         // Field-app completion evidence — persist it on the job so it lives
         // with the work order, not just on the tech's device.
-        'lineItems', 'preFlight', 'inspection', 'enrouteAt', 'onSiteAt', 'completedAt'];
+        'lineItems', 'preFlight', 'inspection', 'enrouteAt', 'onSiteAt', 'completedAt',
+        // Back-office financials.
+        'contractAmount', 'materialCost', 'laborCost', 'invoiceStatus', 'invoicedAt', 'paidAt'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No valid fields to update', event);
 

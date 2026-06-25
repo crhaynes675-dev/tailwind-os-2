@@ -14,6 +14,13 @@ interface ApiJob {
   assignedTo?: string;
   scheduledDate?: string;
   priority?: string;
+  contractAmount?: number;
+  materialCost?: number;
+  laborCost?: number;
+  invoiceStatus?: string;
+  invoicedAt?: string;
+  paidAt?: string;
+  completedAt?: string;
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -29,6 +36,13 @@ function mapJob(j: ApiJob): Job {
     crew: j.assignedTo || undefined,
     scheduledDate: j.scheduledDate && j.scheduledDate !== '0001-01-01' ? j.scheduledDate : undefined,
     priority: (j.priority as Job['priority']) || undefined,
+    contractAmount: typeof j.contractAmount === 'number' ? j.contractAmount : undefined,
+    materialCost: typeof j.materialCost === 'number' ? j.materialCost : undefined,
+    laborCost: typeof j.laborCost === 'number' ? j.laborCost : undefined,
+    invoiceStatus: (j.invoiceStatus as Job['invoiceStatus']) || undefined,
+    invoicedAt: j.invoicedAt || undefined,
+    paidAt: j.paidAt || undefined,
+    completedAt: j.completedAt || undefined,
   };
 }
 
@@ -40,6 +54,12 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.scheduledDate !== undefined) body.scheduledDate = patch.scheduledDate;
   if (patch.name !== undefined) body.jobName = patch.name;
   if (patch.address !== undefined) body.address = patch.address;
+  if (patch.contractAmount !== undefined) body.contractAmount = patch.contractAmount;
+  if (patch.materialCost !== undefined) body.materialCost = patch.materialCost;
+  if (patch.laborCost !== undefined) body.laborCost = patch.laborCost;
+  if (patch.invoiceStatus !== undefined) body.invoiceStatus = patch.invoiceStatus;
+  if (patch.invoicedAt !== undefined) body.invoicedAt = patch.invoicedAt;
+  if (patch.paidAt !== undefined) body.paidAt = patch.paidAt;
   return body;
 }
 
