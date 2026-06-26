@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { apiGet, apiSend } from '../lib/api';
 import { normalizeStatus, WRITE_STATUS, type JobStatus } from '../domain/status';
-import type { Job } from './jobs';
+import type { Job, ReadinessStep } from './jobs';
 
 interface ApiJob {
   jobId: string;
@@ -14,6 +14,7 @@ interface ApiJob {
   status?: string;
   assignedTo?: string;
   scheduledDate?: string;
+  scheduledEndDate?: string;
   priority?: string;
   notes?: string;
   contractAmount?: number;
@@ -25,6 +26,7 @@ interface ApiJob {
   completedAt?: string;
   enrouteAt?: string;
   onSiteAt?: string;
+  readiness?: ReadinessStep[];
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -40,6 +42,7 @@ function mapJob(j: ApiJob): Job {
     status: normalizeStatus(j.status),
     crew: j.assignedTo || undefined,
     scheduledDate: j.scheduledDate && j.scheduledDate !== '0001-01-01' ? j.scheduledDate : undefined,
+    scheduledEndDate: j.scheduledEndDate && j.scheduledEndDate !== '0001-01-01' ? j.scheduledEndDate : undefined,
     priority: (j.priority as Job['priority']) || undefined,
     notes: j.notes || undefined,
     contractAmount: typeof j.contractAmount === 'number' ? j.contractAmount : undefined,
@@ -51,6 +54,7 @@ function mapJob(j: ApiJob): Job {
     completedAt: j.completedAt || undefined,
     enrouteAt: j.enrouteAt || undefined,
     onSiteAt: j.onSiteAt || undefined,
+    readiness: Array.isArray(j.readiness) ? j.readiness : undefined,
   };
 }
 
@@ -60,6 +64,7 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.status) body.status = WRITE_STATUS[patch.status];
   if (patch.crew !== undefined) body.assignedTo = patch.crew;
   if (patch.scheduledDate !== undefined) body.scheduledDate = patch.scheduledDate;
+  if (patch.scheduledEndDate !== undefined) body.scheduledEndDate = patch.scheduledEndDate;
   if (patch.name !== undefined) body.jobName = patch.name;
   if (patch.address !== undefined) body.address = patch.address;
   if (patch.notes !== undefined) body.notes = patch.notes;
@@ -72,6 +77,7 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.enrouteAt !== undefined) body.enrouteAt = patch.enrouteAt;
   if (patch.onSiteAt !== undefined) body.onSiteAt = patch.onSiteAt;
   if (patch.completedAt !== undefined) body.completedAt = patch.completedAt;
+  if (patch.readiness !== undefined) body.readiness = patch.readiness;
   return body;
 }
 

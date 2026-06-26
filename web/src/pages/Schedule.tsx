@@ -1,23 +1,54 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
-import { apiGet } from '../lib/api';
 import { STATUS_META } from '../domain/status';
 import type { Job } from '../data/jobs';
 import TransitionModal from '../components/TransitionModal';
 
-interface ApiUser { username: string; givenName?: string; familyName?: string; role?: string }
-const TECH_ROLES = ['service_technician', 'project_manager', 'installer', 'foreman', 'lead_installer', 'apprentice'];
-interface Resource { id: string; name: string; kind: 'crew' | 'tech'; role?: string }
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-function initials(name: string) {
-  const p = name.trim().split(/\s+/);
-  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || name.slice(0, 2).toUpperCase();
+const DATE_ROW = 22; // px reserved at the top of each week cell for the day number
+const LANE_H = 22;   // px per stacked job bar
+// Readiness chips are colored per job so steps from different jobs are
+// distinguishable at a glance. Color is a stable hash of the job id.
+const READINESS_PALETTE = ['#3b82c4', '#9b6dff', '#e8a427', '#34d39a', '#f4607a', '#22d3ee', '#c4763b', '#5b8def', '#d36ec4', '#7bbf3b'];
+function jobColor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return READINESS_PALETTE[h % READINESS_PALETTE.length];
 }
 
-function QueueRow({ job, onSchedule, onOpen }: { job: Job; onSchedule: () => void; onOpen: () => void }) {
+const pad = (n: number) => String(n).padStart(2, '0');
+function ymd(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+// Timezone-proof string date math (dates are 'YYYY-MM-DD').
+function toNum(s: string) { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); }
+function addDaysStr(s: string, n: number) { const d = new Date(toNum(s) + n * 86400000); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; }
+function diffDaysStr(a: string, b: string) { return Math.round((toNum(b) - toNum(a)) / 86400000); }
+
+type DragMode = 'new' | 'move' | 'resize';
+interface DragState { mode: DragMode; id: string; step?: string }
+
+type CalItem =
+  | { kind: 'job'; job: Job; start: string; end: string }
+  | { kind: 'task'; job: Job; step: string; owner?: string; done: boolean; start: string; end: string };
+interface Bar { item: CalItem; lane: number; startCol: number; endCol: number; startsHere: boolean; endsHere: boolean }
+
+function QueueRow({ job, onSchedule, onOpen, dragging, onDragStart, onDragEnd }: {
+  job: Job;
+  onSchedule: () => void;
+  onOpen: () => void;
+  dragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3.5 py-2.5 transition hover:bg-white/[0.06]">
-      <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3.5 py-2.5 transition hover:bg-white/[0.06] ${dragging ? 'cursor-grabbing opacity-40' : 'cursor-grab'}`}
+    >
+      <div className="min-w-0 flex-1" onClick={onOpen}>
         <div className="flex items-center gap-2">
           <span className="text-[0.6rem] font-semibold text-accent">{job.workOrder}</span>
           {job.priority === 'High' && <span className="rounded-full bg-[#f4607a]/15 px-2 py-px text-[0.5rem] font-bold uppercase text-[#f4607a]">High</span>}
@@ -35,145 +66,288 @@ function QueueRow({ job, onSchedule, onOpen }: { job: Job; onSchedule: () => voi
 export default function Schedule() {
   const { jobs, loading, select, updateJob } = useJobsCtx();
   const [pending, setPending] = useState<Job | null>(null);
-  const [users, setUsers] = useState<ApiUser[]>([]);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [overDate, setOverDate] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => { apiGet<ApiUser[]>('/users').then((u) => setUsers(Array.isArray(u) ? u : [])).catch(() => {}); }, []);
+  const today = useMemo(() => new Date(), []);
+  const [cursor, setCursor] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
+  const todayStr = ymd(today);
+
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
 
   const queue = useMemo(() => jobs.filter((j) => j.status === 'Unscheduled'), [jobs]);
-  const scheduledByDate = useMemo(() => {
-    const map = new Map<string, Job[]>();
-    jobs.filter((j) => j.status === 'Scheduled').forEach((j) => {
-      const d = j.scheduledDate || 'No date';
-      if (!map.has(d)) map.set(d, []);
-      map.get(d)!.push(j);
-    });
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+  // Everything that lands on the calendar: scheduled job spans + dated readiness
+  // steps (single-day tasks). Completed work drops off.
+  const items = useMemo<CalItem[]>(() => {
+    const out: CalItem[] = [];
+    for (const j of jobs) {
+      if (j.status === 'Completed') continue;
+      if (j.scheduledDate) {
+        const end = j.scheduledEndDate && j.scheduledEndDate >= j.scheduledDate ? j.scheduledEndDate : j.scheduledDate;
+        out.push({ kind: 'job', job: j, start: j.scheduledDate, end });
+      }
+      for (const r of j.readiness || []) {
+        if (r.dueDate) {
+          const end = r.endDate && r.endDate >= r.dueDate ? r.endDate : r.dueDate;
+          out.push({ kind: 'task', job: j, step: r.step, owner: r.owner, done: !!r.done, start: r.dueDate, end });
+        }
+      }
+    }
+    return out;
   }, [jobs]);
 
-  const resources = useMemo<Resource[]>(() => {
-    const techs: Resource[] = users
-      .filter((u) => TECH_ROLES.includes(u.role || ''))
-      .map((u) => ({ id: u.username, name: `${u.givenName || ''} ${u.familyName || ''}`.trim() || u.username, kind: 'tech', role: u.role }));
-    const techNames = new Set(techs.map((t) => t.name));
-    const crews: Resource[] = [...new Set(jobs.map((j) => j.crew).filter(Boolean) as string[])]
-      .filter((n) => !techNames.has(n))
-      .map((n) => ({ id: n, name: n, kind: 'crew' }));
-    return [...crews, ...techs];
-  }, [users, jobs]);
+  // Build 6 weeks; for each, lay its intersecting items into non-overlapping lanes.
+  const weeks = useMemo(() => {
+    const first = new Date(cursor.y, cursor.m, 1);
+    const start = new Date(first);
+    start.setDate(1 - first.getDay());
+    return Array.from({ length: 6 }, (_, w) => {
+      const cells = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + w * 7 + i);
+        return { date: d, str: ymd(d), inMonth: d.getMonth() === cursor.m };
+      });
+      const weekStart = cells[0].str;
+      const weekEnd = cells[6].str;
+      const hits = items
+        .filter((s) => s.start <= weekEnd && s.end >= weekStart)
+        .sort((a, b) => a.start.localeCompare(b.start) || diffDaysStr(a.start, a.end) - diffDaysStr(b.start, b.end) || (a.kind === b.kind ? 0 : a.kind === 'job' ? -1 : 1));
+      const laneEnds: number[] = []; // last endCol occupied per lane
+      const bars: Bar[] = hits.map((s) => {
+        const startCol = s.start <= weekStart ? 0 : diffDaysStr(weekStart, s.start);
+        const endCol = s.end >= weekEnd ? 6 : diffDaysStr(weekStart, s.end);
+        let lane = laneEnds.findIndex((e) => e < startCol);
+        if (lane === -1) { lane = laneEnds.length; laneEnds.push(endCol); } else laneEnds[lane] = endCol;
+        return { item: s, lane, startCol, endCol, startsHere: s.start >= weekStart, endsHere: s.end <= weekEnd };
+      });
+      const laneCount = Math.max(1, laneEnds.length);
+      return { cells, bars, height: DATE_ROW + laneCount * LANE_H + 4 };
+    });
+  }, [cursor, items]);
 
-  const crewRes = resources.filter((r) => r.kind === 'crew');
-  const techRes = resources.filter((r) => r.kind === 'tech');
-  const dragJob = jobs.find((j) => j.id === dragId) || null;
-  const assignedCount = (name: string) => jobs.filter((j) => j.crew === name && (j.status === 'Scheduled' || j.status === 'In Progress')).length;
-
-  function assign(jobId: string, res: Resource) {
-    const job = jobs.find((j) => j.id === jobId);
-    updateJob(jobId, { crew: res.name }).then(() => setToast(`${job?.workOrder || 'Job'} → ${res.name}`)).catch(() => setToast('Assign failed'));
+  function colFromEvent(e: React.DragEvent) {
+    const r = e.currentTarget.getBoundingClientRect();
+    return Math.max(0, Math.min(6, Math.floor((e.clientX - r.left) / (r.width / 7))));
   }
 
-  const meta = STATUS_META.Scheduled;
-  const prog = STATUS_META['In Progress'];
+  function apply(job: Job, patch: Partial<Job>, msg: string) {
+    updateJob(job.id, patch).then(() => setToast(msg)).catch(() => setToast('Update failed'));
+  }
+
+  // Move / resize a single readiness step, persisting back onto the WO's readiness array.
+  function applyReadiness(job: Job, step: string, mode: DragMode, date: string) {
+    const cur = (job.readiness || []).find((r) => r.step === step);
+    if (!cur) return;
+    const start = cur.dueDate || date;
+    const end = cur.endDate && cur.endDate >= start ? cur.endDate : start;
+    let patch: { dueDate: string; endDate: string };
+    let msg: string;
+    if (mode === 'resize') {
+      const newEnd = date < start ? start : date;
+      const span = diffDaysStr(start, newEnd) + 1;
+      patch = { dueDate: start, endDate: newEnd };
+      msg = `${step} · ${span} day${span > 1 ? 's' : ''}`;
+    } else {
+      const dur = diffDaysStr(start, end);
+      patch = { dueDate: date, endDate: addDaysStr(date, dur) };
+      msg = `${step} → ${date.slice(5)}`;
+    }
+    const arr = (job.readiness || []).map((r) => (r.step === step ? { ...r, ...patch } : r));
+    updateJob(job.id, { readiness: arr }).then(() => setToast(`${job.workOrder} · ${msg}`)).catch(() => setToast('Update failed'));
+  }
+
+  function onDrop(e: React.DragEvent, cells: { str: string }[]) {
+    e.preventDefault();
+    const d = drag;
+    setDrag(null); setOverDate(null);
+    if (!d) return;
+    const date = cells[colFromEvent(e)].str;
+    const job = jobs.find((j) => j.id === d.id);
+    if (!job) return;
+    if (d.step) { applyReadiness(job, d.step, d.mode, date); return; }
+    if (d.mode === 'resize') {
+      const start = job.scheduledDate!;
+      const end = date < start ? start : date;
+      const span = diffDaysStr(start, end) + 1;
+      apply(job, { scheduledEndDate: end }, `${job.workOrder} · ${span} day${span > 1 ? 's' : ''} (${start.slice(5)}–${end.slice(5)})`);
+    } else if (d.mode === 'move') {
+      const start = job.scheduledDate!;
+      const dur = diffDaysStr(start, job.scheduledEndDate && job.scheduledEndDate >= start ? job.scheduledEndDate : start);
+      const patch: Partial<Job> = { scheduledDate: date, scheduledEndDate: addDaysStr(date, dur) };
+      if (job.status === 'Unscheduled') patch.status = 'Scheduled';
+      apply(job, patch, `${job.workOrder} moved to ${date.slice(5)}`);
+    } else {
+      apply(job, { status: 'Scheduled', scheduledDate: date, scheduledEndDate: date }, `${job.workOrder} scheduled for ${date.slice(5)}`);
+    }
+  }
+
+  function goMonth(delta: number) {
+    setCursor((c) => { const d = new Date(c.y, c.m + delta, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
+  }
 
   return (
     <>
       <div className="mb-6">
         <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Workflow 03</div>
         <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Schedule</h1>
-        <p className="mt-1.5 text-sm text-muted">Schedule jobs, then drag scheduled work onto a crew or service tech to assign it.</p>
+        <p className="mt-1.5 text-sm text-muted">Drag a job onto a day to schedule it. Drag a job box to move it, or drag its right edge to stretch it across multiple days.</p>
       </div>
 
       {loading && jobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-24 text-sm text-muted">Loading…</div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-5 lg:grid-cols-[230px_1fr]">
           {/* Needs scheduling */}
-          <section className="glass flex flex-col rounded-2xl">
+          <section className="glass flex flex-col rounded-2xl lg:max-h-[calc(100vh-12rem)]">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
               <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-text">Needs Scheduling</span>
               <span className="rounded-full bg-white/5 px-2 py-0.5 text-[0.6rem] font-semibold text-muted">{queue.length}</span>
             </div>
-            <div className="flex flex-col gap-2.5 p-3">
+            <div className="flex flex-col gap-2.5 overflow-y-auto p-3">
               {queue.length === 0 ? (
                 <div className="py-10 text-center text-[0.72rem] text-faint">Queue is clear — nothing waiting to schedule.</div>
-              ) : queue.map((j) => <QueueRow key={j.id} job={j} onSchedule={() => setPending(j)} onOpen={() => select(j.id)} />)}
+              ) : queue.map((j) => (
+                <QueueRow
+                  key={j.id}
+                  job={j}
+                  dragging={drag?.id === j.id}
+                  onSchedule={() => setPending(j)}
+                  onOpen={() => select(j.id)}
+                  onDragStart={() => setDrag({ mode: 'new', id: j.id })}
+                  onDragEnd={() => { setDrag(null); setOverDate(null); }}
+                />
+              ))}
             </div>
           </section>
 
-          {/* Scheduled by date — draggable */}
+          {/* Calendar */}
           <section className="glass flex flex-col rounded-2xl">
-            <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
-              <span className="h-2 w-2 rounded-full" style={{ background: meta.color, boxShadow: `0 0 8px ${meta.color}` }} />
-              <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-text">Scheduled</span>
-              <span className="ml-auto text-[0.56rem] text-faint">drag → assign</span>
+            <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
+              <span className="text-sm font-semibold text-text">{MONTHS[cursor.m]} {cursor.y}</span>
+              <span className="hidden items-center gap-1.5 text-[0.56rem] text-faint sm:flex">
+                <span className="inline-block h-2 w-3 rounded-sm border border-dashed border-muted" />
+                readiness step (color = job)
+              </span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <button onClick={() => setCursor({ y: today.getFullYear(), m: today.getMonth() })} className="rounded-lg border border-glass bg-white/5 px-2.5 py-1 text-[0.62rem] font-semibold text-muted transition hover:text-text">Today</button>
+                <button onClick={() => goMonth(-1)} className="grid h-7 w-7 place-items-center rounded-lg border border-glass bg-white/5 text-muted transition hover:text-text">‹</button>
+                <button onClick={() => goMonth(1)} className="grid h-7 w-7 place-items-center rounded-lg border border-glass bg-white/5 text-muted transition hover:text-text">›</button>
+              </div>
             </div>
-            <div className="flex flex-col gap-4 p-3">
-              {scheduledByDate.length === 0 ? (
-                <div className="py-10 text-center text-[0.72rem] text-faint">No scheduled jobs yet.</div>
-              ) : scheduledByDate.map(([date, list]) => (
-                <div key={date}>
-                  <div className="mb-1.5 text-[0.6rem] font-semibold uppercase tracking-wider text-faint">{date} · {list.length}</div>
-                  <div className="flex flex-col gap-2">
-                    {list.map((j) => (
+
+            <div className="grid grid-cols-7 border-b border-white/5">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="px-2 py-1.5 text-center text-[0.56rem] font-semibold uppercase tracking-wider text-faint">{d}</div>
+              ))}
+            </div>
+
+            <div className="flex flex-1 flex-col">
+              {weeks.map((week, wi) => (
+                <div
+                  key={wi}
+                  className="relative border-b border-white/5"
+                  style={{ height: week.height }}
+                  onDragOver={(e) => { if (drag) { e.preventDefault(); setOverDate(week.cells[colFromEvent(e)].str); } }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverDate(null); }}
+                  onDrop={(e) => onDrop(e, week.cells)}
+                >
+                  {/* Day-cell background grid */}
+                  <div className="absolute inset-0 grid grid-cols-7">
+                    {week.cells.map((cell, i) => {
+                      const isToday = cell.str === todayStr;
+                      const isOver = !!drag && overDate === cell.str;
+                      return (
+                        <div key={cell.str} className={`border-r border-white/5 ${i === 6 ? 'border-r-0' : ''} ${cell.inMonth ? '' : 'bg-black/15'} ${isOver ? 'bg-accent/10 ring-2 ring-inset ring-accent/60' : ''}`}>
+                          <div className={`mx-auto mt-1 flex h-5 w-5 items-center justify-center text-[0.62rem] font-semibold ${isToday ? 'rounded-full bg-accent text-black' : cell.inMonth ? 'text-muted' : 'text-faint'}`}>
+                            {cell.date.getDate()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Job bars + readiness tasks */}
+                  {week.bars.map((bar) => {
+                    const common = {
+                      left: `calc(${(bar.startCol / 7) * 100}% + 2px)`,
+                      width: `calc(${((bar.endCol - bar.startCol + 1) / 7) * 100}% - 4px)`,
+                      top: DATE_ROW + bar.lane * LANE_H,
+                      height: LANE_H - 4,
+                    };
+
+                    // Readiness step — a single-day task chip (not draggable).
+                    if (bar.item.kind === 'task') {
+                      const { job: j, step, owner, done } = bar.item;
+                      const rc = jobColor(j.id);
+                      const dragging = drag?.id === j.id && drag?.step === step;
+                      return (
+                        <div
+                          key={`${j.id}:${step}`}
+                          draggable
+                          onDragStart={() => setDrag({ mode: 'move', id: j.id, step })}
+                          onDragEnd={() => { setDrag(null); setOverDate(null); }}
+                          onClick={() => select(j.id)}
+                          title={`Readiness · ${step}${owner ? ` · ${owner}` : ''} · ${j.workOrder} ${j.name}${done ? ' · done' : ''} — drag to move, drag right edge to span days`}
+                          className={`absolute z-10 flex items-center gap-1 overflow-hidden border border-dashed px-1.5 text-[0.58rem] transition hover:brightness-125 ${bar.startsHere ? 'rounded-l-md' : ''} ${bar.endsHere ? 'rounded-r-md' : ''} ${done ? 'opacity-55' : ''} ${dragging ? 'opacity-40' : ''} cursor-grab`}
+                          style={{ ...common, background: `${rc}1f`, borderColor: rc }}
+                        >
+                          <span className="flex-shrink-0 text-[0.6rem]" style={{ color: rc }}>{done ? '✓' : '◷'}</span>
+                          <span className={`truncate font-semibold ${done ? 'line-through' : ''}`} style={{ color: rc }}>{j.workOrder} · {step}</span>
+                          {bar.endsHere && (
+                            <span
+                              draggable
+                              onDragStart={(e) => { e.stopPropagation(); setDrag({ mode: 'resize', id: j.id, step }); }}
+                              onDragEnd={(e) => { e.stopPropagation(); setDrag(null); setOverDate(null); }}
+                              onClick={(e) => e.stopPropagation()}
+                              title="Drag to change how many days this step spans"
+                              className="ml-auto h-full w-2 flex-shrink-0 cursor-ew-resize rounded-r-md"
+                              style={{ background: `${rc}55` }}
+                            />
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Scheduled job span — draggable to move / resize.
+                    const j = bar.item.job;
+                    const color = STATUS_META[j.status]?.color || '#7c6cff';
+                    const span = diffDaysStr(j.scheduledDate!, (j.scheduledEndDate && j.scheduledEndDate >= j.scheduledDate! ? j.scheduledEndDate : j.scheduledDate!)) + 1;
+                    return (
                       <div
                         key={j.id}
                         draggable
-                        onDragStart={() => setDragId(j.id)}
-                        onDragEnd={() => { setDragId(null); setOverId(null); }}
-                        className={`rounded-xl border border-white/5 bg-white/[0.03] px-3.5 py-2.5 transition hover:bg-white/[0.06] ${dragId === j.id ? 'opacity-40' : 'cursor-grab'}`}
+                        onDragStart={() => setDrag({ mode: 'move', id: j.id })}
+                        onDragEnd={() => { setDrag(null); setOverDate(null); }}
+                        onClick={() => select(j.id)}
+                        title={`${j.workOrder} · ${j.name} · ${STATUS_META[j.status]?.short || j.status} · ${span} day${span > 1 ? 's' : ''}${j.crew ? ` · ${j.crew}` : ''}`}
+                        className={`absolute z-10 flex items-center gap-1 overflow-hidden border px-1.5 text-[0.6rem] transition hover:brightness-125 ${bar.startsHere ? 'rounded-l-md' : ''} ${bar.endsHere ? 'rounded-r-md' : ''} ${drag?.id === j.id ? 'opacity-40' : ''} cursor-grab`}
+                        style={{
+                          ...common,
+                          background: `${color}26`,
+                          borderColor: color,
+                          borderLeftWidth: bar.startsHere ? 3 : 1,
+                        }}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="cursor-pointer text-[0.6rem] font-semibold text-accent" onClick={() => select(j.id)}>{j.workOrder}</span>
-                          {j.crew ? <span className="text-[0.62rem]" style={{ color: meta.color }}>● {j.crew}</span> : <span className="text-[0.6rem] text-faint">unassigned</span>}
-                        </div>
-                        <div className="mt-0.5 truncate text-[0.78rem] font-semibold text-text">{j.name}</div>
-                        <div className="truncate text-[0.64rem] text-muted">{j.customer}</div>
+                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: color, boxShadow: `0 0 5px ${color}` }} />
+                        <span className="truncate font-semibold" style={{ color }}>{j.name}</span>
+                        {bar.endsHere && (
+                          <span
+                            draggable
+                            onDragStart={(e) => { e.stopPropagation(); setDrag({ mode: 'resize', id: j.id }); }}
+                            onDragEnd={(e) => { e.stopPropagation(); setDrag(null); setOverDate(null); }}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Drag to change how many days this job spans"
+                            className="ml-auto h-full w-2 flex-shrink-0 cursor-ew-resize rounded-r-md"
+                            style={{ background: `${color}55` }}
+                          />
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               ))}
-            </div>
-          </section>
-
-          {/* Crews & Service Techs — drop targets */}
-          <section className="glass flex flex-col rounded-2xl">
-            <div className="border-b border-white/5 px-4 py-3 text-[0.62rem] font-semibold uppercase tracking-wide text-text">Crews &amp; Service Techs</div>
-            <div className="flex flex-col gap-4 p-3">
-              {([['Crews', crewRes], ['Service Techs', techRes]] as const).map(([label, list]) => (
-                <div key={label}>
-                  <div className="mb-1.5 text-[0.56rem] font-semibold uppercase tracking-wider text-faint">{label}</div>
-                  {list.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-white/10 px-3 py-3 text-center text-[0.62rem] text-faint">{label === 'Crews' ? 'No named crews in use yet.' : 'No service techs found.'}</div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {list.map((r) => {
-                        const isOver = !!dragJob && overId === r.id;
-                        return (
-                          <div
-                            key={r.id}
-                            onDragOver={(e) => { if (dragJob) { e.preventDefault(); setOverId(r.id); } }}
-                            onDragLeave={() => setOverId((o) => (o === r.id ? null : o))}
-                            onDrop={(e) => { e.preventDefault(); if (dragJob) assign(dragJob.id, r); setDragId(null); setOverId(null); }}
-                            className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition ${isOver ? 'border-accent ring-2 ring-accent/60 bg-accent/5' : 'border-white/5 bg-white/[0.03]'}`}
-                          >
-                            <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-[0.6rem] font-bold" style={{ background: `${r.kind === 'crew' ? '#7c6cff' : prog.color}22`, color: r.kind === 'crew' ? '#9b8cff' : prog.color }}>{initials(r.name)}</span>
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-[0.78rem] font-semibold text-text">{r.name}</div>
-                              <div className="text-[0.58rem] capitalize text-muted">{r.kind === 'crew' ? 'Crew' : (r.role || 'tech').replace(/_/g, ' ')}</div>
-                            </div>
-                            <span className="flex-shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[0.58rem] font-semibold text-muted">{assignedCount(r.name)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div className="text-center text-[0.58rem] text-faint">Drag a scheduled job here to assign it.</div>
             </div>
           </section>
         </div>

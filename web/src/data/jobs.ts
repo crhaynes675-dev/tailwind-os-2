@@ -1,5 +1,14 @@
 import { type JobStatus, normalizeStatus } from '../domain/status';
 
+export interface ReadinessStep {
+  step: string;
+  owner?: string;
+  dueDate?: string;     // when this readiness step is scheduled (YYYY-MM-DD)
+  endDate?: string;     // last day of the step's span (inclusive) for multi-day steps
+  done?: boolean;
+  completedAt?: string;
+}
+
 export interface Job {
   id: string;
   workOrder: string;
@@ -10,6 +19,7 @@ export interface Job {
   status: JobStatus;
   crew?: string;
   scheduledDate?: string;
+  scheduledEndDate?: string;   // multi-day jobs: last day of the span (inclusive)
   priority?: 'High' | 'Normal' | 'Low';
   notes?: string;
   // Financials
@@ -22,6 +32,7 @@ export interface Job {
   completedAt?: string;
   enrouteAt?: string;
   onSiteAt?: string;
+  readiness?: ReadinessStep[];   // scheduled preconstruction steps, kept on the WO
 }
 
 // Temporary seed data so Phase 1 screens are real and interactive.

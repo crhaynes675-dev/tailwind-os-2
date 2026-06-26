@@ -17,7 +17,7 @@ export const MODULES: ModuleDef[] = [
   { id: 'customers', label: 'Customer Database', path: '/customers', ready: true },
   { id: 'readiness', label: 'Readiness', path: '/readiness', ready: true },
   { id: 'schedule', label: 'Schedule', path: '/schedule', ready: true },
-  { id: 'dispatch', label: 'Dispatch', path: '/dispatch', ready: true },
+  { id: 'dispatch', label: 'Dispatched', path: '/dispatch', ready: true },
   { id: 'delivery', label: 'Delivery', path: '/delivery', ready: true, isNew: true },
   { id: 'installation', label: 'Installation', path: '/installation', ready: true },
   { id: 'postinstall', label: 'Post-Install', path: '/post-install', ready: true },

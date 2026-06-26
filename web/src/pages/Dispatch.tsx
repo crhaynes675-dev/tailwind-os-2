@@ -8,7 +8,6 @@ import DispatchMap from '../components/DispatchMap';
 
 interface ApiUser { username: string; givenName?: string; familyName?: string; role?: string }
 const TECH_ROLES = ['service_technician', 'project_manager', 'installer', 'foreman', 'lead_installer', 'apprentice'];
-const today = new Date().toISOString().slice(0, 10);
 
 function crewInitials(name: string) {
   const p = name.trim().split(/\s+/);
@@ -47,46 +46,22 @@ export default function Dispatch() {
       });
   }, [users, jobs]);
 
-  const sched = STATUS_META.Scheduled;
   const prog = STATUS_META['In Progress'];
 
   return (
     <>
       <div className="mb-6">
         <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.25em] text-accent">Module · Workflow 05</div>
-        <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Dispatch</h1>
-        <p className="mt-1.5 text-sm text-muted">Ready work on the map with your service techs. Dispatch sends a crew on-site.</p>
+        <h1 className="bg-gradient-to-r from-[#22d3ee] to-[#7c6cff] bg-clip-text text-[2rem] font-bold leading-none tracking-tight text-transparent">Dispatched</h1>
+        <p className="mt-1.5 text-sm text-muted">Scheduled work on the map with your service techs, and crews active on site.</p>
       </div>
 
       {loading && jobs.length === 0 ? (
         <div className="glass grid place-items-center rounded-2xl py-24 text-sm text-muted">Loading…</div>
       ) : (
         <div className="flex flex-col gap-5">
-          {/* Top: ready (narrow) + map (large) */}
-          <div className="grid gap-5" style={{ gridTemplateColumns: '300px 1fr', height: 'min(620px, 70vh)' }}>
-            <section className="glass flex min-h-0 flex-col rounded-2xl">
-              <div className="flex items-center gap-2 border-b border-white/5 px-3.5 py-3">
-                <span className="h-2 w-2 rounded-full" style={{ background: sched.color, boxShadow: `0 0 8px ${sched.color}` }} />
-                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-text">Ready to Dispatch</span>
-                <span className="ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[0.58rem] font-semibold text-muted">{ready.length}</span>
-              </div>
-              <div className="flex flex-col gap-2 overflow-y-auto p-2.5">
-                {ready.length === 0 ? (
-                  <div className="py-10 text-center text-[0.7rem] text-faint">Nothing scheduled.</div>
-                ) : ready.map((j) => (
-                  <div key={j.id} onClick={() => select(j.id)} className="cursor-pointer rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 transition hover:bg-white/[0.06]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[0.58rem] font-semibold text-accent">{j.workOrder}</span>
-                      {j.scheduledDate === today && <span className="rounded-full bg-[#34d39a]/15 px-1.5 py-px text-[0.46rem] font-bold uppercase text-[#34d39a]">Today</span>}
-                    </div>
-                    <div className="mt-0.5 truncate text-[0.74rem] font-semibold text-text">{j.name}</div>
-                    <div className="truncate text-[0.58rem] text-muted">{j.crew || 'unassigned'}{j.scheduledDate ? ` · ${j.scheduledDate}` : ''}</div>
-                    <button onClick={(e) => { e.stopPropagation(); setPending(j); }} className="mt-1.5 w-full rounded-md bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-2 py-1 text-[0.6rem] font-semibold text-white transition hover:brightness-105">Dispatch →</button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
+          {/* Top: live map */}
+          <div style={{ height: 'min(620px, 70vh)' }}>
             <DispatchMap jobs={ready} techs={techs} />
           </div>
 

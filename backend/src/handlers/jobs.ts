@@ -187,7 +187,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }));
         assignedWo = woResult.Attributes?.workOrderNumber ?? candidate;
         // Return immediately — no other fields to update.
-        if (!Object.keys(body).some(k => ['jobName','address','scheduledDate','scheduledTime','assignedTo','status','notes','quoteNum','parentJobId','customerName','customerCompany','customerPhone'].includes(k))) {
+        if (!Object.keys(body).some(k => ['jobName','address','scheduledDate','scheduledEndDate','scheduledTime','assignedTo','status','notes','quoteNum','parentJobId','customerName','customerCompany','customerPhone'].includes(k))) {
           return ok({ jobId, updated: true, workOrderNumber: assignedWo }, event);
         }
       }
@@ -198,10 +198,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return forbidden('Invoicing requires the Pro plan.', event);
       }
 
-      const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone',
+      const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledEndDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone',
         // Field-app completion evidence — persist it on the job so it lives
         // with the work order, not just on the tech's device.
-        'lineItems', 'preFlight', 'inspection', 'enrouteAt', 'onSiteAt', 'completedAt',
+        'lineItems', 'preFlight', 'inspection', 'readiness', 'enrouteAt', 'onSiteAt', 'completedAt',
         // Back-office financials.
         'contractAmount', 'materialCost', 'laborCost', 'invoiceStatus', 'invoicedAt', 'paidAt'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
