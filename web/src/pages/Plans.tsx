@@ -52,6 +52,7 @@ export default function Plans() {
                 {current && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[0.58rem] font-semibold uppercase text-accent">Current</span>}
               </div>
               <div className="mt-1 text-2xl font-bold text-accent">{p.price}</div>
+              {p.priceNote && <div className="mt-0.5 text-[0.66rem] text-faint">{p.priceNote}</div>}
               <p className="mt-1.5 text-[0.78rem] text-muted">{p.blurb}</p>
               <ul className="mt-3 flex flex-col gap-1.5">
                 {p.highlights.map((h) => (

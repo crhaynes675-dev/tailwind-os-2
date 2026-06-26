@@ -7,6 +7,8 @@ export interface Plan {
   id: PlanId;
   name: string;
   price: string;
+  /** seat / billing fine print shown under the price */
+  priceNote?: string;
   blurb: string;
   highlights: string[];
 }
@@ -15,23 +17,26 @@ export const PLANS: Plan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    price: '$49/mo',
+    price: '$99/mo',
+    priceNote: 'Up to 3 office users · +$20/mo per extra seat',
     blurb: 'Capture leads, estimate, schedule, and run the field.',
-    highlights: ['Estimator + quotes', 'Intake & customers', 'Schedule', 'Field App', 'Users'],
+    highlights: ['Up to 3 office users', 'Estimator + quotes', 'Intake & customers', 'Schedule', 'Field App (free crew seats)', 'Users'],
   },
   {
     id: 'pro',
     name: 'Pro',
-    price: '$149/mo',
+    price: '$249/mo',
+    priceNote: 'Up to 8 office users · +$20/mo per extra seat',
     blurb: 'Full dispatch, field workflow, reporting & invoicing.',
-    highlights: ['Everything in Starter', 'Dispatch + Routing + Readiness', 'Delivery → Closeout', 'Reporting + CSV export', 'Invoicing & AR'],
+    highlights: ['Up to 8 office users', 'Everything in Starter', 'Dispatch + Routing + Readiness', 'Delivery → Closeout', 'Reporting + CSV export', 'Invoicing & AR'],
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 'Custom',
+    price: 'From $499/mo',
+    priceNote: 'Unlimited office users · guided onboarding',
     blurb: 'Service, workforce, and advanced tooling.',
-    highlights: ['Everything in Pro', 'Service tickets', 'Crew Time-Off', 'Install Manager', 'Priority support'],
+    highlights: ['Unlimited office users', 'Everything in Pro', 'Service tickets', 'Crew Time-Off', 'Install Manager', 'Priority support'],
   },
 ];
 
