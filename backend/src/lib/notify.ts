@@ -65,73 +65,93 @@ export function normalizePhone(raw?: string): string | null {
   return null;
 }
 
+export interface SmsRecord {
+  tenantId: string;
+  to?: string | null;
+  body: string;
+  trigger: string;
+  jobId?: string;
+  reminderId?: string;
+  /**
+   * Stable id for messages that must only ever be sent once (a daily reminder
+   * re-run, a retried invocation). Reusing the id overwrites the same row
+   * rather than queueing a duplicate.
+   */
+  dedupeKey?: string;
+}
+
 /**
- * Queue (and optionally send) the customer notification for a status change.
- * Never throws — a notification problem must not fail the job update that
- * triggered it.
+ * Queue a message, then send it if delivery is enabled. Never throws — a
+ * notification problem must not fail whatever triggered it.
+ *
+ * Recording always happens first, so there is a log of what the system decided
+ * to say even when sending is off or fails.
  */
-export async function notifyStatusChange(input: NotifyInput): Promise<void> {
+export async function queueSms(rec: SmsRecord): Promise<'sent' | 'queued' | 'skipped' | 'failed'> {
   try {
-    const status = ALIAS[input.status] ?? input.status;
-    const template = TEMPLATES[status];
-    if (!template) return;
-
-    const to = normalizePhone(input.customerPhone);
-    const link = input.shareToken && PORTAL_BASE_URL ? `${PORTAL_BASE_URL}/j/${input.shareToken}` : undefined;
-
-    const body = template({
-      company: input.companyName || 'Your installer',
-      jobName: input.jobName || 'your installation',
-      date: input.scheduledDate?.slice(0, 10),
-      link,
-    });
-
-    const id = `sms_${Date.now()}_${randomUUID().slice(0, 8)}`;
+    const to = normalizePhone(rec.to ?? undefined);
+    const id = rec.dedupeKey ?? `sms_${Date.now()}_${randomUUID().slice(0, 8)}`;
     const created = new Date().toISOString();
     // 'skipped' is a real outcome worth recording: it distinguishes "we had
     // nobody to text" from "we tried and it failed".
     const state = !to ? 'skipped:no-phone' : SMS_ENABLED ? 'sending' : 'skipped:disabled';
 
-    await ddb.send(new PutCommand({
-      TableName: TABLE,
-      Item: {
-        PK: tpk(input.tenantId, 'SMS', id), SK: 'MESSAGE',
-        GSI1PK: tgsi(input.tenantId, 'SMS_QUEUE'),
-        GSI1SK: `CREATED#${created}#${id}`,
-        id, created, to, body, state,
-        jobId: input.jobId,
-        trigger: `status:${status}`,
-      },
-    }));
-
-    if (!to || !SMS_ENABLED) return;
+    await put(rec, id, created, to, state);
+    if (!to) return 'skipped';
+    if (!SMS_ENABLED) return 'skipped';
 
     try {
-      await sns.send(new PublishCommand({ PhoneNumber: to, Message: body }));
-      await markState(input.tenantId, id, created, to, body, input.jobId, status, 'sent');
+      await sns.send(new PublishCommand({ PhoneNumber: to, Message: rec.body }));
+      await put(rec, id, created, to, 'sent');
+      return 'sent';
     } catch (err) {
       console.error('[notify] SMS send failed', err);
-      await markState(input.tenantId, id, created, to, body, input.jobId, status, 'failed');
+      await put(rec, id, created, to, 'failed');
+      return 'failed';
     }
   } catch (err) {
-    // Swallow: the job update already succeeded and must stay succeeded.
-    console.error('[notify] could not queue notification', err);
+    console.error('[notify] could not queue message', err);
+    return 'failed';
   }
 }
 
-async function markState(
-  tenantId: string, id: string, created: string, to: string,
-  body: string, jobId: string, status: string, state: string,
-) {
-  await ddb.send(new PutCommand({
+function put(rec: SmsRecord, id: string, created: string, to: string | null, state: string) {
+  return ddb.send(new PutCommand({
     TableName: TABLE,
     Item: {
-      PK: tpk(tenantId, 'SMS', id), SK: 'MESSAGE',
-      GSI1PK: tgsi(tenantId, 'SMS_QUEUE'),
+      PK: tpk(rec.tenantId, 'SMS', id), SK: 'MESSAGE',
+      GSI1PK: tgsi(rec.tenantId, 'SMS_QUEUE'),
       GSI1SK: `CREATED#${created}#${id}`,
-      id, created, to, body, state,
-      jobId, trigger: `status:${status}`,
+      id, created, to, state,
+      body: rec.body,
+      trigger: rec.trigger,
+      jobId: rec.jobId,
+      reminderId: rec.reminderId,
       updatedAt: new Date().toISOString(),
     },
   }));
+}
+
+/** Queue the customer notification for a job status change. */
+export async function notifyStatusChange(input: NotifyInput): Promise<void> {
+  const status = ALIAS[input.status] ?? input.status;
+  const template = TEMPLATES[status];
+  if (!template) return;
+
+  await queueSms({
+    tenantId: input.tenantId,
+    to: input.customerPhone,
+    jobId: input.jobId,
+    trigger: `status:${status}`,
+    body: template({
+      company: input.companyName || 'Your installer',
+      jobName: input.jobName || 'your installation',
+      date: input.scheduledDate?.slice(0, 10),
+      link: portalLink(input.shareToken),
+    }),
+  });
+}
+
+export function portalLink(shareToken?: string | null): string | undefined {
+  return shareToken && PORTAL_BASE_URL ? `${PORTAL_BASE_URL}/j/${shareToken}` : undefined;
 }

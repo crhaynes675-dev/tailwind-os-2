@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  // Tests are typechecked by the base config but must never be emitted: dist/
+  // is the Lambda deployment asset, and a compiled test importing vitest would
+  // both bloat the bundle and fail if it were ever loaded.
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

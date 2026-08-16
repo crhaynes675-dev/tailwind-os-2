@@ -5,6 +5,8 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -47,7 +49,9 @@ export class Os3ApiStack extends cdk.Stack {
     // Access to the new table (+ its indexes) and the existing shared table.
     os3Table.grantReadWriteData(lambdaRole);
     lambdaRole.addToPolicy(new iam.PolicyStatement({
-      actions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:BatchWriteItem'],
+      // Scan is used only by the daily reminder sweep, to list tenant config
+      // rows (one per tenant — never for jobs).
+      actions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:BatchWriteItem'],
       resources: [existingTableArn, `${existingTableArn}/index/*`],
     }));
     lambdaRole.addToPolicy(new iam.PolicyStatement({
@@ -131,6 +135,21 @@ export class Os3ApiStack extends cdk.Stack {
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName, { CONFIG_TABLE: EXISTING_TABLE_NAME });
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
+    // Calendar reminders live with the other OS3-only entities.
+    const remindersFn = makeFn('Os3RemindersFn', 'handlers/reminders.handler', os3Table.tableName);
+
+    // Daily reminder sweep. Reads jobs from the shared table and reminders
+    // from the OS3 table, so it needs both names.
+    const schedulerFn = makeFn('Os3SchedulerFn', 'handlers/scheduler.handler', EXISTING_TABLE_NAME, {
+      REMINDERS_TABLE: os3Table.tableName, PORTAL_BASE_URL, SMS_ENABLED,
+    });
+    // 13:00 UTC ≈ early morning in US Eastern, so a "tomorrow" reminder lands
+    // the day before rather than overnight.
+    new events.Rule(this, 'Os3DailyReminders', {
+      description: 'Send appointment reminders and dated calendar reminders',
+      schedule: events.Schedule.cron({ minute: '0', hour: '13' }),
+      targets: [new targets.LambdaFunction(schedulerFn)],
+    });
 
     const api = new apigateway.RestApi(this, 'Os3Api', {
       restApiName: 'tailwind-os3-api',
@@ -195,6 +214,14 @@ export class Os3ApiStack extends cdk.Stack {
     const billingConnect = billing.addResource('connect');
     billingConnect.addMethod('GET', integ(connectFn), auth);
     billingConnect.addMethod('POST', integ(connectFn), auth);
+
+    // /reminders — dated calendar items that aren't jobs
+    const reminders = api.root.addResource('reminders');
+    reminders.addMethod('GET', integ(remindersFn), auth);
+    reminders.addMethod('POST', integ(remindersFn), auth);
+    const reminder = reminders.addResource('{reminderId}');
+    reminder.addMethod('PUT', integ(remindersFn), auth);
+    reminder.addMethod('DELETE', integ(remindersFn), auth);
 
     // /customers
     const customers = api.root.addResource('customers');
