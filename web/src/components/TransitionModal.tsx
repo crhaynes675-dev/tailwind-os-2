@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { STATUS_META, STATUS_GATE, transitionKind, type JobStatus } from '../domain/status';
+import { useState, useRef } from 'react';
+import { STATUS_META, STATUS_GATE, SIGNATURE_GATE_KEY, transitionKind, type JobStatus } from '../domain/status';
 import type { Job } from '../data/jobs';
+import SignaturePad, { type SignaturePadHandle } from './SignaturePad';
+import { uploadSignature } from '../lib/api';
 
 interface Props {
   job: Job;
@@ -26,15 +28,48 @@ export default function TransitionModal({ job, to, onConfirm, onCancel }: Props)
     return init;
   });
   const [touched, setTouched] = useState(false);
+  const [hasInk, setHasInk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const padRef = useRef<SignaturePadHandle>(null);
 
-  const missing = fields.filter((f) => f.required && (f.type === 'confirm' ? !values[f.key] : !String(values[f.key] || '').trim()));
+  const missing = fields.filter((f) => {
+    if (!f.required) return false;
+    if (f.type === 'confirm') return !values[f.key];
+    if (f.type === 'signature') return !hasInk;
+    return !String(values[f.key] || '').trim();
+  });
 
-  function confirm() {
+  async function confirm() {
     setTouched(true);
-    if (missing.length) return;
+    if (missing.length || busy) return;
+
     const patch: Partial<Job> = { status: to };
     if (typeof values.assignedTo === 'string' && values.assignedTo.trim()) patch.crew = values.assignedTo.trim();
     if (typeof values.scheduledDate === 'string' && values.scheduledDate) patch.scheduledDate = values.scheduledDate;
+    // Non-underscore gate keys are persisted fields (see STATUS_GATE).
+    if (typeof values.postInstallSignedBy === 'string' && values.postInstallSignedBy.trim()) {
+      patch.postInstallSignedBy = values.postInstallSignedBy.trim();
+      patch.postInstallSignedAt = new Date().toISOString();
+    }
+
+    // The signature is uploaded here rather than handed to the caller, so all
+    // eight places that open this modal get sign-off capture for free.
+    const sig = SIGNATURE_GATE_KEY[to] ? padRef.current?.toDataUrl() : null;
+    if (sig) {
+      setBusy(true);
+      try {
+        await uploadSignature(job.id, sig, 'crewsignoff');
+      } catch (e) {
+        setBusy(false);
+        // Advancing the stage without the signature that justifies it would
+        // leave exactly the unprovable gate this sign-off exists to prevent.
+        setUploadError(e instanceof Error ? e.message : 'Could not save the signature. Please try again.');
+        return;
+      }
+      setBusy(false);
+    }
+
     onConfirm(patch);
   }
 
@@ -69,7 +104,12 @@ export default function TransitionModal({ job, to, onConfirm, onCancel }: Props)
           <div className="mt-4 flex flex-col gap-3">
             {fields.map((f) => (
               <div key={f.key}>
-                {f.type === 'confirm' ? (
+                {f.type === 'signature' ? (
+                  <>
+                    <label className="mb-1 block text-[0.6rem] font-semibold uppercase tracking-wider text-faint">{f.label}</label>
+                    <SignaturePad ref={padRef} onChange={setHasInk} />
+                  </>
+                ) : f.type === 'confirm' ? (
                   <label className="flex cursor-pointer items-center gap-2.5 text-[0.82rem] text-text">
                     <input
                       type="checkbox"
@@ -99,6 +139,7 @@ export default function TransitionModal({ job, to, onConfirm, onCancel }: Props)
         {touched && missing.length > 0 && (
           <div className="mt-3 text-[0.72rem] text-[#f4607a]">Please complete: {missing.map((m) => m.label).join(', ')}.</div>
         )}
+        {uploadError && <div className="mt-3 text-[0.72rem] text-[#f4607a]">{uploadError}</div>}
 
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-lg border border-glass bg-white/5 px-4 py-2 text-xs font-semibold text-muted hover:text-text">
@@ -106,9 +147,10 @@ export default function TransitionModal({ job, to, onConfirm, onCancel }: Props)
           </button>
           <button
             onClick={confirm}
-            className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_22px_-8px_rgba(41,195,236,0.55)] transition hover:brightness-105"
+            disabled={busy}
+            className="rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_22px_-8px_rgba(41,195,236,0.55)] transition hover:brightness-105 disabled:opacity-50"
           >
-            Confirm move
+            {busy ? 'Saving sign-off…' : 'Confirm move'}
           </button>
         </div>
       </div>

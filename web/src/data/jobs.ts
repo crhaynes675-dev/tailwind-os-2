@@ -33,6 +33,12 @@ export interface Job {
   enrouteAt?: string;
   onSiteAt?: string;
   readiness?: ReadinessStep[];   // scheduled preconstruction steps, kept on the WO
+  // Sign-offs. Two, and only two: the field crew signs the post-install walk,
+  // the customer signs the final walkthrough (captured via the portal).
+  postInstallSignedBy?: string;
+  postInstallSignedAt?: string;
+  customerApprovedBy?: string;
+  customerApprovedAt?: string;
 }
 
 // Temporary seed data so Phase 1 screens are real and interactive.

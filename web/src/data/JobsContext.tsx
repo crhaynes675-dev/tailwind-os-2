@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { apiGet, apiSend } from '../lib/api';
+import { enqueue } from '../lib/outbox';
 import { normalizeStatus, WRITE_STATUS, type JobStatus } from '../domain/status';
 import type { Job, ReadinessStep } from './jobs';
 
@@ -27,6 +28,10 @@ interface ApiJob {
   enrouteAt?: string;
   onSiteAt?: string;
   readiness?: ReadinessStep[];
+  postInstallSignedBy?: string;
+  postInstallSignedAt?: string;
+  customerApprovedName?: string;
+  customerApprovedAt?: string;
 }
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -55,6 +60,10 @@ function mapJob(j: ApiJob): Job {
     enrouteAt: j.enrouteAt || undefined,
     onSiteAt: j.onSiteAt || undefined,
     readiness: Array.isArray(j.readiness) ? j.readiness : undefined,
+    postInstallSignedBy: j.postInstallSignedBy || undefined,
+    postInstallSignedAt: j.postInstallSignedAt || undefined,
+    customerApprovedBy: j.customerApprovedName || undefined,
+    customerApprovedAt: j.customerApprovedAt || undefined,
   };
 }
 
@@ -78,6 +87,8 @@ function patchToBody(patch: Partial<Job>): Record<string, unknown> {
   if (patch.onSiteAt !== undefined) body.onSiteAt = patch.onSiteAt;
   if (patch.completedAt !== undefined) body.completedAt = patch.completedAt;
   if (patch.readiness !== undefined) body.readiness = patch.readiness;
+  if (patch.postInstallSignedBy !== undefined) body.postInstallSignedBy = patch.postInstallSignedBy;
+  if (patch.postInstallSignedAt !== undefined) body.postInstallSignedAt = patch.postInstallSignedAt;
   return body;
 }
 
@@ -137,8 +148,17 @@ export function JobsProvider({ children }: { children: ReactNode }) {
     async (id: string, patch: Partial<Job>) => {
       setJobs((js) => js.map((j) => (j.id === id ? { ...j, ...patch } : j)));
       try {
-        await apiSend('PUT', `/jobs/${id}`, patchToBody(patch));
+        // Goes through the outbox so a crew with no signal keeps their work:
+        // the write is persisted and replayed rather than thrown away. When
+        // online this still sends immediately.
+        await enqueue({
+          method: 'PUT',
+          path: `/jobs/${id}`,
+          body: patchToBody(patch),
+          label: patch.status ? `Status → ${patch.status}` : 'Job update',
+        });
       } catch (e) {
+        // Only genuine rejections reach here; offline writes stay queued.
         await load();
         throw e;
       }

@@ -200,7 +200,7 @@ export default function Schedule() {
       ) : (
         <div className="grid gap-5 lg:grid-cols-[230px_1fr]">
           {/* Needs scheduling */}
-          <section className="glass flex flex-col rounded-2xl lg:max-h-[calc(100vh-12rem)]">
+          <section className="glass flex flex-col rounded-2xl lg:max-h-[calc(100vh-20rem)]">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
               <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-text">Needs Scheduling</span>
               <span className="rounded-full bg-white/5 px-2 py-0.5 text-[0.6rem] font-semibold text-muted">{queue.length}</span>
@@ -222,8 +222,9 @@ export default function Schedule() {
             </div>
           </section>
 
-          {/* Calendar */}
-          <section className="glass flex flex-col rounded-2xl">
+          {/* Calendar — fills the viewport so week rows get real vertical room
+              instead of collapsing to the height of their job bars. */}
+          <section className="glass flex flex-col rounded-2xl lg:h-[calc(100vh-20rem)]">
             <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
               <span className="text-sm font-semibold text-text">{MONTHS[cursor.m]} {cursor.y}</span>
               <span className="hidden items-center gap-1.5 text-[0.56rem] text-faint sm:flex">
@@ -243,12 +244,15 @@ export default function Schedule() {
               ))}
             </div>
 
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col overflow-y-auto">
               {weeks.map((week, wi) => (
                 <div
                   key={wi}
-                  className="relative border-b border-white/5"
-                  style={{ height: week.height }}
+                  // flex-1 shares leftover height across the weeks; minHeight
+                  // keeps a busy week tall enough for its stacked bars, and the
+                  // parent scrolls when every week is at its minimum.
+                  className="relative flex-1 border-b border-white/5"
+                  style={{ minHeight: week.height }}
                   onDragOver={(e) => { if (drag) { e.preventDefault(); setOverDate(week.cells[colFromEvent(e)].str); } }}
                   onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverDate(null); }}
                   onDrop={(e) => onDrop(e, week.cells)}

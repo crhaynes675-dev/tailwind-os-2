@@ -57,12 +57,25 @@ export function planRank(p: PlanId): number {
   return PLAN_ORDER.indexOf(p);
 }
 
+/**
+ * Tenants created before plan config existed have no plan on record. That is a
+ * known, legitimate state — they keep full access — and is deliberately kept
+ * distinct from an unreadable or unrecognized value, which is a fault.
+ */
+export const LEGACY_PLAN: PlanId = 'enterprise';
+
+/** The tier to fall back to when the real plan can't be trusted. */
+export const FALLBACK_PLAN: PlanId = 'starter';
+
 /** Map a stored tenant plan string ('trial', 'pro', …) to an effective tier. */
 export function effectivePlan(raw?: string): PlanId {
-  const p = (raw || '').toLowerCase();
+  const p = (raw || '').trim().toLowerCase();
   if (p === 'starter' || p === 'pro' || p === 'enterprise') return p;
   if (p === 'trial') return 'pro'; // 30-day trial = Pro
-  return 'enterprise'; // unknown / legacy (no config) → full access, never lock
+  if (!p) return LEGACY_PLAN; // no plan on record → pre-billing tenant
+  // A non-empty value we don't recognize means bad data, not a free upgrade.
+  console.warn(`[plans] unrecognized plan ${JSON.stringify(raw)} — treating as ${FALLBACK_PLAN}`);
+  return FALLBACK_PLAN;
 }
 
 /** Smallest plan that unlocks a given module (for the upgrade prompt). */

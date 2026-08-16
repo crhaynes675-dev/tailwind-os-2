@@ -115,7 +115,7 @@ export function normalizeStatus(raw: string | null | undefined): JobStatus {
 // Each transition can require inputs/confirmations (the "gate"). Keys
 // starting with "_" are confirmation-only (not persisted); other keys
 // are written to the job (e.g. assignedTo, scheduledDate).
-export type GateFieldType = 'text' | 'date' | 'confirm';
+export type GateFieldType = 'text' | 'date' | 'confirm' | 'signature';
 export interface GateField {
   key: string;
   label: string;
@@ -132,8 +132,19 @@ export const STATUS_GATE: Record<JobStatus, GateField[]> = {
   ],
   'In Progress': [{ key: '_onsite', label: 'Crew confirmed on-site', type: 'confirm', required: true }],
   'Ready for Post-Install Walk': [{ key: '_installComplete', label: 'Installation complete', type: 'confirm', required: true }],
-  'Final Walkthrough Ready': [{ key: '_postApproved', label: 'Post-install inspection approved', type: 'confirm', required: true }],
+  // Two sign-offs, and only two. The post-install walk is signed by the field
+  // crew who did the work; the final walkthrough is signed by the customer
+  // (captured through the customer portal, not here).
+  'Final Walkthrough Ready': [
+    { key: 'postInstallSignedBy', label: 'Field crew member signing off', type: 'text', required: true, placeholder: 'Name of crew member' },
+    { key: '_crewSignature', label: 'Field crew sign-off signature', type: 'signature', required: true },
+  ],
   Completed: [{ key: '_customerApproved', label: 'Customer approval received', type: 'confirm', required: true }],
+};
+
+/** Gate keys whose value is a captured signature image (PNG data URL). */
+export const SIGNATURE_GATE_KEY: Partial<Record<JobStatus, string>> = {
+  'Final Walkthrough Ready': '_crewSignature',
 };
 
 export type TransitionKind = 'same' | 'forward' | 'skip' | 'back';

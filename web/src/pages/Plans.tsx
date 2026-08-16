@@ -2,25 +2,31 @@ import { useState } from 'react';
 import { PLANS, PLAN_BY_ID, planRank } from '../domain/plans';
 import { usePlan } from '../data/PlanContext';
 import { useAuth } from '../auth/AuthContext';
-import { apiSend } from '../lib/api';
+import { apiSend, ApiError } from '../lib/api';
+import { isTenantAdmin } from '../lib/auth';
 
 export default function Plans() {
   const { plan, rawPlan, refresh } = usePlan();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isTenantAdmin(user);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   async function choose(id: string) {
     if (!isAdmin) return;
     setBusy(id);
     setMsg(null);
+    setErr(null);
     try {
       await apiSend('PUT', '/tenants/me', { plan: id });
       refresh();
       setMsg(`You're now on ${PLAN_BY_ID[id as keyof typeof PLAN_BY_ID].name}.`);
-    } catch {
-      setMsg('Could not change plan.');
+    } catch (e) {
+      // Show what the server actually said. A blanket "Could not change plan"
+      // hides the difference between a permission problem, a bad plan value,
+      // and the API being down.
+      setErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Could not change plan.');
     } finally {
       setBusy(null);
     }
@@ -40,6 +46,11 @@ export default function Plans() {
         Billing isn't connected yet — during setup, switching plans is instant and free.
       </div>
       {msg && <div className="mt-2 text-xs font-semibold text-completed">{msg}</div>}
+      {err && (
+        <div className="mt-2 rounded-lg border border-[#f0554c]/30 bg-[#f0554c]/10 px-3 py-1.5 text-xs font-semibold text-[#f0554c]">
+          Couldn't change plan — {err}
+        </div>
+      )}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-3">
         {PLANS.map((p) => {
@@ -73,7 +84,12 @@ export default function Plans() {
         })}
       </div>
 
-      {!isAdmin && <p className="mt-4 text-xs text-faint">Only a company admin can change the plan.</p>}
+      {!isAdmin && (
+        <p className="mt-4 text-xs text-faint">
+          Only a company admin can change the plan — you're signed in as{' '}
+          <span className="font-semibold">{user?.role?.replace(/_/g, ' ') || 'an unknown role'}</span>.
+        </p>
+      )}
       <p className="mt-4 text-[0.7rem] text-faint">When Stripe is connected, the upgrade buttons will open secure checkout and the plan will update automatically after payment.</p>
     </div>
   );
