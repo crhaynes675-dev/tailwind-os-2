@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useJobsCtx } from '../data/JobsContext';
-import { apiGet } from '../lib/api';
+import { apiGet, apiSend } from '../lib/api';
 import { STATUS_META, nextStatus, type JobStatus } from '../domain/status';
 import { buildReadinessPlan, readinessComplete } from '../domain/readiness';
 import type { Job } from '../data/jobs';
@@ -48,6 +48,8 @@ interface JobDetail {
   units?: Array<Record<string, unknown>>;
   createdAt?: string;
   updatedAt?: string;
+  customerApprovedAt?: string;
+  customerApprovedName?: string;
   workOrderNumber?: string;
 }
 
@@ -98,6 +100,122 @@ const INV_META: Record<string, { label: string; color: string }> = {
   invoiced: { label: 'Invoiced', color: '#f0a23c' },
   paid: { label: 'Paid', color: '#34d39a' },
 };
+
+/**
+ * The customer-facing link for a job. Minting is explicit — a job is never
+ * silently shareable — and re-minting invalidates the previous link, which is
+ * how you cut off access after sending it to the wrong address.
+ */
+function CustomerLink({ jobId, approvedAt, approvedName }: { jobId: string; approvedAt?: string; approvedName?: string }) {
+  const [token, setToken] = useState<string | null | undefined>(undefined); // undefined = loading
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Mounted with key={job.id}, so switching jobs remounts with fresh state
+  // and this effect never has to reset anything synchronously.
+  useEffect(() => {
+    let alive = true;
+    apiGet<{ token: string | null }>(`/jobs/${jobId}/share`)
+      .then((r) => { if (alive) setToken(r.token); })
+      .catch(() => { if (alive) setToken(null); });
+    return () => { alive = false; };
+  }, [jobId]);
+
+  const url = token ? `${window.location.origin}/j/${token}` : null;
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    setErr(null);
+    try { await fn(); } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong.'); }
+    finally { setBusy(false); }
+  }
+
+  const create = () => run(async () => {
+    const r = await apiSend<{ token: string }>('POST', `/jobs/${jobId}/share`);
+    setToken(r.token);
+    setCopied(false);
+  });
+
+  const revoke = () => run(async () => {
+    await apiSend('DELETE', `/jobs/${jobId}/share`);
+    setToken(null);
+  });
+
+  async function copy() {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setErr('Copy failed — select the link and copy it manually.');
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="mb-2 flex items-center gap-2 text-[0.58rem] font-semibold uppercase tracking-wider text-faint">
+        <span>Customer link</span>
+        {approvedAt && (
+          <span className="rounded-full bg-[#34d39a]/15 px-1.5 py-px text-[0.56rem] font-semibold text-[#34d39a]">
+            approved
+          </span>
+        )}
+      </div>
+
+      {approvedAt && (
+        <p className="mb-2 text-[0.72rem] text-[#34d39a]">
+          Signed by {approvedName || 'the customer'} on {new Date(approvedAt).toLocaleDateString()}.
+        </p>
+      )}
+
+      {token === undefined ? (
+        <div className="text-[0.72rem] text-faint">Loading…</div>
+      ) : token ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={url ?? ''}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 rounded-lg border border-glass bg-white/[0.04] px-2.5 py-1.5 font-mono text-[0.68rem] text-muted outline-none focus:border-accent"
+            />
+            <button
+              onClick={copy}
+              className="flex-shrink-0 rounded-lg bg-gradient-to-br from-[#22d3ee] to-[#6d6bff] px-3 py-1.5 text-[0.66rem] font-semibold text-white transition hover:brightness-105"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <div className="flex gap-3 text-[0.66rem]">
+            <button onClick={create} disabled={busy} className="font-semibold text-muted underline underline-offset-2 hover:text-text disabled:opacity-40">
+              Replace link
+            </button>
+            <button onClick={revoke} disabled={busy} className="font-semibold text-[#f0554c]/80 underline underline-offset-2 hover:text-[#f0554c] disabled:opacity-40">
+              Revoke
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <button
+            onClick={create}
+            disabled={busy}
+            className="rounded-lg border border-glass bg-white/5 px-3 py-1.5 text-[0.68rem] font-semibold text-muted transition hover:border-accent hover:text-accent disabled:opacity-40"
+          >
+            {busy ? 'Creating…' : 'Create customer link'}
+          </button>
+          <p className="mt-1.5 text-[0.66rem] text-faint">
+            Shows schedule, progress photos, and collects sign-off. No pricing is visible.
+          </p>
+        </div>
+      )}
+
+      {err && <p className="mt-1.5 text-[0.66rem] text-[#f0554c]">{err}</p>}
+    </div>
+  );
+}
 
 export default function JobDrawer() {
   const { jobs, selectedId, select, updateJob } = useJobsCtx();
@@ -406,6 +524,9 @@ export default function JobDrawer() {
               </div>
             </div>
           )}
+
+          {/* customer portal link */}
+          <CustomerLink key={job.id} jobId={job.id} approvedAt={detail?.customerApprovedAt} approvedName={detail?.customerApprovedName} />
 
           {/* field photos & signature */}
           <div className="mt-6">

@@ -3,6 +3,8 @@ import { useJobsCtx } from '../data/JobsContext';
 import { STATUS_META } from '../domain/status';
 import type { Job } from '../data/jobs';
 import TransitionModal from '../components/TransitionModal';
+import ReminderModal from '../components/ReminderModal';
+import { useReminders, type Reminder, type ReminderDraft } from '../data/reminders';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -30,7 +32,8 @@ interface DragState { mode: DragMode; id: string; step?: string }
 
 type CalItem =
   | { kind: 'job'; job: Job; start: string; end: string }
-  | { kind: 'task'; job: Job; step: string; owner?: string; done: boolean; start: string; end: string };
+  | { kind: 'task'; job: Job; step: string; owner?: string; done: boolean; start: string; end: string }
+  | { kind: 'reminder'; reminder: Reminder; start: string; end: string };
 interface Bar { item: CalItem; lane: number; startCol: number; endCol: number; startsHere: boolean; endsHere: boolean }
 
 function QueueRow({ job, onSchedule, onOpen, dragging, onDragStart, onDragEnd }: {
@@ -78,6 +81,20 @@ export default function Schedule() {
 
   const queue = useMemo(() => jobs.filter((j) => j.status === 'Unscheduled'), [jobs]);
 
+  // The grid always renders six weeks, so fetch a window wide enough to cover
+  // the days bleeding in from the neighbouring months.
+  const [windowFrom, windowTo] = useMemo(() => {
+    const first = new Date(cursor.y, cursor.m, 1);
+    const start = new Date(first);
+    start.setDate(1 - first.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 41);
+    return [ymd(start), ymd(end)];
+  }, [cursor]);
+  const { reminders, create: createReminder, update: updateReminder, remove: removeReminder } =
+    useReminders(windowFrom, windowTo);
+  const [editing, setEditing] = useState<Reminder | { date: string } | null>(null);
+
   // Everything that lands on the calendar: scheduled job spans + dated readiness
   // steps (single-day tasks). Completed work drops off.
   const items = useMemo<CalItem[]>(() => {
@@ -95,8 +112,12 @@ export default function Schedule() {
         }
       }
     }
+    for (const r of reminders) {
+      const end = r.endDate && r.endDate >= r.date ? r.endDate : r.date;
+      out.push({ kind: 'reminder', reminder: r, start: r.date, end });
+    }
     return out;
-  }, [jobs]);
+  }, [jobs, reminders]);
 
   // Build 6 weeks; for each, lay its intersecting items into non-overlapping lanes.
   const weeks = useMemo(() => {
@@ -200,7 +221,7 @@ export default function Schedule() {
       ) : (
         <div className="grid gap-5 lg:grid-cols-[230px_1fr]">
           {/* Needs scheduling */}
-          <section className="glass flex flex-col rounded-2xl lg:max-h-[calc(100vh-12rem)]">
+          <section className="glass flex flex-col rounded-2xl lg:max-h-[calc(100vh-20rem)]">
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
               <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-text">Needs Scheduling</span>
               <span className="rounded-full bg-white/5 px-2 py-0.5 text-[0.6rem] font-semibold text-muted">{queue.length}</span>
@@ -222,8 +243,9 @@ export default function Schedule() {
             </div>
           </section>
 
-          {/* Calendar */}
-          <section className="glass flex flex-col rounded-2xl">
+          {/* Calendar — fills the viewport so week rows get real vertical room
+              instead of collapsing to the height of their job bars. */}
+          <section className="glass flex flex-col rounded-2xl lg:h-[calc(100vh-20rem)]">
             <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
               <span className="text-sm font-semibold text-text">{MONTHS[cursor.m]} {cursor.y}</span>
               <span className="hidden items-center gap-1.5 text-[0.56rem] text-faint sm:flex">
@@ -231,6 +253,12 @@ export default function Schedule() {
                 readiness step (color = job)
               </span>
               <div className="ml-auto flex items-center gap-1.5">
+                <button
+                  onClick={() => setEditing({ date: cursor.y === today.getFullYear() && cursor.m === today.getMonth() ? todayStr : ymd(new Date(cursor.y, cursor.m, 1)) })}
+                  className="rounded-lg border border-glass bg-white/5 px-2.5 py-1 text-[0.62rem] font-semibold text-muted transition hover:border-accent hover:text-accent"
+                >
+                  + Reminder
+                </button>
                 <button onClick={() => setCursor({ y: today.getFullYear(), m: today.getMonth() })} className="rounded-lg border border-glass bg-white/5 px-2.5 py-1 text-[0.62rem] font-semibold text-muted transition hover:text-text">Today</button>
                 <button onClick={() => goMonth(-1)} className="grid h-7 w-7 place-items-center rounded-lg border border-glass bg-white/5 text-muted transition hover:text-text">‹</button>
                 <button onClick={() => goMonth(1)} className="grid h-7 w-7 place-items-center rounded-lg border border-glass bg-white/5 text-muted transition hover:text-text">›</button>
@@ -243,12 +271,15 @@ export default function Schedule() {
               ))}
             </div>
 
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col overflow-y-auto">
               {weeks.map((week, wi) => (
                 <div
                   key={wi}
-                  className="relative border-b border-white/5"
-                  style={{ height: week.height }}
+                  // flex-1 shares leftover height across the weeks; minHeight
+                  // keeps a busy week tall enough for its stacked bars, and the
+                  // parent scrolls when every week is at its minimum.
+                  className="relative flex-1 border-b border-white/5"
+                  style={{ minHeight: week.height }}
                   onDragOver={(e) => { if (drag) { e.preventDefault(); setOverDate(week.cells[colFromEvent(e)].str); } }}
                   onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverDate(null); }}
                   onDrop={(e) => onDrop(e, week.cells)}
@@ -259,7 +290,12 @@ export default function Schedule() {
                       const isToday = cell.str === todayStr;
                       const isOver = !!drag && overDate === cell.str;
                       return (
-                        <div key={cell.str} className={`border-r border-white/5 ${i === 6 ? 'border-r-0' : ''} ${cell.inMonth ? '' : 'bg-black/15'} ${isOver ? 'bg-accent/10 ring-2 ring-inset ring-accent/60' : ''}`}>
+                        <div
+                          key={cell.str}
+                          onDoubleClick={() => setEditing({ date: cell.str })}
+                          title="Double-click to add a reminder"
+                          className={`border-r border-white/5 ${i === 6 ? 'border-r-0' : ''} ${cell.inMonth ? '' : 'bg-black/15'} ${isOver ? 'bg-accent/10 ring-2 ring-inset ring-accent/60' : ''}`}
+                        >
                           <div className={`mx-auto mt-1 flex h-5 w-5 items-center justify-center text-[0.62rem] font-semibold ${isToday ? 'rounded-full bg-accent text-black' : cell.inMonth ? 'text-muted' : 'text-faint'}`}>
                             {cell.date.getDate()}
                           </div>
@@ -276,6 +312,27 @@ export default function Schedule() {
                       top: DATE_ROW + bar.lane * LANE_H,
                       height: LANE_H - 4,
                     };
+
+                    // Reminder — not a work order, so it reads differently from
+                    // a job bar: dashed, neutral, and struck through when done.
+                    if (bar.item.kind === 'reminder') {
+                      const r = bar.item.reminder;
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                          title={`${r.title}${r.time ? ` at ${r.time}` : ''}${r.owner ? ` · ${r.owner}` : ''}${r.smsTo ? ' · texts a reminder' : ''}`}
+                          className={`absolute z-10 flex cursor-pointer items-center gap-1 overflow-hidden rounded-md border border-dashed px-1.5 text-[0.58rem] transition hover:brightness-125 ${r.done ? 'opacity-50' : ''}`}
+                          style={{ ...common, background: '#8da3c71f', borderColor: '#8da3c7' }}
+                        >
+                          <span className="flex-shrink-0 text-[0.6rem] text-[#8da3c7]">{r.done ? '✓' : '🔔'}</span>
+                          <span className={`truncate font-semibold text-[#b9c8dd] ${r.done ? 'line-through' : ''}`}>
+                            {r.time ? `${r.time} ` : ''}{r.title}
+                          </span>
+                          {r.smsTo && <span className="ml-auto flex-shrink-0 text-[0.55rem] text-[#8da3c7]" aria-label="texts a reminder">✉</span>}
+                        </div>
+                      );
+                    }
 
                     // Readiness step — a single-day task chip (not draggable).
                     if (bar.item.kind === 'task') {
@@ -355,6 +412,19 @@ export default function Schedule() {
 
       {pending && (
         <TransitionModal job={pending} to="Scheduled" onCancel={() => setPending(null)} onConfirm={(patch) => { updateJob(pending.id, patch).catch(() => {}); setPending(null); }} />
+      )}
+
+      {editing && (
+        <ReminderModal
+          initial={editing}
+          onCancel={() => setEditing(null)}
+          onSave={async (draft: ReminderDraft) => {
+            if ('id' in editing) await updateReminder(editing.id, draft);
+            else await createReminder(draft);
+            setEditing(null);
+          }}
+          onDelete={'id' in editing ? async () => { await removeReminder(editing.id); setEditing(null); } : undefined}
+        />
       )}
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">

@@ -3,6 +3,7 @@ import { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, Bat
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, created, noContent, notFound, badRequest, forbidden, serverError } from '../lib/response';
 import { planAllows } from '../lib/plan';
+import { notifyStatusChange } from '../lib/notify';
 import { getTenantId, tpk, tgsi } from '../lib/tenant';
 import { randomUUID } from 'crypto';
 
@@ -198,7 +199,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return forbidden('Invoicing requires the Pro plan.', event);
       }
 
-      const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledEndDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone',
+      const allowed = ['jobName', 'address', 'scheduledDate', 'scheduledEndDate', 'scheduledTime', 'assignedTo', 'status', 'notes', 'quoteNum', 'parentJobId', 'customerName', 'customerCompany', 'customerPhone', 'postInstallSignedBy', 'postInstallSignedAt',
         // Field-app completion evidence — persist it on the job so it lives
         // with the work order, not just on the tech's device.
         'lineItems', 'preFlight', 'inspection', 'readiness', 'enrouteAt', 'onSiteAt', 'completedAt',
@@ -247,13 +248,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
       }
 
-      await ddb.send(new UpdateCommand({
+      // ALL_OLD so we can tell a real status change from a no-op rewrite —
+      // customers must not get a second "crew is on the way" because someone
+      // re-saved the job.
+      const updateRes = await ddb.send(new UpdateCommand({
         TableName: TABLE,
         Key: { PK: tpk(t, 'JOB', jobId), SK: 'METADATA' },
         UpdateExpression: `SET ${expr}, #ua = :now${setExtra}${removeExpr}`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
         ConditionExpression: 'attribute_exists(PK)',
+        ReturnValues: 'ALL_OLD',
       }));
 
       await ddb.send(new PutCommand({
@@ -267,6 +272,26 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           ts: now,
         },
       }));
+
+      const before = updateRes.Attributes ?? {};
+      if (body.status && body.status !== before.status) {
+        const cfg = await ddb.send(new GetCommand({
+          TableName: TABLE,
+          Key: { PK: `TENANT_CONFIG#${t}`, SK: 'CONFIG' },
+          ProjectionExpression: 'companyName',
+        })).catch(() => undefined);
+
+        await notifyStatusChange({
+          tenantId: t,
+          jobId,
+          status: String(body.status),
+          jobName:       (body.jobName       ?? before.jobName)       as string | undefined,
+          scheduledDate: (body.scheduledDate ?? before.scheduledDate) as string | undefined,
+          customerPhone: (body.customerPhone ?? before.customerPhone) as string | undefined,
+          companyName:   cfg?.Item?.companyName as string | undefined,
+          shareToken:    before.shareToken as string | undefined,
+        });
+      }
 
       return ok({ jobId, updated: true, ...(assignedWo ? { workOrderNumber: assignedWo } : {}) }, event);
     }

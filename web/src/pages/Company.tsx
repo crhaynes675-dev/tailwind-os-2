@@ -9,6 +9,8 @@ interface TenantConfig {
   tenantId?: string;
   companyName?: string;
   industry?: string;
+  remindersEnabled?: boolean;
+  reminderLeadDays?: number;
   adminFirstName?: string;
   adminLastName?: string;
   adminEmail?: string;
@@ -25,6 +27,65 @@ function Row({ label, value }: { label: string; value?: string }) {
     <div className="flex items-center justify-between gap-3 border-b border-white/5 py-2.5 last:border-0">
       <span className="text-[0.62rem] uppercase tracking-wide text-faint">{label}</span>
       <span className="text-sm text-text">{value || '—'}</span>
+    </div>
+  );
+}
+
+/**
+ * Automatic customer appointment reminders. Off by default — nobody should
+ * start texting a customer list because they enabled a feature they hadn't
+ * read about.
+ */
+function ReminderSettings({ cfg, onSaved }: { cfg: TenantConfig; onSaved: () => void }) {
+  const enabled = cfg.remindersEnabled !== false;
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(patch: { remindersEnabled?: boolean; reminderLeadDays?: number }) {
+    setSaving(true);
+    setErr(null);
+    try {
+      await apiSend('PUT', '/tenants/me', patch);
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not save that setting.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 border-t border-white/5 pt-4">
+      <div className="text-[0.6rem] font-semibold uppercase tracking-wider text-faint">Automatic reminders</div>
+      <label className="mt-2 flex cursor-pointer items-center gap-2.5 text-[0.82rem] text-text">
+        <input
+          type="checkbox"
+          checked={enabled}
+          disabled={saving}
+          onChange={(e) => save({ remindersEnabled: e.target.checked })}
+          className="h-4 w-4 accent-[#29c3ec]"
+        />
+        Text customers before their scheduled installation
+      </label>
+      <div className="mt-2 flex items-center gap-2 text-[0.76rem] text-muted">
+        <span>Send</span>
+        <select
+          value={String(cfg.reminderLeadDays ?? 1)}
+          disabled={!enabled || saving}
+          onChange={(e) => save({ reminderLeadDays: Number(e.target.value) })}
+          className="rounded-lg border border-glass bg-white/[0.04] px-2 py-1 text-[0.76rem] text-text outline-none focus:border-accent disabled:opacity-40"
+        >
+          <option value="0">on the day</option>
+          <option value="1">1 day before</option>
+          <option value="2">2 days before</option>
+          <option value="3">3 days before</option>
+          <option value="7">a week before</option>
+        </select>
+      </div>
+      <p className="mt-1.5 text-[0.66rem] text-faint">
+        One message per job, sent in the morning. Only jobs with a customer phone number are texted.
+      </p>
+      {err && <p className="mt-1.5 text-[0.7rem] text-[#f4607a]">{err}</p>}
     </div>
   );
 }
@@ -156,6 +217,7 @@ export default function Company() {
             <Row label="Contact email" value={cfg.adminEmail} />
             <Row label="Contact phone" value={cfg.adminPhone} />
             <Row label="Created" value={cfg.createdAt ? new Date(cfg.createdAt).toLocaleDateString() : undefined} />
+            <ReminderSettings cfg={cfg} onSaved={load} />
           </div>
         ) : (
           <div className="text-[0.78rem] text-muted">A full profile isn't on file for this account yet (legacy company) — your company code is shown above.</div>

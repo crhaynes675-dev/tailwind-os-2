@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ddb, TABLE } from '../lib/dynamo';
 import { ok, created, badRequest, notFound, forbidden, serverError } from '../lib/response';
-import { getTenantId } from '../lib/tenant';
+import { getTenantId, getRole, isTenantAdmin } from '../lib/tenant';
 
 const cognito = new CognitoIdentityProviderClient({ region: process.env.REGION ?? 'us-east-1' });
 const USER_POOL_ID = process.env.USER_POOL_ID!;
@@ -126,17 +126,26 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // PUT /tenants/me — update own tenant config (admin only)
     if (httpMethod === 'PUT' && isMe) {
-      const claims = (event.requestContext?.authorizer as any)?.claims ?? {};
-      if (claims['custom:role'] !== 'admin') return forbidden('Admin access required', event);
+      if (!isTenantAdmin(event)) {
+        return forbidden(`Admin access required (your role is "${getRole(event) || 'unset'}")`, event);
+      }
       const tenantId = getTenantId(event);
 
       const body = JSON.parse(event.body ?? '{}');
       if (body.plan && !['starter', 'pro', 'enterprise', 'trial'].includes(body.plan)) {
         return badRequest('Invalid plan', event);
       }
+      if (body.reminderLeadDays !== undefined) {
+        const n = Number(body.reminderLeadDays);
+        if (!Number.isInteger(n) || n < 0 || n > 14) {
+          return badRequest('Reminder lead time must be between 0 and 14 days', event);
+        }
+        body.reminderLeadDays = n;
+      }
+      if (body.remindersEnabled !== undefined) body.remindersEnabled = !!body.remindersEnabled;
       // NOTE: 'plan' is self-serve while billing is in placeholder mode.
       // When Stripe is wired, drop it here and let the webhook set the plan.
-      const allowed = ['companyName', 'industry', 'adminFirstName', 'adminLastName', 'adminEmail', 'adminPhone', 'plan'];
+      const allowed = ['companyName', 'industry', 'adminFirstName', 'adminLastName', 'adminEmail', 'adminPhone', 'plan', 'remindersEnabled', 'reminderLeadDays'];
       const updates = Object.entries(body).filter(([k]) => allowed.includes(k));
       if (!updates.length) return badRequest('No updatable fields provided', event);
 
@@ -144,15 +153,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const names  = Object.fromEntries(updates.map(([k], i) => [`#f${i}`, k]));
       const values = Object.fromEntries(updates.map(([k, v], i) => [`:v${i}`, v]));
       values[':now'] = new Date().toISOString();
-      names['#ua']  = 'updatedAt';
+      values[':tid'] = tenantId;
+      names['#ua']   = 'updatedAt';
+      names['#tid']  = 'tenantId';
+      names['#ca']   = 'createdAt';
 
+      // Upsert. Tenants created before plan config existed have no CONFIG row,
+      // and requiring one (attribute_exists(PK)) made plan changes fail for
+      // exactly those accounts — the same ones LEGACY_PLAN exists to cover.
       await ddb.send(new UpdateCommand({
         TableName: TABLE,
         Key: tenantPk(tenantId),
-        UpdateExpression: `SET ${expr}, #ua = :now`,
+        UpdateExpression:
+          `SET ${expr}, #ua = :now, #tid = if_not_exists(#tid, :tid), #ca = if_not_exists(#ca, :now)`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
-        ConditionExpression: 'attribute_exists(PK)',
       }));
 
       return ok({ updated: true }, event);

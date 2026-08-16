@@ -20,29 +20,48 @@ export const PLAN_MODULES: Record<PlanId, string[]> = {
   enterprise: [...STARTER, ...PRO_ADDS, ...ENT_ADDS],
 };
 
+/**
+ * Tenants predating plan config have no CONFIG row. That is a known,
+ * legitimate state and keeps full access — kept deliberately distinct from an
+ * unreadable or unrecognized plan, which is a fault and must not grant one.
+ */
+export const LEGACY_PLAN: PlanId = 'enterprise';
+
+/** The tier to fall back to when the real plan can't be trusted. */
+export const FALLBACK_PLAN: PlanId = 'starter';
+
 export function effectivePlan(raw?: string): PlanId {
-  const p = (raw || '').toLowerCase();
+  const p = (raw || '').trim().toLowerCase();
   if (p === 'starter' || p === 'pro' || p === 'enterprise') return p as PlanId;
   if (p === 'trial') return 'pro';
-  return 'enterprise'; // unknown / legacy (no config) → full access, never lock
+  if (!p) return LEGACY_PLAN; // no plan on record → pre-billing tenant
+  // A non-empty value we don't recognize means bad data, not a free upgrade.
+  console.warn(`[plan] unrecognized plan ${JSON.stringify(raw)} — treating as ${FALLBACK_PLAN}`);
+  return FALLBACK_PLAN;
 }
 
 export function rank(p: PlanId): number { return ORDER.indexOf(p); }
 
+/** Throws if the tenant config can't be read — callers decide the fallback. */
 export async function getTenantPlan(tenantId: string): Promise<PlanId> {
-  try {
-    const res = await ddb.send(new GetCommand({
-      TableName: CONFIG_TABLE,
-      Key: { PK: `TENANT_CONFIG#${tenantId}`, SK: 'CONFIG' },
-    }));
-    return effectivePlan(res.Item?.plan as string | undefined);
-  } catch {
-    return 'enterprise'; // fail open — don't lock people out on a lookup error
-  }
+  const res = await ddb.send(new GetCommand({
+    TableName: CONFIG_TABLE,
+    Key: { PK: `TENANT_CONFIG#${tenantId}`, SK: 'CONFIG' },
+  }));
+  return effectivePlan(res.Item?.plan as string | undefined);
 }
 
 /** True if the tenant's plan unlocks the given module/feature. */
 export async function planAllows(tenantId: string, moduleId: string): Promise<boolean> {
-  const plan = await getTenantPlan(tenantId);
+  let plan: PlanId;
+  try {
+    plan = await getTenantPlan(tenantId);
+  } catch (err) {
+    // Fail closed to the base tier. Granting the top tier on a failed lookup
+    // makes every paid feature reachable by inducing one — and the same table
+    // outage would fail the rest of the request anyway.
+    console.error(`[plan] lookup failed for tenant ${tenantId} — falling back to ${FALLBACK_PLAN}`, err);
+    plan = FALLBACK_PLAN;
+  }
   return PLAN_MODULES[plan].includes(moduleId);
 }

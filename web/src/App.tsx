@@ -23,6 +23,7 @@ import TimeOff from './pages/TimeOff';
 import Field from './pages/Field';
 import ModuleStub from './pages/ModuleStub';
 import Login from './pages/Login';
+import Portal from './pages/Portal';
 import { MODULES } from './domain/modules';
 import { useAuth } from './auth/AuthContext';
 import { JobsProvider } from './data/JobsContext';
@@ -53,25 +54,46 @@ const CUSTOM_PAGES: Record<string, React.ComponentType> = {
 };
 
 export default function App() {
-  const { user } = useAuth();
+  // The router has to sit above the auth gate: the customer portal is opened
+  // by people with no account, so /j/:token must render without ever reaching
+  // Login or the job/plan providers (which all assume a signed-in session).
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/j/:token" element={<Portal />} />
+        <Route path="*" element={<StaffApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function StaffApp() {
+  const { user, restoring } = useAuth();
+  // Restoring a stored session — showing Login here would flash a spurious
+  // "signed out" state at users whose session is about to come back.
+  if (restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted">
+        Restoring your session…
+      </div>
+    );
+  }
   if (!user) return <Login />;
 
   return (
     <JobsProvider>
       <PlanProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              {MODULES.filter((m) => m.id !== 'dashboard').map((m) => {
-                const Custom = CUSTOM_PAGES[m.id];
-                const page = Custom ? <Custom /> : <ModuleStub module={m} />;
-                return <Route key={m.id} path={m.path} element={<Gated id={m.id}>{page}</Gated>} />;
-              })}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            {MODULES.filter((m) => m.id !== 'dashboard').map((m) => {
+              const Custom = CUSTOM_PAGES[m.id];
+              const page = Custom ? <Custom /> : <ModuleStub module={m} />;
+              return <Route key={m.id} path={m.path} element={<Gated id={m.id}>{page}</Gated>} />;
+            })}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
       </PlanProvider>
     </JobsProvider>
   );

@@ -5,11 +5,15 @@ import { useAuth } from '../auth/AuthContext';
 import { useJobsCtx } from '../data/JobsContext';
 import { usePlan } from '../data/PlanContext';
 import JobDrawer from './JobDrawer';
+import OfflineBar from './OfflineBar';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
   const { jobs, select } = useJobsCtx();
-  const { allowed } = usePlan();
+  const { allowed, loaded: planLoaded } = usePlan();
+  // Nav is cosmetic — Gated does the real blocking. Keep every tab visible
+  // until the plan is known so the bar doesn't reshuffle under the cursor.
+  const navVisible = (id: string) => !planLoaded || allowed(id);
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -35,6 +39,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-full">
+      <OfflineBar />
       {/* Top bar */}
       <header className="glass sticky top-0 z-40 flex items-center gap-4 px-6 py-3">
         <div className="flex items-center gap-2.5">
@@ -91,7 +96,7 @@ export default function Layout() {
       <nav className="glass sticky top-[57px] z-30 flex gap-1.5 overflow-x-auto px-6 py-2.5">
         {NAV_GROUPS.map((g) => {
           const isActive = g.id === activeGroup.id;
-          const firstPath = MODULE_BY_ID[g.modules.find((id) => allowed(id)) || g.modules[0]]?.path || '/';
+          const firstPath = MODULE_BY_ID[g.modules.find((id) => navVisible(id)) || g.modules[0]]?.path || '/';
           return (
             <button
               key={g.id}
@@ -113,7 +118,7 @@ export default function Layout() {
       {subModules.length > 1 && (
         <div className="sticky top-[100px] z-20 flex gap-1.5 overflow-x-auto border-b border-glass bg-[#0a0f1c]/70 px-6 py-2 backdrop-blur-md">
           {subModules.map((m) => (
-            allowed(m.id) ? (
+            navVisible(m.id) ? (
               <NavLink
                 key={m.id}
                 to={m.path}

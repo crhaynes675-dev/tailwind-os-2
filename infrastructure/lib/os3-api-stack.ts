@@ -5,6 +5,8 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -47,7 +49,9 @@ export class Os3ApiStack extends cdk.Stack {
     // Access to the new table (+ its indexes) and the existing shared table.
     os3Table.grantReadWriteData(lambdaRole);
     lambdaRole.addToPolicy(new iam.PolicyStatement({
-      actions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:BatchWriteItem'],
+      // Scan is used only by the daily reminder sweep, to list tenant config
+      // rows (one per tenant — never for jobs).
+      actions: ['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:BatchWriteItem'],
       resources: [existingTableArn, `${existingTableArn}/index/*`],
     }));
     lambdaRole.addToPolicy(new iam.PolicyStatement({
@@ -57,6 +61,13 @@ export class Os3ApiStack extends cdk.Stack {
     lambdaRole.addToPolicy(new iam.PolicyStatement({
       actions: ['s3:PutObject', 's3:GetObject'],
       resources: [`arn:aws:s3:::${ATTACHMENTS_BUCKET}/*`],
+    }));
+    // Customer SMS. Publishing to a bare phone number has no resource ARN to
+    // scope to, so this is necessarily '*'. Sending stays off until
+    // SMS_ENABLED is set, which also needs an SNS spend limit configured.
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['sns:Publish'],
+      resources: ['*'],
     }));
     lambdaRole.addToPolicy(new iam.PolicyStatement({
       actions: [
@@ -89,8 +100,19 @@ export class Os3ApiStack extends cdk.Stack {
       });
     };
 
+    // Where customers land when they follow a share link. Used to build the
+    // absolute URL inside notification texts. Must match the deployed app
+    // origin (see APP_SUB in bin/app.ts).
+    const PORTAL_BASE_URL = 'https://app.morrisonmillwork.com';
+    // Flip to 'true' once an SNS SMS spend limit and origination number are in
+    // place; until then notifications are recorded but not delivered.
+    const SMS_ENABLED = 'false';
+    // Platform Stripe key. Empty until set — every Stripe path checks for it
+    // and reports "not configured" rather than failing obscurely.
+    const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? '';
+
     // Reused handlers → existing data table
-    const jobsFn = makeFn('Os3JobsFn', 'handlers/jobs.handler', EXISTING_TABLE_NAME);
+    const jobsFn = makeFn('Os3JobsFn', 'handlers/jobs.handler', EXISTING_TABLE_NAME, { PORTAL_BASE_URL, SMS_ENABLED });
     const auditFn = makeFn('Os3AuditFn', 'handlers/audit.handler', EXISTING_TABLE_NAME);
     const customersFn = makeFn('Os3CustomersFn', 'handlers/customers.handler', EXISTING_TABLE_NAME);
     const attachmentsFn = makeFn('Os3AttachmentsFn', 'handlers/attachments.handler', EXISTING_TABLE_NAME, { ATTACHMENTS_BUCKET });
@@ -99,9 +121,35 @@ export class Os3ApiStack extends cdk.Stack {
     const quotesFn = makeFn('Os3QuotesFn', 'handlers/quotes.handler', EXISTING_TABLE_NAME);
     // Shared access code that gates public company signup (change to rotate).
     const tenantsFn = makeFn('Os3TenantsFn', 'handlers/tenants.handler', EXISTING_TABLE_NAME, { USER_POOL_ID: EXISTING_USER_POOL_ID, SIGNUP_ACCESS_CODE: 'tailwind-2026' });
+    const shareFn = makeFn('Os3ShareFn', 'handlers/share.handler', EXISTING_TABLE_NAME);
+    // Customer-facing portal. Public (no authorizer) — access is granted by
+    // possession of an unguessable share token, resolved inside the handler.
+    const portalFn = makeFn('Os3PortalFn', 'handlers/portal.handler', EXISTING_TABLE_NAME, {
+      ATTACHMENTS_BUCKET, PORTAL_BASE_URL, STRIPE_SECRET_KEY,
+    });
+    // Stripe Connect onboarding so each tenant can take card payments into
+    // their own account.
+    const connectFn = makeFn('Os3ConnectFn', 'handlers/connect.handler', EXISTING_TABLE_NAME, {
+      PORTAL_BASE_URL, STRIPE_SECRET_KEY,
+    });
     // New handlers → new OS3 table
     const serviceFn = makeFn('Os3ServiceFn', 'handlers/service.handler', os3Table.tableName, { CONFIG_TABLE: EXISTING_TABLE_NAME });
     const checklistsFn = makeFn('Os3ChecklistsFn', 'handlers/checklists.handler', os3Table.tableName);
+    // Calendar reminders live with the other OS3-only entities.
+    const remindersFn = makeFn('Os3RemindersFn', 'handlers/reminders.handler', os3Table.tableName);
+
+    // Daily reminder sweep. Reads jobs from the shared table and reminders
+    // from the OS3 table, so it needs both names.
+    const schedulerFn = makeFn('Os3SchedulerFn', 'handlers/scheduler.handler', EXISTING_TABLE_NAME, {
+      REMINDERS_TABLE: os3Table.tableName, PORTAL_BASE_URL, SMS_ENABLED,
+    });
+    // 13:00 UTC ≈ early morning in US Eastern, so a "tomorrow" reminder lands
+    // the day before rather than overnight.
+    new events.Rule(this, 'Os3DailyReminders', {
+      description: 'Send appointment reminders and dated calendar reminders',
+      schedule: events.Schedule.cron({ minute: '0', hour: '13' }),
+      targets: [new targets.LambdaFunction(schedulerFn)],
+    });
 
     const api = new apigateway.RestApi(this, 'Os3Api', {
       restApiName: 'tailwind-os3-api',
@@ -144,6 +192,36 @@ export class Os3ApiStack extends cdk.Stack {
     const attachments = job.addResource('attachments');
     attachments.addMethod('POST', integ(attachmentsFn), auth);
     attachments.addMethod('GET', integ(attachmentsFn), auth);
+    const share = job.addResource('share');
+    share.addMethod('GET', integ(shareFn), auth);
+    share.addMethod('POST', integ(shareFn), auth);
+    share.addMethod('DELETE', integ(shareFn), auth);
+
+    // /public — customer portal. Intentionally UNAUTHENTICATED: these are the
+    // only routes besides company signup without a Cognito authorizer. The
+    // share token is the credential, and portal.ts allow-lists every field it
+    // returns so job costs and internal notes can never leak here.
+    const pub = api.root.addResource('public');
+    const pubJob = pub.addResource('jobs').addResource('{token}');
+    pubJob.addMethod('GET', integ(portalFn));
+    pubJob.addResource('approve').addMethod('POST', integ(portalFn));
+    const pubPay = pubJob.addResource('pay');
+    pubPay.addMethod('POST', integ(portalFn));
+    pubPay.addResource('confirm').addMethod('POST', integ(portalFn));
+
+    // /billing/connect — Stripe Connect onboarding (staff, admin-gated).
+    const billing = api.root.addResource('billing');
+    const billingConnect = billing.addResource('connect');
+    billingConnect.addMethod('GET', integ(connectFn), auth);
+    billingConnect.addMethod('POST', integ(connectFn), auth);
+
+    // /reminders — dated calendar items that aren't jobs
+    const reminders = api.root.addResource('reminders');
+    reminders.addMethod('GET', integ(remindersFn), auth);
+    reminders.addMethod('POST', integ(remindersFn), auth);
+    const reminder = reminders.addResource('{reminderId}');
+    reminder.addMethod('PUT', integ(remindersFn), auth);
+    reminder.addMethod('DELETE', integ(remindersFn), auth);
 
     // /customers
     const customers = api.root.addResource('customers');
