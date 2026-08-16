@@ -8,6 +8,9 @@ import { ok, badRequest, notFound, serverError } from '../lib/response';
 import { tpk } from '../lib/tenant';
 import { resolveShareToken } from '../lib/share';
 import { stripeRequest, StripeError } from '../lib/stripe';
+import {
+  customerView, customerStatus, invoiceView, isSignatureFile, APPROVAL_STEP,
+} from '../lib/customerView';
 
 const s3 = new S3Client({ region: process.env.REGION ?? 'us-east-1' });
 const BUCKET = process.env.ATTACHMENTS_BUCKET!;
@@ -19,47 +22,10 @@ const BUCKET = process.env.ATTACHMENTS_BUCKET!;
  * become customer-visible.
  */
 
-/** Internal status names are staff jargon; customers get plain language. */
-const CUSTOMER_STATUS: Record<string, { label: string; blurb: string; step: number }> = {
-  Unscheduled:                   { label: 'Being scheduled',   blurb: "We're preparing your job and will confirm a date shortly.", step: 1 },
-  Scheduled:                     { label: 'Scheduled',          blurb: 'Your installation date is confirmed.',                     step: 2 },
-  'In Progress':                 { label: 'In progress',        blurb: 'Our crew is working on your installation.',                step: 3 },
-  'Ready for Site Review':       { label: 'Quality check',      blurb: 'Installation is complete and being inspected.',            step: 4 },
-  'Ready for Post-Install Walk': { label: 'Quality check',      blurb: 'Installation is complete and being inspected.',            step: 4 },
-  'Final Walkthrough Ready':     { label: 'Ready for your approval', blurb: 'Please review the work and approve below.',           step: 5 },
-  Completed:                     { label: 'Complete',           blurb: 'This job is closed. Thank you.',                           step: 6 },
-};
-
-const STEP_COUNT = 6;
-
-function customerStatus(raw?: string) {
-  return CUSTOMER_STATUS[String(raw ?? '')] ?? CUSTOMER_STATUS.Unscheduled;
-}
 
 /** Photos only. Internal documents and paperwork never reach the portal. */
 const PHOTO_TYPES = /^image\//;
 
-/**
- * What the customer may see about money. Deliberately narrow: the billed total
- * once invoiced, and nothing else — never materialCost, laborCost or margin.
- */
-function invoiceView(job: Record<string, any>, canTakeCard: boolean) {
-  const status = String(job.invoiceStatus ?? 'none');
-  const amount = typeof job.contractAmount === 'number' ? job.contractAmount : null;
-  if (status === 'none' || !amount || amount <= 0) {
-    return { invoice: null as null | Record<string, unknown> };
-  }
-  return {
-    invoice: {
-      amountDue: amount,
-      currency: 'usd',
-      status,                       // 'invoiced' | 'paid'
-      paidAt: job.paidAt ?? null,
-      // Only offer a card button if the contractor can actually take one.
-      payable: status === 'invoiced' && canTakeCard,
-    },
-  };
-}
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
@@ -96,7 +62,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       const photos = await Promise.all(
         (attRes.Items ?? [])
           .filter((it) => PHOTO_TYPES.test(String(it.contentType ?? '')))
-          .filter((it) => !/^(signature|crewsignoff|customersignoff)-/.test(String(it.filename ?? '')))
+          .filter((it) => !isSignatureFile(it.filename))
           .sort((a, b) => (String(a.uploadedAt) < String(b.uploadedAt) ? 1 : -1))
           .slice(0, 24)
           .map(async (it) => ({
@@ -106,33 +72,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
           })),
       );
 
-      const cs = customerStatus(job.status as string);
-
-      // Explicit allow-list. Cost, margin, invoice state, internal notes,
-      // readiness detail and crew assignments are all deliberately absent.
-      return ok({
-        company:      cfgRes.Item?.companyName ?? 'Your installer',
-        reference:    job.workOrderNumber ?? null,
-        jobName:      job.jobName ?? 'Your installation',
-        address:      job.address ?? null,
-        status:       cs.label,
-        statusBlurb:  cs.blurb,
-        step:         cs.step,
-        stepCount:    STEP_COUNT,
-        scheduledDate:    job.scheduledDate ?? null,
-        scheduledEndDate: job.scheduledEndDate ?? null,
-        onSiteAt:     job.onSiteAt ?? null,
-        completedAt:  job.completedAt ?? null,
+      // Every field a customer sees is decided by customerView — a pure,
+      // tested allow-list rather than an inline object literal.
+      return ok(customerView({
+        job,
+        companyName: connect?.companyName as string | undefined,
         photos,
-        awaitingApproval: cs.step === 5 && !job.customerApprovedAt,
-        approvedAt:   job.customerApprovedAt ?? null,
-        approvedBy:   job.customerApprovedName ?? null,
-        // The one deliberate exception to the no-money rule: once an invoice
-        // has been issued, the customer must be able to see what they owe.
-        // Cost and margin stay hidden — this is the billed total only, and
-        // only after staff have marked the job invoiced.
-        ...invoiceView(job, !!connect?.stripeConnectId),
-      }, event);
+        canTakeCard: !!connect?.stripeConnectId,
+      }), event);
     }
 
     // POST /public/jobs/{token}/pay — start a card payment for the invoice.
@@ -236,7 +183,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       if (job.customerApprovedAt) return badRequest('This job has already been approved.', event);
 
       const cs = customerStatus(job.status as string);
-      if (cs.step < 5) return badRequest('This job is not ready for approval yet.', event);
+      if (cs.step < APPROVAL_STEP) return badRequest('This job is not ready for approval yet.', event);
 
       const now = new Date().toISOString();
       const attachId = randomUUID();

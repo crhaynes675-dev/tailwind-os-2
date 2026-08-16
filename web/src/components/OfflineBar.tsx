@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { subscribeOutbox, flush, startOutbox, type OutboxEntry } from '../lib/outbox';
+import { ENV_NAME, IS_PRODUCTION } from '../lib/config';
 
 /**
  * Connectivity and pending-work indicator.
@@ -27,7 +28,15 @@ export default function OfflineBar() {
     };
   }, []);
 
-  if (online && pending.length === 0) return null;
+  // A non-production build must never be mistakable for the real thing —
+  // this is the safeguard that makes pointing at staging safe to do.
+  const envBanner = !IS_PRODUCTION ? (
+    <div className="sticky top-0 z-50 border-b border-[#f0a23c]/30 bg-[#f0a23c]/15 px-4 py-1.5 text-center text-[0.68rem] font-semibold uppercase tracking-wider text-[#f0a23c]">
+      {ENV_NAME} environment — not live data
+    </div>
+  ) : null;
+
+  if (online && pending.length === 0) return envBanner;
 
   async function retry() {
     setSyncing(true);
@@ -38,8 +47,10 @@ export default function OfflineBar() {
   const offline = !online;
 
   return (
-    <div
-      role="status"
+    <>
+      {envBanner}
+      <div
+        role="status"
       aria-live="polite"
       className={`sticky top-0 z-50 flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-[0.72rem] font-semibold ${
         offline
@@ -68,7 +79,8 @@ export default function OfflineBar() {
         >
           {syncing ? 'Sending…' : 'Retry now'}
         </button>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
